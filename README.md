@@ -12,7 +12,7 @@
 - **계층형 프로젝트 가이드북 자동 생성:** README, 폴더 구조, 핵심 실행 플로우 등 온보딩 문서 자동 요약 및 생성
 
 ## 🛠 Tech Stack (기술 스택)
-- **Frontend:** HTML, CSS(SCSS), JavaScript, React.js (v19.2), Vite
+- **Frontend:** HTML, CSS(SCSS), JavaScript, React.js (v19), Next.js (v15, App Router)
 - **Backend:** Python (v3.12), FastAPI, SQLAlchemy, Pydantic
 - **Database:** PostgreSQL, pgvector
 - **Infra/Deploy:** Docker Compose, 로컬 HTTPS(mkcert), 환경 자동화 셸 스크립트

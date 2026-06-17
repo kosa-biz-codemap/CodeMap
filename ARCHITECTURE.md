@@ -22,12 +22,11 @@ apps/frontend/
 
 ```text
 apps/backend/app/
-├── {domain}/             # (예: user, analysis) 기능별 독립 도메인 모듈
+├── {domain}/             # (예: repo, list, rag, agent 등) 기능별 독립 도메인 모듈
 │   ├── router.py         # 📡 API 진입점 (Controller)
 │   ├── service.py        # 🧠 비즈니스 로직 (Service)
 │   ├── repository.py     # 🗄️ DB 접근 로직 (DAO / Repository)
-│   ├── schemas.py        # 🚚 데이터 유효성 검증 및 전송 모델 (DTO / Pydantic)
-│   └── models.py         # 🏗️ 데이터베이스 테이블 매핑 (Entity / SQLAlchemy)
+│   └── schemas.py        # 🚚 데이터 유효성 검증 및 전송 모델 (DTO / Pydantic)
 ```
 
 ---

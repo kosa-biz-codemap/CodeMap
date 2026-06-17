@@ -56,15 +56,15 @@ graph TD
 ```plain text
 CodeMap/
 ├── apps/
-│   ├── frontend/                 # React 19 (FSD 구조: pages, features, common)
+│   ├── frontend/                 # Next.js (FSD 구조: app, features, common)
 │   │   ├── src/
-│   │   │   ├── common/           # 공통 UI 컴포넌트, 훅, 테마
+│   │   │   ├── common/           # 공통 UI 코어 컴포넌트, 훅, 타입
 │   │   │   ├── features/         # 기능별 도메인 UI, API 통신, 상태 관리
-│   │   │   └── pages/            # 화면 조립 및 라우터 정의 페이지
-│   │   └── vite.config.js
+│   │   │   └── app/              # Next.js App Router 기반 페이지 및 레이아웃
+│   │   └── next.config.ts
 │   └── backend/                  # FastAPI - Python 3.12 (3-Tier Layer)
 │       ├── app/
-│       │   ├── {domain}/         # 기능 도메인 폴더 (router, service, repository, schemas, models)
+│       │   ├── {domain}/         # 기능 도메인 폴더 (repo, list, rag, agent 등) (router, service, repository, schemas)
 │       │   └── main.py           # FastAPI 서버 진입점
 │       ├── certs/                # 로컬 SSL 인증서
 │       └── requirements.txt
