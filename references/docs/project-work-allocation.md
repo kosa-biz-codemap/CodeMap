@@ -40,14 +40,34 @@ CodeMap 팀프로젝트의 MVP 1차 작업 분배 문서입니다.
 | COMMON / QA | CONFIG | env, API base URL, CORS, storage path | `backend/app/models/config.py`, `frontend/src/lib/api.ts`, `docker-compose.yml` | TODO | P0 | 예정 |
 | COMMON / QA | TEST | backend/frontend 테스트, sample repo, 배포 전 검증 | `backend/tests/`, `frontend/src/**/*.test.*`, `references/docs/deployment-verification-guide.md` | TODO | P1 | 예정 |
 
-## 4인 담당 분배 초안
+## 4인 페어 작업 흐름 초안
 
-| 담당 | 추천 영역 | 이유 |
+초반에는 도메인별로 1명씩 고정 배정하지 않고, `PROJECT` 영역을 2인 페어 2개로 나누어 병렬로 시작합니다. 한 페어의 작업이 먼저 끝나면 다음 병목 영역으로 이동해 다른 페어를 기다리는 시간을 줄입니다.
+
+### Round 1: PROJECT 병렬 구현
+
+| 페어 | 담당자 | 우선 작업 | 관련 Module | 완료 기준 |
+| --- | --- | --- | --- | --- |
+| Pair A | TODO / TODO | 분석 목록, 분석 상세, 파일 수/크기 사전 검증, 진행 상태 UI | PROJECT LIST / PIPELINE | 목록 조회와 분석 진행 상태가 UI에서 확인된다. |
+| Pair B | TODO / TODO | GitHub URL 검증, Git clone, 파일 필터링, cleanup | PROJECT REPO | public GitHub URL을 입력하면 서버가 안전하게 clone하고 분석 대상 파일만 남긴다. |
+
+### Round 2: 먼저 끝난 페어의 이동 경로
+
+| 먼저 끝난 작업 | 다음 이동 후보 | 이유 |
 | --- | --- | --- |
-| 담당자 A | PROJECT LIST / REPO / PIPELINE | 저장소 등록부터 분석 시작까지 MVP 입구를 책임진다. |
-| 담당자 B | RAG PARSE / EMBED | 분석 품질의 기반인 청킹, 임베딩, 검색 연결을 책임진다. |
-| 담당자 C | AGENT SEARCH / CHAT / CORE | 사용자에게 보이는 AI 분석과 답변 흐름을 책임진다. |
-| 담당자 D | DOCS GEN / GUARD / COMMON QA | 온보딩 문서, 안전성, 검증, 발표 완성도를 책임진다. |
+| PROJECT LIST / PIPELINE | RAG EMBED | 진행 상태와 저장 구조가 잡히면 임베딩/검색 연결을 붙일 수 있다. |
+| PROJECT REPO | RAG PARSE | clone/필터링 결과를 바로 파일 트리, 설정 탐지, 청킹 입력으로 넘길 수 있다. |
+| RAG PARSE | AGENT SEARCH | 파싱 결과가 나오면 분석 agent가 근거 수집과 요약을 시작할 수 있다. |
+| RAG EMBED | AGENT CHAT | 검색 결과가 나오면 사용자 질문 응답과 source 표시를 붙일 수 있다. |
+| AGENT SEARCH / CHAT | DOCS GEN / GUARD | 분석/답변 결과를 온보딩 문서로 만들고 민감정보 검사를 연결한다. |
+
+### Round 3: MVP 마감 전 통합
+
+| 담당 | 작업 | 완료 기준 |
+| --- | --- | --- |
+| 전체 | API contract와 타입 동기화 | backend schema와 frontend contract가 같은 응답 구조를 사용한다. |
+| 전체 | end-to-end demo flow 검증 | URL 입력 -> clone -> 분석 진행 -> report 생성 -> source 확인 흐름이 동작한다. |
+| 전체 | README / 실행 가이드 / 배포 전 검증 | 팀원 환경에서 같은 명령으로 실행과 검증이 가능하다. |
 
 ## Phase 2 후보
 
