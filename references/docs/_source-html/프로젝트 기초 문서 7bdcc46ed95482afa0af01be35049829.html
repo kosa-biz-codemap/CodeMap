@@ -1,0 +1,785 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>프로젝트 기초 문서</title><style>
+/* cspell:disable-file */
+/* webkit printing magic: print all background colors */
+html {
+	-webkit-print-color-adjust: exact;
+}
+* {
+	box-sizing: border-box;
+	-webkit-print-color-adjust: exact;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+@media only screen {
+	body {
+		margin: 2em auto;
+		max-width: 900px;
+		color: rgb(55, 53, 47);
+	}
+}
+
+body {
+	line-height: 1.5;
+	white-space: pre-wrap;
+}
+
+a,
+a.visited {
+	color: inherit;
+	text-decoration: underline;
+}
+
+.pdf-relative-link-path {
+	font-size: 80%;
+	color: #444;
+}
+
+h1,
+h2,
+h3 {
+	letter-spacing: -0.01em;
+	line-height: 1.2;
+	font-weight: 600;
+	margin-bottom: 0;
+}
+
+/* Override strong tags inside headings to maintain consistent weight */
+h1 strong,
+h2 strong,
+h3 strong {
+	font-weight: 600;
+}
+
+.page-title {
+	font-size: 2.5rem;
+	font-weight: 700;
+	margin-top: 0;
+	margin-bottom: 0.75em;
+}
+
+h1 {
+	font-size: 1.875rem;
+	margin-top: 1.875rem;
+}
+
+h2 {
+	font-size: 1.5rem;
+	margin-top: 1.5rem;
+}
+
+h3 {
+	font-size: 1.25rem;
+	margin-top: 1.25rem;
+}
+
+.source {
+	border: 1px solid #ddd;
+	border-radius: 3px;
+	padding: 1.5em;
+	word-break: break-all;
+}
+
+.callout {
+	border-radius: 10px;
+	padding: 1rem;
+}
+
+figure {
+	margin: 1.25em 0;
+	page-break-inside: avoid;
+}
+
+figcaption {
+	opacity: 0.5;
+	font-size: 85%;
+	margin-top: 0.5em;
+}
+
+mark {
+	background-color: transparent;
+}
+
+.indented {
+	padding-left: 1.5em;
+}
+
+hr {
+	background: transparent;
+	display: block;
+	width: 100%;
+	height: 1px;
+	visibility: visible;
+	border: none;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+img {
+	max-width: 100%;
+}
+
+@media only print {
+	img {
+		max-height: 100vh;
+		object-fit: contain;
+	}
+
+	table.collection-content {
+		width: 100%;
+		table-layout: fixed;
+	}
+
+	table.collection-content th,
+	table.collection-content td {
+		overflow-wrap: anywhere;
+	}
+
+	table.collection-content td > .user,
+	table.collection-content td > time {
+		white-space: pre-wrap;
+	}
+}
+
+@page {
+	margin: 1in;
+}
+
+.collection-content-wrapper {
+	overflow-x: auto;
+}
+
+@media only print {
+	.collection-content-wrapper {
+		overflow-x: visible;
+	}
+}
+
+.collection-content {
+	font-size: 0.875rem;
+}
+
+.collection-content td {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.column-list {
+	display: flex;
+	gap: 46px;
+}
+
+.column {
+	min-width: 0;
+	overflow: hidden;
+}
+
+.column > *:first-child {
+	margin-top: 0;
+}
+
+.table_of_contents-item {
+	display: block;
+	font-size: 0.875rem;
+	line-height: 1.3;
+	padding: 0.125rem;
+}
+
+.table_of_contents-indent-1 {
+	margin-left: 1.5rem;
+}
+
+.table_of_contents-indent-2 {
+	margin-left: 3rem;
+}
+
+.table_of_contents-indent-3 {
+	margin-left: 4.5rem;
+}
+
+.table_of_contents-link {
+	text-decoration: none;
+	opacity: 0.7;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.18);
+}
+
+table,
+th,
+td {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+table {
+	border-collapse: collapse;
+	border-left: none;
+	border-right: none;
+}
+
+th,
+td {
+	font-weight: normal;
+	padding: 0.25em 0.5em;
+	line-height: 1.5;
+	min-height: 1.5em;
+	text-align: left;
+}
+
+th {
+	color: rgba(55, 53, 47, 0.6);
+}
+
+ol,
+ul {
+	margin: 0;
+	margin-block-start: 0.6em;
+	margin-block-end: 0.6em;
+}
+
+li > ol:first-child,
+li > ul:first-child {
+	margin-block-start: 0.6em;
+}
+
+ul > li {
+	list-style: disc;
+}
+
+ul.to-do-list {
+	padding-inline-start: 0;
+}
+
+ul.to-do-list > li {
+	list-style: none;
+}
+
+.to-do-children-checked {
+	text-decoration: line-through;
+	opacity: 0.375;
+}
+
+ul.toggle > li {
+	list-style: none;
+}
+
+ul {
+	padding-inline-start: 1.7em;
+}
+
+ul > li {
+	padding-left: 0.1em;
+}
+
+ol {
+	padding-inline-start: 1.6em;
+}
+
+ol.numbered-list.numbered-list-digits-2 {
+	padding-inline-start: 2em;
+}
+
+ol.numbered-list.numbered-list-digits-3plus {
+	padding-inline-start: 2.4em;
+}
+
+ol > li {
+	padding-left: 0.2em;
+}
+
+.mono ol {
+	padding-inline-start: 2em;
+}
+
+.mono ol > li {
+	text-indent: -0.4em;
+}
+
+.toggle {
+	padding-inline-start: 0em;
+	list-style-type: none;
+}
+
+/* Indent toggle children */
+.toggle > li > details {
+	padding-left: 1.7em;
+}
+
+.toggle > li > details > summary {
+	margin-left: -1.1em;
+}
+
+.selected-value {
+	display: inline-block;
+	padding: 0 0.5em;
+	background: rgba(206, 205, 202, 0.5);
+	border-radius: 3px;
+	margin-right: 0.5em;
+	margin-top: 0.3em;
+	margin-bottom: 0.3em;
+	white-space: nowrap;
+}
+
+.collection-title {
+	display: inline-block;
+	margin-right: 1em;
+}
+
+.page-description {
+	margin-bottom: 2em;
+}
+
+.simple-table {
+	margin-top: 1em;
+	font-size: 0.875rem;
+	empty-cells: show;
+}
+.simple-table td {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table th {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table-header-color {
+	background: rgb(247, 246, 243);
+	color: black;
+}
+.simple-table-header {
+	font-weight: 500;
+}
+
+time {
+	opacity: 0.5;
+}
+
+.icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 1.2em;
+	max-height: 1.2em;
+	text-decoration: none;
+	vertical-align: text-bottom;
+	margin-right: 0.5em;
+}
+
+img.icon {
+	border-radius: 3px;
+}
+
+.callout img.notion-static-icon {
+	width: 1em;
+	height: 1em;
+}
+
+.callout p {
+	margin: 0;
+}
+
+.callout h1,
+.callout h2,
+.callout h3 {
+	margin: 0 0 0.6rem;
+}
+
+.user-icon {
+	width: 1.5em;
+	height: 1.5em;
+	border-radius: 100%;
+	margin-right: 0.5rem;
+}
+
+.user-icon-inner {
+	font-size: 0.8em;
+}
+
+.text-icon {
+	border: 1px solid #000;
+	text-align: center;
+}
+
+.page-cover-image {
+	display: block;
+	object-fit: cover;
+	width: 100%;
+	max-height: 30vh;
+}
+
+.page-header-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.page-header-icon-with-cover {
+	margin-top: -0.72em;
+	margin-left: 0.07em;
+}
+
+.page-header-icon img {
+	border-radius: 3px;
+}
+
+.link-to-page {
+	margin: 1em 0;
+	padding: 0;
+	border: none;
+	font-weight: 500;
+}
+
+p > .user {
+	opacity: 0.5;
+}
+
+td > .user,
+td > time {
+	white-space: nowrap;
+}
+
+input[type="checkbox"] {
+	transform: scale(1.5);
+	margin-right: 0.6em;
+	vertical-align: middle;
+}
+
+p {
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.image {
+	border: none;
+	margin: 1.5em 0;
+	padding: 0;
+	border-radius: 0;
+	text-align: center;
+}
+
+.code,
+code {
+	background: rgba(135, 131, 120, 0.15);
+	border-radius: 3px;
+	padding: 0.2em 0.4em;
+	border-radius: 3px;
+	font-size: 85%;
+	tab-size: 2;
+}
+
+code {
+	color: #eb5757;
+}
+
+.code {
+	padding: 1.5em 1em;
+}
+
+.code-wrap {
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.code > code {
+	background: none;
+	padding: 0;
+	font-size: 100%;
+	color: inherit;
+}
+
+blockquote {
+	font-size: 1em;
+	margin: 1em 0;
+	padding-left: 1em;
+	border-left: 3px solid rgb(55, 53, 47);
+}
+
+blockquote.quote-large {
+	font-size: 1.25em;
+}
+
+.bookmark {
+	text-decoration: none;
+	max-height: 8em;
+	padding: 0;
+	display: flex;
+	width: 100%;
+	align-items: stretch;
+}
+
+.bookmark-title {
+	font-size: 0.85em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: 1.75em;
+	white-space: nowrap;
+}
+
+.bookmark-text {
+	display: flex;
+	flex-direction: column;
+}
+
+.bookmark-info {
+	flex: 4 1 180px;
+	padding: 12px 14px 14px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.bookmark-image {
+	width: 33%;
+	flex: 1 1 180px;
+	display: block;
+	position: relative;
+	object-fit: cover;
+	border-radius: 1px;
+}
+
+.bookmark-description {
+	color: rgba(55, 53, 47, 0.6);
+	font-size: 0.75em;
+	overflow: hidden;
+	max-height: 4.5em;
+	word-break: break-word;
+}
+
+.bookmark-href {
+	font-size: 0.75em;
+	margin-top: 0.25em;
+}
+
+.sans { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"; }
+.code { font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; }
+.serif { font-family: Lyon-Text, Georgia, ui-serif, serif; }
+.mono { font-family: iawriter-mono, Nitti, Menlo, Courier, monospace; }
+.pdf .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK JP'; }
+.pdf:lang(zh-CN) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK SC'; }
+.pdf:lang(zh-TW) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK TC'; }
+.pdf:lang(ko-KR) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK KR'; }
+.pdf .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.pdf .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK JP'; }
+.pdf:lang(zh-CN) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK SC'; }
+.pdf:lang(zh-TW) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK TC'; }
+.pdf:lang(ko-KR) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK KR'; }
+.pdf .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.highlight-default {
+	color: rgba(44, 44, 43, 1);
+}
+.highlight-gray {
+	color: rgba(125, 122, 117, 1);
+	fill: rgba(125, 122, 117, 1);
+}
+.highlight-brown {
+	color: rgba(159, 118, 90, 1);
+	fill: rgba(159, 118, 90, 1);
+}
+.highlight-orange {
+	color: rgba(210, 123, 45, 1);
+	fill: rgba(210, 123, 45, 1);
+}
+.highlight-yellow {
+	color: rgba(203, 148, 52, 1);
+	fill: rgba(203, 148, 52, 1);
+}
+.highlight-teal {
+	color: rgba(80, 148, 110, 1);
+	fill: rgba(80, 148, 110, 1);
+}
+.highlight-blue {
+	color: rgba(56, 125, 201, 1);
+	fill: rgba(56, 125, 201, 1);
+}
+.highlight-purple {
+	color: rgba(154, 107, 180, 1);
+	fill: rgba(154, 107, 180, 1);
+}
+.highlight-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.highlight-red {
+	color: rgba(207, 81, 72, 1);
+	fill: rgba(207, 81, 72, 1);
+}
+.highlight-default_background {
+	color: rgba(44, 44, 43, 1);
+}
+.highlight-gray_background {
+	background: rgba(42, 28, 0, 0.07);
+}
+.highlight-brown_background {
+	background: rgba(139, 46, 0, 0.086);
+}
+.highlight-orange_background {
+	background: rgba(224, 101, 1, 0.129);
+}
+.highlight-yellow_background {
+	background: rgba(211, 168, 0, 0.137);
+}
+.highlight-teal_background {
+	background: rgba(0, 100, 45, 0.09);
+}
+.highlight-blue_background {
+	background: rgba(0, 124, 215, 0.094);
+}
+.highlight-purple_background {
+	background: rgba(102, 0, 178, 0.078);
+}
+.highlight-pink_background {
+	background: rgba(197, 0, 93, 0.086);
+}
+.highlight-red_background {
+	background: rgba(223, 22, 0, 0.094);
+}
+.block-color-default {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray {
+	color: rgba(125, 122, 117, 1);
+	fill: rgba(125, 122, 117, 1);
+}
+.block-color-brown {
+	color: rgba(159, 118, 90, 1);
+	fill: rgba(159, 118, 90, 1);
+}
+.block-color-orange {
+	color: rgba(210, 123, 45, 1);
+	fill: rgba(210, 123, 45, 1);
+}
+.block-color-yellow {
+	color: rgba(203, 148, 52, 1);
+	fill: rgba(203, 148, 52, 1);
+}
+.block-color-teal {
+	color: rgba(80, 148, 110, 1);
+	fill: rgba(80, 148, 110, 1);
+}
+.block-color-blue {
+	color: rgba(56, 125, 201, 1);
+	fill: rgba(56, 125, 201, 1);
+}
+.block-color-purple {
+	color: rgba(154, 107, 180, 1);
+	fill: rgba(154, 107, 180, 1);
+}
+.block-color-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.block-color-red {
+	color: rgba(207, 81, 72, 1);
+	fill: rgba(207, 81, 72, 1);
+}
+.block-color-default_background {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray_background {
+	background: rgba(240, 239, 237, 1);
+}
+.block-color-brown_background {
+	background: rgba(245, 237, 233, 1);
+}
+.block-color-orange_background {
+	background: rgba(251, 235, 222, 1);
+}
+.block-color-yellow_background {
+	background: rgba(249, 243, 220, 1);
+}
+.block-color-teal_background {
+	background: rgba(232, 241, 236, 1);
+}
+.block-color-blue_background {
+	background: rgba(229, 242, 252, 1);
+}
+.block-color-purple_background {
+	background: rgba(243, 235, 249, 1);
+}
+.block-color-pink_background {
+	background: rgba(250, 233, 241, 1);
+}
+.block-color-red_background {
+	background: rgba(252, 233, 231, 1);
+}
+.select-value-color-default { background-color: rgba(42, 28, 0, 0.07); }
+.select-value-color-gray { background-color: rgba(28, 19, 1, 0.11); }
+.select-value-color-brown { background-color: rgba(127, 51, 0, 0.156); }
+.select-value-color-orange { background-color: rgba(196, 88, 0, 0.203); }
+.select-value-color-yellow { background-color: rgba(209, 156, 0, 0.282); }
+.select-value-color-green { background-color: rgba(0, 96, 38, 0.156); }
+.select-value-color-blue { background-color: rgba(0, 118, 217, 0.203); }
+.select-value-color-purple { background-color: rgba(92, 0, 163, 0.141); }
+.select-value-color-pink { background-color: rgba(183, 0, 78, 0.152); }
+.select-value-color-red { background-color: rgba(206, 24, 0, 0.164); }
+
+.checkbox {
+	display: inline-flex;
+	vertical-align: text-bottom;
+	width: 16;
+	height: 16;
+	background-size: 16px;
+	margin-left: 2px;
+	margin-right: 5px;
+}
+
+.checkbox-on {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%2358A9D7%22%2F%3E%0A%3Cpath%20d%3D%22M6.71429%2012.2852L14%204.9995L12.7143%203.71436L6.71429%209.71378L3.28571%206.2831L2%207.57092L6.71429%2012.2852Z%22%20fill%3D%22white%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+
+.checkbox-off {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20x%3D%220.75%22%20y%3D%220.75%22%20width%3D%2214.5%22%20height%3D%2214.5%22%20fill%3D%22white%22%20stroke%3D%22%2336352F%22%20stroke-width%3D%221.5%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+	
+</style></head><body><article id="7bdcc46e-d954-82af-a0af-01be35049829" class="page sans"><header><div class="page-header-icon undefined"><span class="icon">🤔</span></div><h1 class="page-title" dir="auto">프로젝트 기초 문서</h1><p class="page-description" dir="auto"></p></header><div class="page-body"><div style="display:contents" dir="auto"><hr id="2edcc46e-d954-8377-9065-0131c25e6380"/></div><div style="display:contents" dir="auto"><p id="050cc46e-d954-83c8-baff-81386610dde9" class="">LLM을 이용한 Application 개발</p></div><div style="display:contents" dir="ltr"><figure id="1b2cc46e-d954-83af-8331-011694131b79" class="link-to-page"><a href="https://app.notion.com/p/1-1b2cc46ed95483af8331011694131b79?pvs=21">프로젝트 주제 후보 (1)</a></figure></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.5em;line-height:1.3;margin:0">AI 코드베이스 온보딩 도우미 — GitHub 레포 분석 RAG 서비스</summary><div class="indented"><div style="display:contents" dir="auto"><p id="0cfcc46e-d954-8354-84d9-81839279489a" class="">한 줄 요약</p></div><div style="display:contents" dir="auto"><p id="784cc46e-d954-83f4-b9d8-01a1a548ba34" class="">GitHub 레포 URL을 입력하면 README, 폴더 구조, 핵심 파일, 실행 방법, 처음 읽을 순서를 분석해서 &quot;신입 개발자용 온보딩 문서&quot;를 자동 생성하는 FastAPI + React 기반 LLM 웹앱.</p></div><div style="display:contents" dir="auto"><h2 id="0fccc46e-d954-8283-883d-8152c0800ed4" class="">1. 프로젝트 개요</h2></div><div style="display:contents" dir="ltr"><table id="466cc46e-d954-83e8-aee5-01cf3cdf9c95" class="simple-table"><thead class="simple-table-header"><div style="display:contents" dir="ltr"><tr id="5f0cc46e-d954-830d-ab93-01dcab7dd902"><th id="aRCz" class="simple-table-header-color simple-table-header">항목</th><th id="vB}|" class="simple-table-header-color simple-table-header">내용</th></tr></div></thead><tbody><div style="display:contents" dir="ltr"><tr id="71dcc46e-d954-8231-90a8-0166b095e8d9"><td id="aRCz" class="">프로젝트명</td><td id="vB}|" class="">(가칭) RepoPilot / Codebase Guide</td></tr></div><div style="display:contents" dir="ltr"><tr id="44acc46e-d954-828c-bdab-013ca8b93ff3"><td id="aRCz" class="">핵심 콘셉트</td><td id="vB}|" class="">처음 보는 GitHub 레포를 빠르게 이해하도록 구조 분석, 핵심 파일 추천, 실행 가이드, 아키텍처 요약 제공</td></tr></div><div style="display:contents" dir="ltr"><tr id="19dcc46e-d954-8270-bd23-812c7d1554f8"><td id="aRCz" class="">타깃 사용자</td><td id="vB}|" class="">신입 개발자, 팀 프로젝트 참여자, 오픈소스 기여자, 부트캠프 수강생</td></tr></div><div style="display:contents" dir="ltr"><tr id="95dcc46e-d954-831d-9f56-0119e5948035"><td id="aRCz" class="">스택</td><td id="vB}|" class="">React 또는 Next.js · FastAPI · GitHub API · RAG · LLM · PostgreSQL/pgvector 또는 Chroma</td></tr></div></tbody></table></div><div style="display:contents" dir="auto"><h2 id="4b4cc46e-d954-83ba-8e08-81109b23a9cd" class="">2. 문제 정의 — 왜 필요한가</h2></div><div style="display:contents" dir="auto"><ul id="bbccc46e-d954-837c-9ef0-81865a4d4277" class="bulleted-list"><li style="list-style-type:disc">처음 보는 레포는 README만으로 전체 구조를 이해하기 어렵다.</li></ul></div><div style="display:contents" dir="auto"><ul id="789cc46e-d954-836b-a265-0102766bfc8c" class="bulleted-list"><li style="list-style-type:disc">팀 프로젝트에서 &quot;어떤 파일부터 봐야 하는지&quot;, &quot;어떻게 실행하는지&quot;, &quot;핵심 로직이 어디 있는지&quot; 찾는 데 시간이 많이 든다.</li></ul></div><div style="display:contents" dir="auto"><ul id="2bdcc46e-d954-830e-b627-01e363f10df9" class="bulleted-list"><li style="list-style-type:disc">단순 챗봇이 아니라 실제 개발자가 바로 쓸 수 있는 온보딩/문서화 도구로 제품성이 있다.</li></ul></div><div style="display:contents" dir="auto"><h2 id="b00cc46e-d954-83fb-abdd-8177a7eaff0d" class="">3. 핵심 기능</h2></div><div style="display:contents" dir="auto"><p id="a81cc46e-d954-83d8-b52b-013bb63c93f8" class="">MVP 기준 핵심 기능을 실제 개발 단위로 쪼개면 아래와 같다. 기능 영역은 크지만, 세부 기능과 구현 방법을 기준으로 역할 분담과 1주차 작업 범위를 정할 수 있다.</p></div><div style="display:contents" dir="ltr"><table id="ecdcc46e-d954-838a-a6a2-810e06faca82" class="simple-table"><thead class="simple-table-header"><div style="display:contents" dir="ltr"><tr id="39fcc46e-d954-838b-b513-01dbabc75305"><th id="mH&lt;j" class="simple-table-header-color simple-table-header">기능 영역</th><th id="[~eT" class="simple-table-header-color simple-table-header">세부 기능 / 파생 기능</th><th id="=zx@" class="simple-table-header-color simple-table-header">설명</th><th id="pBlK" class="simple-table-header-color simple-table-header">구현 방법</th></tr></div></thead><tbody><div style="display:contents" dir="ltr"><tr id="7c9cc46e-d954-83c1-be11-01794a62d8db"><td id="mH&lt;j" class="">레포 등록</td><td id="[~eT" class="">GitHub URL 검증, owner/repo/branch 추출, 분석 상태 생성</td><td id="=zx@" class="">사용자가 public GitHub 레포 URL을 입력하면 분석 작업을 시작하고 레포 메타데이터를 저장한다.</td><td id="pBlK" class="">FastAPI POST /api/repositories/analyze에서 URL 파싱 후 GitHub API로 접근 가능 여부 확인, repositories 테이블에 status=processing 저장</td></tr></div><div style="display:contents" dir="ltr"><tr id="856cc46e-d954-83ef-81fc-818090dcc9c7"><td id="mH&lt;j" class="">코드 수집</td><td id="[~eT" class="">clone/API 수집, 파일 크기 제한, 확장자 필터링</td><td id="=zx@" class="">README, 설정 파일, 주요 소스코드처럼 온보딩에 필요한 파일만 수집하고 node_modules, build 산출물, 대용량 바이너리는 제외한다.</td><td id="pBlK" class="">git clone --depth 1 또는 GitHub Contents API 사용, allowlist/denylist 기반 필터, max file size와 max file count 제한 적용</td></tr></div><div style="display:contents" dir="ltr"><tr id="b4dcc46e-d954-8238-90d3-819188c00b4a"><td id="mH&lt;j" class="">구조 분석</td><td id="[~eT" class="">파일 트리 생성, 기술 스택 추론, 진입점 탐지</td><td id="=zx@" class="">프로젝트가 어떤 프레임워크와 런타임을 쓰는지, 주요 폴더가 어떤 역할인지 자동으로 요약한다.</td><td id="pBlK" class="">package.json, requirements.txt, pyproject.toml, Dockerfile, docker-compose.yml, framework config 파일을 규칙 기반으로 탐지</td></tr></div><div style="display:contents" dir="ltr"><tr id="376cc46e-d954-82ff-bb7b-012cf6d56565"><td id="mH&lt;j" class="">청킹 및 인덱싱</td><td id="[~eT" class="">문서/코드 청크 생성, 메타데이터 저장</td><td id="=zx@" class="">RAG 검색을 위해 파일 내용을 검색 가능한 단위로 나누고 파일 경로, 언어, 라인 번호, 심볼 정보를 함께 저장한다.</td><td id="pBlK" class="">MVP에서는 Markdown 헤더/문단 단위와 코드 파일 단위 분할을 우선 적용하고, 함수/클래스 단위 분할은 가능한 언어부터 점진 적용</td></tr></div><div style="display:contents" dir="ltr"><tr id="347cc46e-d954-8321-a220-81fa1157d6c7"><td id="mH&lt;j" class="">임베딩 및 벡터 검색</td><td id="[~eT" class="">임베딩 생성, repository_id 기반 검색, top-k 검색</td><td id="=zx@" class="">질문과 관련 있는 코드/문서 조각을 의미 기반으로 찾는다.</td><td id="pBlK" class="">OpenAI embedding 모델과 pgvector 또는 Chroma 사용, chunks 테이블/컬렉션에 repository_id, path, chunk_type, start_line, end_line 저장</td></tr></div><div style="display:contents" dir="ltr"><tr id="e6ccc46e-d954-82cf-8094-01f881df7363"><td id="mH&lt;j" class="">온보딩 문서 생성</td><td id="[~eT" class="">프로젝트 요약, 처음 읽을 순서, 실행 가이드, 핵심 파일 목록</td><td id="=zx@" class="">분석이 끝나면 신입 개발자가 바로 볼 수 있는 온보딩 문서를 자동 생성한다.</td><td id="pBlK" class="">파일 요약 -&gt; 폴더 요약 -&gt; 프로젝트 요약 순서의 Map-Reduce 방식으로 생성하고, 정해진 Markdown 템플릿에 맞춰 결과 저장</td></tr></div><div style="display:contents" dir="ltr"><tr id="430cc46e-d954-833a-b87b-0124593e68e9"><td id="mH&lt;j" class="">Repo 기반 Q&amp;A</td><td id="[~eT" class="">자연어 질문, 관련 코드 검색, 답변 생성</td><td id="=zx@" class="">사용자가 “로그인 로직 어디야?”처럼 질문하면 실제 레포 내용을 근거로 답변한다.</td><td id="pBlK" class="">POST /api/repositories/{repo_id}/ask에서 질문 임베딩 -&gt; top-k 검색 -&gt; source 포함 프롬프트 구성 -&gt; LLM 답변 생성</td></tr></div><div style="display:contents" dir="ltr"><tr id="912cc46e-d954-8209-b5ef-01bed3f105c0"><td id="mH&lt;j" class="">Agentic Search</td><td id="[~eT" class="">다단계 질문, 추가 파일 탐색, 자가 교정</td><td id="=zx@" class="">단순 검색 한 번으로 부족한 질문은 파일 트리, grep, 파일 읽기 도구를 제한된 범위에서 추가 실행한다.</td><td id="pBlK" class="">1차 RAG 결과의 신뢰도가 낮거나 질문이 복합적이면 tool loop 실행, 최대 5회 또는 20초 제한으로 비용과 지연 방지</td></tr></div><div style="display:contents" dir="ltr"><tr id="b18cc46e-d954-82ba-8b9e-8182b4f84a1b"><td id="mH&lt;j" class="">답변 근거 표시</td><td id="[~eT" class="">파일 경로, 라인 번호, 근거 요약, source card</td><td id="=zx@" class="">답변이 어떤 파일과 코드 조각을 기반으로 만들어졌는지 보여줘 hallucination을 줄이고 사용자가 직접 확인할 수 있게 한다.</td><td id="pBlK" class="">chunk metadata의 path/start_line/end_line을 응답에 포함하고, UI에서 source list 또는 하이퍼링크 형태로 표시</td></tr></div><div style="display:contents" dir="ltr"><tr id="06ecc46e-d954-8219-a60d-81659099b3c9"><td id="mH&lt;j" class="">분석 결과 저장</td><td id="[~eT" class="">레포별 분석 문서, 질문 기록, 재조회</td><td id="=zx@" class="">한 번 분석한 레포의 결과를 다시 볼 수 있게 저장해 팀 온보딩 문서로 재사용한다.</td><td id="pBlK" class="">repositories, files, chunks, analyses, questions 테이블로 분리 저장하고 repo_id 기준으로 문서/질문 기록 조회</td></tr></div></tbody></table></div><div style="display:contents" dir="auto"><h2 id="8a3cc46e-d954-82c5-b6fd-81f7746973d7" class="">4. 추가 기능</h2></div><div style="display:contents" dir="auto"><p id="5c8cc46e-d954-83ac-8b6b-010d6a359c88" class="">MVP의 기본 RAG 흐름이 완성된 뒤, 서비스 차별화와 답변 품질 개선을 위해 아래 기능을 추가 후보로 논의한다.</p></div><div style="display:contents" dir="auto"><h3 id="3b1cc46e-d954-8221-9f93-81f1bbf21d59" class="">1) 텍스트 답변과 시각화 답변 탭 제공</h3></div><div style="display:contents" dir="auto"><ul id="f92cc46e-d954-83f8-a09b-01e2fd7483d0" class="bulleted-list"><li style="list-style-type:disc">답변을 텍스트로만 출력하지 않고, 필요에 따라 폴더 구조도, API 흐름도, 컴포넌트 관계도, 데이터 흐름도 같은 시각화 자료를 함께 제공한다.</li></ul></div><div style="display:contents" dir="auto"><ul id="6cccc46e-d954-824e-9545-01ee65d1c98d" class="bulleted-list"><li style="list-style-type:disc">다만 복사/붙여넣기와 문서화를 위해 텍스트 답변은 항상 유지하고, 텍스트 탭과 시각화 탭을 전환할 수 있게 한다.</li></ul></div><div style="display:contents" dir="auto"><h3 id="d54cc46e-d954-8251-a3ee-818bf71b03ef" class="">2) 정보가 부족한 질문에 대한 추가 질문 기능</h3></div><div style="display:contents" dir="auto"><ul id="50dcc46e-d954-82f8-8de9-815b4a9efe38" class="bulleted-list"><li style="list-style-type:disc">사용자 질문이 너무 넓거나 정보가 부족한 경우 바로 답변하지 않고, 추가 질문을 통해 의도를 명확히 한 뒤 답변한다.</li></ul></div><div style="display:contents" dir="auto"><ul id="bb5cc46e-d954-838b-a28b-0162d6c77bbf" class="bulleted-list"><li style="list-style-type:disc">추가 질문은 주관식만 제공하지 않고 객관식 선택지를 먼저 제시하며, 선택지에 없는 경우를 위해 기타 입력도 허용한다.</li></ul></div><div style="display:contents" dir="auto"><ul id="f31cc46e-d954-82e6-a9e6-0158ce5fa9b5" class="bulleted-list"><li style="list-style-type:disc">예: &quot;이 프로젝트 어떻게 보면 돼?&quot;라는 질문에는 전체 구조 파악, 실행 방법 파악, API 흐름 파악, 특정 기능 이해, 오류 수정 위치 찾기 등의 선택지를 제공한다.</li></ul></div><div style="display:contents" dir="auto"><h3 id="9cbcc46e-d954-8388-9f1d-81de4b13bdac" class="">3) 고도화된 의미 기반 청크 분할 헬퍼</h3></div><div style="display:contents" dir="auto"><ul id="b16cc46e-d954-82d8-8c82-81112e454d17" class="bulleted-list"><li style="list-style-type:disc">MVP의 기본 청킹 이후에는 RecursiveCharacterTextSplitter처럼 문자 수만 기준으로 자르기보다, 코드와 문서의 의미 단위를 더 정교하게 고려해 청크를 나눈다.</li></ul></div><div style="display:contents" dir="auto"><ul id="df1cc46e-d954-83b5-a563-81376c6c70be" class="bulleted-list"><li style="list-style-type:disc">Markdown은 제목/문단 단위로, 코드는 함수/클래스/라우터/컴포넌트 단위로 분할하고, 파일 경로·함수명·클래스명 같은 메타데이터를 함께 저장한다.</li></ul></div><div style="display:contents" dir="auto"><ul id="4eccc46e-d954-83a5-9955-01c0d092459b" class="bulleted-list"><li style="list-style-type:disc">긴 문장이나 큰 코드 블록은 문맥이 끊기지 않도록 하위 문장/블록 단위로 재분할해 검색 정확도와 답변 품질을 높인다.</li></ul></div><div style="display:contents" dir="auto"><h3 id="16fcc46e-d954-8336-9088-017a95a64c15" class="">4) 얕은 분석 / 깊은 분석 진행 상태 표시</h3></div><div style="display:contents" dir="auto"><ul id="a3acc46e-d954-833d-ab49-813321e50b8b" class="bulleted-list"><li style="list-style-type:disc">GitHub URL을 입력하면 먼저 파일 트리, README, 설정 파일 중심의 얕은 분석을 빠르게 수행하고, 챗봇은 이 1차 분석 결과를 바탕으로 바로 대화를 시작한다.</li></ul></div><div style="display:contents" dir="auto"><ul id="b11cc46e-d954-83ba-ad1e-814114aeb13c" class="bulleted-list"><li style="list-style-type:disc">동시에 백그라운드에서는 함수/클래스 단위 요약, 의존성 추적, Map-Reduce 문서화 같은 깊은 분석을 비동기 병렬 작업으로 계속 진행한다.</li></ul></div><div style="display:contents" dir="auto"><ul id="e74cc46e-d954-82d6-a681-81aa973b2b2d" class="bulleted-list"><li style="list-style-type:disc">UI에서는 얕은 분석과 깊은 분석을 분리한 프로그레스바 또는 단계 표시를 제공해 현재 어떤 수준까지 분석이 끝났는지 시각적으로 보여준다.</li></ul></div><div style="display:contents" dir="auto"><ul id="8a8cc46e-d954-83bf-afbb-81d1b02403a3" class="bulleted-list"><li style="list-style-type:disc">예를 들어 사용자가 심층 요약 보고서를 요청했지만 1차 분석만 끝난 상태라면, “현재는 1차 분석만 완료되어 심층 보고서는 아직 제공할 수 없습니다. 대신 지금 단계에서는 파일 트리 구조, 주요 파일의 목적, 프로젝트 실행 단서 정도는 정리해드릴 수 있습니다.”처럼 투명하게 안내한다.</li></ul></div><div style="display:contents" dir="auto"><ul id="703cc46e-d954-83e0-b71a-01cb02a1c637" class="bulleted-list"><li style="list-style-type:disc">깊은 분석이 완료되면 심층 보고서, 의존성 흐름, 핵심 로직 상세 설명처럼 더 무거운 요청을 처리할 수 있도록 하고, 필요하면 “2차 분석 완료 후 다시 요청해주세요” 또는 완료 알림을 제공한다.</li></ul></div><div style="display:contents" dir="auto"><ul id="c2ecc46e-d954-835d-bb2d-010ca793c526" class="bulleted-list"><li style="list-style-type:disc">구현은 analyze 요청 직후 repository 상태를 shallow_done/deep_processing/deep_done처럼 나누고, 프론트엔드는 polling 또는 WebSocket/SSE로 진행률을 받아 프로그레스바와 챗봇 응답 정책에 반영한다.</li></ul></div><div style="display:contents" dir="auto"><h2 id="853cc46e-d954-8294-adb4-814cad9b153d" class="">5. 시스템 아키텍처</h2></div><div style="display:contents" dir="auto"><p id="139cc46e-d954-8325-a8a6-01251f4220df" class="">graph TD<br/>A[사용자: GitHub URL 입력] --&gt; B[FastAPI: GitHub API로 파일 트리/README/코드 수집]<br/>B --&gt; C[파일 필터링: README, config, src, routes, models, tests]<br/>C --&gt; D[청킹 및 임베딩]<br/>D --&gt; E[Vector DB 저장]<br/>E --&gt; F[RAG 검색]<br/>F --&gt; G[LLM: 온보딩 문서/질문 답변 생성]<br/>G --&gt; H[React UI: 구조 요약, 핵심 파일, 실행 가이드 표시]</p></div><div style="display:contents" dir="auto"><h2 id="3f9cc46e-d954-8277-af7c-8189afb74283" class="">6. 프로젝트 디렉토리 구조</h2></div><div style="display:contents" dir="auto"><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="adacc46e-d954-8205-b375-013e26550f72" class="code code-wrap"><code style="white-space:pre-wrap;word-break:break-all">repo-pilot/
+├── docker-compose.yml          # frontend / backend / postgres / vectordb
+├── frontend/                   # React 또는 Next.js
+│   ├── src/
+│   │   ├── components/          # RepoForm, AnalysisPanel, SourceList, FileTree
+│   │   ├── pages/               # 분석 목록, 상세 화면
+│   │   ├── api/                 # FastAPI client
+│   │   └── types/
+│   └── package.json
+├── backend/                    # FastAPI
+│   ├── main.py
+│   ├── api/
+│   │   ├── repositories.py      # 레포 분석 요청/조회
+│   │   └── ask.py               # repo 기반 Q&amp;A
+│   ├── services/
+│   │   ├── github_client.py     # GitHub API 연동
+│   │   ├── file_filter.py       # 분석 대상 파일 필터링
+│   │   ├── analyzer.py          # 구조/실행법/핵심 파일 분석
+│   │   └── llm.py               # LLM 호출
+│   ├── rag/
+│   │   ├── chunker.py
+│   │   ├── embedder.py
+│   │   ├── retriever.py
+│   │   └── pipeline.py
+│   ├── models/
+│   │   ├── repository.py
+│   │   ├── document_chunk.py
+│   │   └── analysis.py
+│   └── core/config.py
+└── data/
+    └── samples/                # 데모용 public repo 분석 샘플</code></pre></div><div style="display:contents" dir="auto"><h2 id="bd6cc46e-d954-8349-bc4b-818c40e5ca2e" class="">7. API 설계</h2></div><div style="display:contents" dir="auto"><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js" integrity="sha512-QXFMVAusM85vUYDaNgcYeU3rzSlc+bTV4JvkfJhjxSHlQEo+ig53BtnGkvFTiNJh8D+wv6uWAQ2vJaVmxe8d3w==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><pre id="3dfcc46e-d954-821b-aeba-816a41e2aa1f" class="code code-wrap"><code class="language-json" style="white-space:pre-wrap;word-break:break-all">POST /api/repositories/analyze
+요청: { &quot;github_url&quot;: &quot;&lt;https://github.com/owner/repo&gt;&quot; }
+응답: { &quot;repo_id&quot;: 1, &quot;status&quot;: &quot;processing&quot; }
+
+GET /api/repositories/{repo_id}
+응답: 레포 메타데이터, 분석 상태, 요약 결과
+
+POST /api/repositories/{repo_id}/ask
+요청: { &quot;question&quot;: &quot;백엔드 API 라우터 구조 설명해줘&quot; }
+응답: {
+  &quot;answer&quot;: &quot;...&quot;,
+  &quot;sources&quot;: [{ &quot;path&quot;: &quot;backend/main.py&quot;, &quot;reason&quot;: &quot;FastAPI app entrypoint&quot; }]
+}</code></pre></div><div style="display:contents" dir="auto"><h2 id="a69cc46e-d954-8260-ba27-01a059664ee5" class="">8. 레퍼런스</h2></div><div style="display:contents" dir="auto"><ul id="002cc46e-d954-8314-92c5-01595b1fcab3" class="bulleted-list"><li style="list-style-type:disc"><code>repositories/HarishChandran3304__TTG</code> — GitHub 레포를 대화형 분석 대상으로 만드는 FastAPI + React/Vite + Gemini 앱</li></ul></div><div style="display:contents" dir="auto"><ul id="ec3cc46e-d954-835b-9b9d-81b4ec6e7f6d" class="bulleted-list"><li style="list-style-type:disc"><code>repositories/aadhakal__code-review-ai</code> — 코드 분석/리뷰 UI 참고</li></ul></div><div style="display:contents" dir="auto"><ul id="1c4cc46e-d954-8361-bcf6-01b240847b14" class="bulleted-list"><li style="list-style-type:disc"><code>repositories/vstorm-co__full-stack-ai-agent-template</code> — FastAPI + Next.js + RAG + streaming 구조 참고</li></ul></div><div style="display:contents" dir="auto"><ul id="9e2cc46e-d954-8202-be36-816e1dc5779c" class="bulleted-list"><li style="list-style-type:disc"><code>repositories/BCG-X-Official__agentkit</code> — agent 기반 앱 구조 참고</li></ul></div><div style="display:contents" dir="auto"><ul id="82fcc46e-d954-834b-8414-8121ecd8053a" class="bulleted-list"><li style="list-style-type:disc"><a href="http://codewiki.google.com">codewiki.google.com</a> - <em><strong>코드 저장소에 대한 문서를 자동으로 생성해주고, 구조를 시각화</strong></em>하며, Gemini와 대화하듯 코드 설명<br/></li></ul></div><div style="display:contents" dir="auto"><h2 id="ef2cc46e-d954-837b-afea-817923da455c" class="">9. 난이도 / 리스크</h2></div><div style="display:contents" dir="auto"><ul id="e29cc46e-d954-826e-9e2f-014503f9281f" class="bulleted-list"><li style="list-style-type:disc">종합 난이도: 중</li></ul></div><div style="display:contents" dir="auto"><ul id="a4ecc46e-d954-829d-add3-8155db4b90f0" class="bulleted-list"><li style="list-style-type:disc">장점: 발표 임팩트가 큼. FastAPI, React, GitHub API, RAG, LLM을 모두 보여줄 수 있음.</li></ul></div><div style="display:contents" dir="auto"><ul id="893cc46e-d954-83c9-984c-81c2862d34c5" class="bulleted-list"><li style="list-style-type:disc">리스크: 큰 레포를 분석할 때 토큰/파일 수 제한이 필요함.</li></ul></div><div style="display:contents" dir="auto"><ul id="f7acc46e-d954-82ac-a986-014f0e41362b" class="bulleted-list"><li style="list-style-type:disc">해결책: MVP에서는 public repo + 파일 수 제한 + 주요 확장자만 분석.</li></ul></div><div style="display:contents" dir="auto"><h2 id="221cc46e-d954-83dd-8bef-01dcf6b06cf4" class="">10. 프로젝트 이름 후보</h2></div><div style="display:contents" dir="auto"><ul id="9c0cc46e-d954-82b5-b25c-81642df3c54d" class="bulleted-list"><li style="list-style-type:disc">AskRepo AI</li></ul></div><div style="display:contents" dir="auto"><ul id="65bcc46e-d954-82ee-b202-818726459d19" class="bulleted-list"><li style="list-style-type:disc">RepoTalk AI</li></ul></div><div style="display:contents" dir="auto"><ul id="9c6cc46e-d954-83d1-a9d2-0189f071571b" class="bulleted-list"><li style="list-style-type:disc">CodeTalk AI</li></ul></div><div style="display:contents" dir="auto"><ul id="4d9cc46e-d954-8328-9942-01338f621919" class="bulleted-list"><li style="list-style-type:disc">RepoChat AI</li></ul></div><div style="display:contents" dir="auto"><ul id="572cc46e-d954-839f-8630-811dd4cc0bbf" class="bulleted-list"><li style="list-style-type:disc">CodeChat AI</li></ul></div><div style="display:contents" dir="auto"><ul id="687cc46e-d954-820c-a332-011d69a2fd8d" class="bulleted-list"><li style="list-style-type:disc">CodeMap AI</li></ul></div><div style="display:contents" dir="auto"><ul id="100cc46e-d954-8236-aecd-0169f6698abe" class="bulleted-list"><li style="list-style-type:disc">RepoMap AI</li></ul></div><div style="display:contents" dir="auto"><ul id="081cc46e-d954-8317-84e6-813c35a73164" class="bulleted-list"><li style="list-style-type:disc">Code Compass</li></ul></div><div style="display:contents" dir="auto"><ul id="b88cc46e-d954-832b-8693-0140f77fa8ac" class="bulleted-list"><li style="list-style-type:disc">DevCompass</li></ul></div><div style="display:contents" dir="auto"><ul id="888cc46e-d954-8233-8648-8129c978b517" class="bulleted-list"><li style="list-style-type:disc">GitPilot</li></ul></div><div style="display:contents" dir="auto"><ul id="a42cc46e-d954-8284-8d7e-81cfd45cebd9" class="bulleted-list"><li style="list-style-type:disc">CodePilot</li></ul></div><div style="display:contents" dir="auto"><ul id="056cc46e-d954-825a-a09e-81ba2fd78de2" class="bulleted-list"><li style="list-style-type:disc">RepoMate</li></ul></div><div style="display:contents" dir="auto"><ul id="06ccc46e-d954-82d2-be46-018cd8a3ac89" class="bulleted-list"><li style="list-style-type:disc">CodeMate</li></ul></div><div style="display:contents" dir="auto"><ul id="01bcc46e-d954-824a-a513-015c3b38eefe" class="bulleted-list"><li style="list-style-type:disc">GitMate</li></ul></div><div style="display:contents" dir="auto"><ul id="fb2cc46e-d954-83ec-8490-0176780ebcfa" class="bulleted-list"><li style="list-style-type:disc">DevMate</li></ul></div><div style="display:contents" dir="auto"><ul id="b23cc46e-d954-82af-9bbc-81005d321a5b" class="bulleted-list"><li style="list-style-type:disc">RepoGuide</li></ul></div><div style="display:contents" dir="auto"><ul id="196cc46e-d954-83f6-88b2-81368691b140" class="bulleted-list"><li style="list-style-type:disc">CodeGuide</li></ul></div><div style="display:contents" dir="auto"><ul id="67dcc46e-d954-8235-9498-01bc80c5518a" class="bulleted-list"><li style="list-style-type:disc">RepoNavigator</li></ul></div><div style="display:contents" dir="auto"><ul id="843cc46e-d954-82a2-a674-81df9dfc0d43" class="bulleted-list"><li style="list-style-type:disc">CodeNavigator</li></ul></div></div></details></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.5em;line-height:1.3;margin:0">프로젝트 이름 제안</summary><div class="indented"><div style="display:contents" dir="ltr"><table id="e09cc46e-d954-8238-ab3d-017167515990" class="simple-table"><thead class="simple-table-header"><div style="display:contents" dir="ltr"><tr id="f21cc46e-d954-8259-9aeb-81229b560400"><th id="yz|N" class="simple-table-header-color simple-table-header">이름</th><th id="idzu" class="simple-table-header-color simple-table-header">한국어 어감</th><th id="?vlp" class="simple-table-header-color simple-table-header">영어 어감</th><th id="W;A:" class="simple-table-header-color simple-table-header">직관성</th><th id="O^n_" class="simple-table-header-color simple-table-header">기억용이성</th><th id="Q~Ta" class="simple-table-header-color simple-table-header">프로젝트 성격 반영</th><th id="AQAj" class="simple-table-header-color simple-table-header">차별성</th><th id="qqRt" class="simple-table-header-color simple-table-header">총평</th></tr></div></thead><tbody><div style="display:contents" dir="ltr"><tr id="8dacc46e-d954-8203-8767-011f57eec82c"><td id="yz|N" class=""><strong>AskRepo AI</strong></td><td id="idzu" class="">“레포에 물어본다”가 바로 이해됨</td><td id="?vlp" class="">자연스럽고 짧음</td><td id="W;A:" class="">5</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">4</td><td id="AQAj" class="">3</td><td id="qqRt" class="">Q&amp;A 기능은 매우 잘 드러나지만 온보딩/분석보다 질문 서비스 느낌이 강함</td></tr></div><div style="display:contents" dir="ltr"><tr id="c3fcc46e-d954-827c-80f5-818850330528"><td id="yz|N" class=""><strong>RepoTalk AI</strong></td><td id="idzu" class="">레포와 대화한다는 느낌</td><td id="?vlp" class="">부드럽고 서비스명 같음</td><td id="W;A:" class="">4</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">3</td><td id="AQAj" class="">3</td><td id="qqRt" class="">친근하지만 챗봇 이미지가 강함</td></tr></div><div style="display:contents" dir="ltr"><tr id="2b1cc46e-d954-827f-a4d9-81cf814d8797"><td id="yz|N" class=""><strong>CodeTalk AI</strong></td><td id="idzu" class="">코드와 대화한다는 의미가 쉬움</td><td id="?vlp" class="">자연스러움</td><td id="W;A:" class="">4</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">3</td><td id="AQAj" class="">3</td><td id="qqRt" class="">범용 코드 챗봇처럼 보여 레포 온보딩 특화성이 약함</td></tr></div><div style="display:contents" dir="ltr"><tr id="24acc46e-d954-8347-8ad9-011888141161"><td id="yz|N" class=""><strong>RepoChat AI</strong></td><td id="idzu" class="">레포 챗봇 느낌</td><td id="?vlp" class="">매우 직관적</td><td id="W;A:" class="">5</td><td id="O^n_" class="">4</td><td id="Q~Ta" class="">3</td><td id="AQAj" class="">2</td><td id="qqRt" class="">기능은 바로 보이지만 너무 챗봇 중심으로 들림</td></tr></div><div style="display:contents" dir="ltr"><tr id="973cc46e-d954-8344-8755-0174deebfb2b"><td id="yz|N" class=""><strong>CodeChat AI</strong></td><td id="idzu" class="">코드 챗봇 느낌</td><td id="?vlp" class="">흔한 편</td><td id="W;A:" class="">5</td><td id="O^n_" class="">4</td><td id="Q~Ta" class="">2</td><td id="AQAj" class="">2</td><td id="qqRt" class="">일반적인 코드 챗 서비스처럼 보임</td></tr></div><div style="display:contents" dir="ltr"><tr id="bc6cc46e-d954-835c-860b-01d2dded85c8"><td id="yz|N" class=""><strong>CodeMap AI</strong></td><td id="idzu" class="">코드 지도를 만든다는 느낌</td><td id="?vlp" class="">짧고 제품명 같음</td><td id="W;A:" class="">4</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">5</td><td id="AQAj" class="">4</td><td id="qqRt" class="">구조 분석/파일 탐색 성격이 잘 맞음</td></tr></div><div style="display:contents" dir="ltr"><tr id="a7bcc46e-d954-8317-9247-81f5e3c68be1"><td id="yz|N" class=""><strong>RepoMap AI</strong></td><td id="idzu" class="">레포 지도를 만든다는 느낌</td><td id="?vlp" class="">간결함</td><td id="W;A:" class="">4</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">5</td><td id="AQAj" class="">4</td><td id="qqRt" class="">GitHub 레포 분석 서비스라는 범위가 CodeMap보다 명확함</td></tr></div><div style="display:contents" dir="ltr"><tr id="241cc46e-d954-826b-bdb7-815ba5195ae3"><td id="yz|N" class=""><strong>Code Compass</strong></td><td id="idzu" class="">코드 나침반, 방향 안내 느낌</td><td id="?vlp" class="">세련되고 안정적</td><td id="W;A:" class="">4</td><td id="O^n_" class="">4</td><td id="Q~Ta" class="">5</td><td id="AQAj" class="">4</td><td id="qqRt" class="">온보딩/탐색/가이드 성격이 잘 살아남</td></tr></div><div style="display:contents" dir="ltr"><tr id="3aecc46e-d954-832f-a168-813e66a291bc"><td id="yz|N" class=""><strong>DevCompass</strong></td><td id="idzu" class="">개발자 나침반 느낌</td><td id="?vlp" class="">자연스럽고 브랜드감 있음</td><td id="W;A:" class="">3</td><td id="O^n_" class="">4</td><td id="Q~Ta" class="">4</td><td id="AQAj" class="">4</td><td id="qqRt" class="">개발자 도구 느낌은 좋지만 레포 분석이 직접 드러나진 않음</td></tr></div><div style="display:contents" dir="ltr"><tr id="22ccc46e-d954-82ba-8260-01a3827b51df"><td id="yz|N" class=""><strong>GitPilot</strong></td><td id="idzu" class="">Git을 조종/안내한다는 느낌</td><td id="?vlp" class="">강하고 개발자스러움</td><td id="W;A:" class="">4</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">4</td><td id="AQAj" class="">4</td><td id="qqRt" class="">이름은 좋지만 Git 자체 기능 도구로 오해될 수 있음</td></tr></div><div style="display:contents" dir="ltr"><tr id="b79cc46e-d954-832b-a135-816199b508fa"><td id="yz|N" class=""><strong>CodePilot</strong></td><td id="idzu" class="">코드 작업을 안내하는 느낌</td><td id="?vlp" class="">익숙하고 강함</td><td id="W;A:" class="">4</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">4</td><td id="AQAj" class="">3</td><td id="qqRt" class="">좋은 이름이지만 Copilot 연상과 범용성 때문에 특화성이 약간 흐림</td></tr></div><div style="display:contents" dir="ltr"><tr id="642cc46e-d954-83c3-bfb0-01da6e0719f2"><td id="yz|N" class=""><strong>RepoMate</strong></td><td id="idzu" class="">레포를 같이 봐주는 동료 느낌</td><td id="?vlp" class="">친근하고 짧음</td><td id="W;A:" class="">4</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">4</td><td id="AQAj" class="">4</td><td id="qqRt" class="">온보딩 도우미 이미지가 좋고 부담 없음</td></tr></div><div style="display:contents" dir="ltr"><tr id="91dcc46e-d954-83c6-851f-819d6f3d4626"><td id="yz|N" class=""><strong>CodeMate</strong></td><td id="idzu" class="">코드 동료 느낌</td><td id="?vlp" class="">자연스럽고 친근함</td><td id="W;A:" class="">4</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">3</td><td id="AQAj" class="">3</td><td id="qqRt" class="">범용 개발 보조 도구처럼 보임</td></tr></div><div style="display:contents" dir="ltr"><tr id="cd8cc46e-d954-83ba-9e16-812715a5fa4b"><td id="yz|N" class=""><strong>GitMate</strong></td><td id="idzu" class="">Git 동료 느낌</td><td id="?vlp" class="">짧고 귀여움</td><td id="W;A:" class="">3</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">3</td><td id="AQAj" class="">3</td><td id="qqRt" class="">Git 명령/브랜치 도구로 오해될 수 있음</td></tr></div><div style="display:contents" dir="ltr"><tr id="789cc46e-d954-82a4-ae61-015956e3dd3e"><td id="yz|N" class=""><strong>DevMate</strong></td><td id="idzu" class="">개발자 동료 느낌</td><td id="?vlp" class="">친근함</td><td id="W;A:" class="">3</td><td id="O^n_" class="">5</td><td id="Q~Ta" class="">3</td><td id="AQAj" class="">3</td><td id="qqRt" class="">넓은 개발 보조 서비스 느낌, 레포 분석 특화성은 약함</td></tr></div><div style="display:contents" dir="ltr"><tr id="3dbcc46e-d954-82e1-b0c0-812f449ba957"><td id="yz|N" class=""><strong>RepoGuide</strong></td><td id="idzu" class="">레포 길잡이 느낌</td><td id="?vlp" class="">매우 명확함</td><td id="W;A:" class="">5</td><td id="O^n_" class="">4</td><td id="Q~Ta" class="">5</td><td id="AQAj" class="">3</td><td id="qqRt" class="">기능 설명력 최고. 다만 브랜드명으로는 조금 평범함</td></tr></div><div style="display:contents" dir="ltr"><tr id="4f2cc46e-d954-83f8-9e0c-8194adca040f"><td id="yz|N" class=""><strong>CodeGuide</strong></td><td id="idzu" class="">코드 길잡이 느낌</td><td id="?vlp" class="">자연스럽고 안정적</td><td id="W;A:" class="">4</td><td id="O^n_" class="">4</td><td id="Q~Ta" class="">4</td><td id="AQAj" class="">3</td><td id="qqRt" class="">무난하지만 범용 코드 학습/문서 서비스처럼 보일 수 있음</td></tr></div><div style="display:contents" dir="ltr"><tr id="6d2cc46e-d954-82ae-ab58-81bb41dcd977"><td id="yz|N" class=""><strong>RepoNavigator</strong></td><td id="idzu" class="">레포 탐색기/길찾기 느낌</td><td id="?vlp" class="">의미가 정확함</td><td id="W;A:" class="">5</td><td id="O^n_" class="">3</td><td id="Q~Ta" class="">5</td><td id="AQAj" class="">4</td><td id="qqRt" class="">프로젝트 성격은 잘 맞지만 이름이 길어서 기억성은 낮음</td></tr></div><div style="display:contents" dir="ltr"><tr id="58dcc46e-d954-83dd-aca9-01791d911b00"><td id="yz|N" class=""><strong>CodeNavigator</strong></td><td id="idzu" class="">코드 탐색기 느낌</td><td id="?vlp" class="">전문적이고 명확함</td><td id="W;A:" class="">4</td><td id="O^n_" class="">3</td><td id="Q~Ta" class="">4</td><td id="AQAj" class="">4</td><td id="qqRt" class="">구조 탐색 도구 느낌이 좋지만 다소 길고 무거움</td></tr></div></tbody></table></div><div style="display:contents" dir="auto"><p id="796cc46e-d954-8343-bdea-0164eab74109" class="">최종 채택 : CodeMap</p></div></div></details></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.5em;line-height:1.3;margin:0">프로젝트 핵심 기능</summary><div class="indented"><div style="display:contents" dir="auto"><p id="afecc46e-d954-83c2-a129-81cf07283d43" class="">코어 기능 및 설명</p></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.25em;line-height:1.3;margin:0"><strong>프로젝트 등록 (Git 클론 및 필터링)</strong></summary><div class="indented"><div style="display:contents" dir="auto"><ul id="e55cc46e-d954-8234-ad06-81a1517d3a2d" class="bulleted-list"><li style="list-style-type:disc"><strong>기능 개요</strong><div style="display:contents" dir="auto"><ul id="4f3cc46e-d954-83bf-bf23-81fe1c02f26b" class="bulleted-list"><li style="list-style-type:circle">사용자가 입력한 Git 저장소의 소스코드를 실시간으로 안전하게 복제하고 분석에 필요한 정보만 걸러내어 저장하는 초기 단계</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="ce0cc46e-d954-827a-b080-810b12a5c484" class="bulleted-list"><li style="list-style-type:disc"><strong>핵심 가치 및 UX 디자인</strong><div style="display:contents" dir="auto"><ol type="1" id="adfcc46e-d954-8226-93cf-81006d12bca5" class="numbered-list" start="1"><li><strong>원클릭 저장소 연동</strong><div style="display:contents" dir="auto"><ul id="b3fcc46e-d954-8325-8a86-81343aa926ac" class="bulleted-list"><li style="list-style-type:disc">사용자는 별도의 개발 환경 세팅 없이 브라우저 화면에서 분석하고자 하는 GitHub URL만 입력하고 클릭하면 자동으로 코드가 복제됩니다.<br/>→ Repository를 서버 Dir 안에 실시간 저장* (경로 설정 → git clone 실행)</li></ul></div></li></ol></div><div style="display:contents" dir="auto"><ol type="1" id="d76cc46e-d954-828c-9278-010465d191e5" class="numbered-list" start="2"><li><strong>지능형 노이즈 필터링</strong><div style="display:contents" dir="auto"><ul id="d80cc46e-d954-8276-9b97-8124f445cc73" class="bulleted-list"><li style="list-style-type:disc">(필터링) 라이브러리 파일(<code>node_modules</code>, <code>.venv</code>), 빌드 산출물(<code>dist</code>, <code>build</code>), 컴파일러 캐시, 패키지 잠금 파일(<code>package-lock.json</code>, <code>poetry.lock</code>), 대용량 미디어 파일 및 바이너리(이미지, PDF) 등 코드 분석과 상관없는 노이즈를 자동으로 걸러냅니다. </li></ul></div><div style="display:contents" dir="auto"><ul id="a74cc46e-d954-8354-bb8e-812c04aaa1b2" class="bulleted-list"><li style="list-style-type:disc">(살리기) 프로젝트 환경설정 파일(예: <code>.env</code>, <code>package.json</code>, <code>requirements.txt</code>) 및 안내 문서(예: <code>README.md</code>)는 신규 개발자를 위한 온보딩 대시보드 및 구동 가이드 생성에 필수적이므로 제외하지 않고 안전하게 보존한다.</li></ul></div></li></ol></div><div style="display:contents" dir="auto"><p id="d6ccc46e-d954-8204-882c-8178e94aeb0e" class=""><mark class="highlight-red_background"><strong>결론) </strong></mark><mark class="highlight-red_background">분석 효율 극대화</mark><div class="indented"><div style="display:contents" dir="auto"><ul id="2b5cc46e-d954-826c-9591-01b525a49f1a" class="bulleted-list"><li style="list-style-type:disc">노이즈 필터링 → 시스템 처리 속도 비약적으로 단축, Agent가 오직 순수한 비즈니스 로직, 설계 문서에만 100% 집중해 답변 품질 높일 수 있게 한다.</li></ul></div></div></p></div></li></ul></div></div></details></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.25em;line-height:1.3;margin:0"><strong>코드 맥락 및 관계망 이해 (RAG 및 코드 임베딩)</strong></summary><div class="indented"><div style="display:contents" dir="auto"><ul id="d1acc46e-d954-826e-909c-014563867f24" class="bulleted-list"><li style="list-style-type:disc"><strong>기능 개요</strong><div style="display:contents" dir="auto"><ul id="100cc46e-d954-83b6-b968-81d189ad4824" class="bulleted-list"><li style="list-style-type:circle">단순 단어 비교 검색(Keyword Search)의 한계를 뛰어넘어, 코드가 갖는 고유한 역할과 설계 의미, 그리고 파일 간의 연결 관계를 학습하여 &#x27;의미 기반 사전&#x27;을 구축하는 단계</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="7e5cc46e-d954-83b1-9510-01df58a633e8" class="bulleted-list"><li style="list-style-type:disc"><strong> 핵심 가치 및 UX 디자인</strong>:<div style="display:contents" dir="auto"><ul id="c02cc46e-d954-83fb-990a-014a4f9941c7" class="bulleted-list"><li style="list-style-type:circle"><strong>의미 단위 구조화</strong><div style="display:contents" dir="auto"><ul id="130cc46e-d954-831a-b9ca-81636bd13e9c" class="bulleted-list"><li style="list-style-type:square">코드 → 줄 단위의 단순한 텍스트가 아닌 <strong>클래스</strong>, <strong>함수</strong>, <strong>메서드</strong> 등 실제 소프트웨어 기능 단위로 분할해 역할을 파악한다.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="18bcc46e-d954-8376-96ad-81895d3a59bb" class="bulleted-list"><li style="list-style-type:circle"><strong>유기적 관계망 지도 구축*</strong><div style="display:contents" dir="auto"><ul id="b61cc46e-d954-8259-9740-0120fe7775cb" class="bulleted-list"><li style="list-style-type:square">어떤 소스코드 파일이 다른 파일을 참조하고 있는지(의존성 및 가져오기(Import) 흐름)를 추적하여 유기적인 논리 지도를 구성한다.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="aa7cc46e-d954-8323-9b75-8155d4c9e3f4" class="bulleted-list"><li style="list-style-type:circle"><strong>계층적 개념 탐색 - 상향식</strong><div style="display:contents" dir="auto"><ul id="0a9cc46e-d954-823d-97c0-010a4e560427" class="bulleted-list"><li style="list-style-type:square">상위 폴더(디렉토리) 구조로 갈수록 하위 세부 요약본들을 자연스럽게 압축하여 체계적인 지식 구조를 구축합니다.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="1e0cc46e-d954-83e6-8f28-01063be0f61c" class="bulleted-list"><li style="list-style-type:circle"><strong>자연어 질문 해석</strong><div style="display:contents" dir="auto"><ul id="eaecc46e-d954-83d2-82ef-011e053795d1" class="bulleted-list"><li style="list-style-type:square">사용자가 특정 변수명이나 함수명을 기억하지 못하더라도 <em>&quot;로그인 처리는 어느 부분에서 담당해?&quot;</em>, <em>&quot;결제 금액을 계산하는 과정을 설명해줘&quot;</em>와 같이 평소 사용하는 언어로 질문하면, 시스템이 문맥을 이해하고 의도에 맞는 소스코드 파일을 정확히 찾아냅니다.</li></ul></div></li></ul></div></li></ul></div></div></details></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.25em;line-height:1.3;margin:0"><strong>자율 탐색형 AI 코드 분석 (Agentic Search 및 도구 호출) - Agent Chat</strong></summary><div class="indented"><div style="display:contents" dir="auto"><ul id="7bfcc46e-d954-8349-b79d-017680c6c970" class="bulleted-list"><li style="list-style-type:disc"><strong>기능 개요</strong><div style="display:contents" dir="auto"><ul id="acacc46e-d954-83e5-8146-81e9a381865b" class="bulleted-list"><li style="list-style-type:circle">AI 비서가 사용자의 질문을 단 한 번만 조회해 답변을 기계적으로 내놓는 것이 아니라, 숙련된 소프트웨어 엔지니어처럼 스스로 계획을 세우고 디렉토리를 열어보며 답을 찾아내는 자율형 탐색 기능</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="cd3cc46e-d954-8215-b35b-01e992d0ad6f" class="bulleted-list"><li style="list-style-type:disc"><strong>핵심 가치 및 UX 디자인</strong><div style="display:contents" dir="auto"><ul id="d2ccc46e-d954-836a-b0f1-01170a03fca8" class="bulleted-list"><li style="list-style-type:circle"><strong>자율 탐색 계획 수립</strong><div style="display:contents" dir="auto"><ul id="e7fcc46e-d954-8364-9699-01a8fe35d8b6" class="bulleted-list"><li style="list-style-type:square">복잡한 다단계 질문을 받으면 스스로 질문의 의미를 분석한 후, <em>&quot;디렉토리 구조 파악 -&gt; 파일 검색 -&gt; 소스코드 정독 -&gt; 참조 파일 확인&quot;</em> 순으로 논리적인 탐색 여정을 계획합니다.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="bd4cc46e-d954-824f-bb76-81435f6bf277" class="bulleted-list"><li style="list-style-type:circle"><strong>실시간 소스코드 추적</strong><div style="display:contents" dir="auto"><ul id="0e0cc46e-d954-82a3-b3f8-81274cce80b1" class="bulleted-list"><li style="list-style-type:square">시스템에 구현된 코드 탐색 기능(도구)들을 주도적으로 실행하며 최적의 답변 단서를 찾습니다.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="b53cc46e-d954-831e-a751-81b895456693" class="bulleted-list"><li style="list-style-type:circle"><strong>자가 교정(Self-Correction) 프로세스 및 루프 한계 설정</strong><div style="display:contents" dir="auto"><ul id="efccc46e-d954-83f8-9314-81300c0c389d" class="bulleted-list"><li style="list-style-type:square">첫 번째 탐색 과정에서 답을 찾지 못하거나 정보가 부족하다고 인지할 경우, 연계된 다른 파일 경로를 탐색하여 오류를 스스로 바로잡는 자가 검증을 진행합니다. 이때 무한 분석 루프에 빠져 답변이 지연되거나 불필요한 API 비용이 발생하는 것을 원천 방지하기 위해, AI 비서의 자율 탐색 도구 호출은 최대 5회, 처리 시간은 최대 20초로 제한합니다. 제한된 범위 내에서 최종 결론에 도달하지 못할 경우 수집된 정보를 최대로 종합하여 최선의 답변을 제공하고, 한계가 발생했음을 사용자에게 알립니다.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="694cc46e-d954-836b-a011-81c09160e7df" class="bulleted-list"><li style="list-style-type:circle"><strong>명확한 출처 제공</strong><div style="display:contents" dir="auto"><ul id="db9cc46e-d954-82d2-98d5-81488014d6ce" class="bulleted-list"><li style="list-style-type:square">최종 답변 시 분석의 근거가 된 소스코드 파일명과 줄 번호(Line Numbers)를 하이퍼링크 형태로 제공하여, 사용자가 직접 코드를 대조해 보며 결과를 즉각적이고 완벽하게 신뢰할 수 있게 합니다.</li></ul></div></li></ul></div></li></ul></div></div></details></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.25em;line-height:1.3;margin:0"><strong>계층형 프로젝트 가이드북 자동 생성 (Map-Reduce 요약) - 문서화</strong></summary><div class="indented"><div style="display:contents" dir="auto"><ul id="535cc46e-d954-8355-9824-81137c5042b0" class="bulleted-list"><li style="list-style-type:disc"><strong>기능 개요</strong><div style="display:contents" dir="auto"><ul id="9e2cc46e-d954-8354-b308-816d073ad766" class="bulleted-list"><li style="list-style-type:circle">수십만 줄의 낯설고 방대한 저장소 코드를 일일이 읽지 않아도, 한눈에 파악할 수 있는 고품질의 Markdown 형식 &#x27;프로젝트 가이드북&#x27;을 자동으로 집필해 주는 기능</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="fb3cc46e-d954-8372-bf78-81e260e19247" class="bulleted-list"><li style="list-style-type:disc"><strong>핵심 가치 및 UX 디자인</strong><div style="display:contents" dir="auto"><ul id="dadcc46e-d954-8269-8c6f-8122fd90731d" class="bulleted-list"><li style="list-style-type:circle"><strong>상향식(Bottom-up) 정보 집필</strong><div style="display:contents" dir="auto"><ul id="dfecc46e-d954-820e-bd68-81faaebbe5e2" class="bulleted-list"><li style="list-style-type:square">개별 소스코드 파일의 요약을 먼저 작성하고(Map), 폴더별로 이 요약본들을 모아서 상위 설명을 작성한 뒤, 최종적으로 프로젝트 전체의 마스터 리포트로 융합(Reduce)하는 체계적인 요약 과정을 거칩니다.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="6d1cc46e-d954-8391-8f7c-01cb53e77b19" class="bulleted-list"><li style="list-style-type:circle"><strong>정보 누락 및 한계 돌파</strong><div style="display:contents" dir="auto"><ul id="bf9cc46e-d954-8286-95f7-819e9f72d953" class="bulleted-list"><li style="list-style-type:square">많은 분량을 한 번에 분석할 때 나타나는 정보 유실이나 본문 생략 문제 없이, 모든 소스코드의 구조가 꼼꼼하고 완벽하게 설명서에 반영됩니다.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="063cc46e-d954-8210-be8e-01986a271535" class="bulleted-list"><li style="list-style-type:circle"><strong>아키텍처 전반의 시각화</strong><div style="display:contents" dir="auto"><ul id="290cc46e-d954-838d-9cc0-817981a4f89b" class="bulleted-list"><li style="list-style-type:square">저장소의 연동 작업이 완료됨과 동시에 폴더 구조 트리, 핵심 데이터 흐름, 환경별 구동 방법이 정리된 문서가 즉석에서 생성되므로 새로 팀에 합류한 멤버들의 온보딩 리소스를 획기적으로 줄여줍니다.</li></ul></div></li></ul></div></li></ul></div></div></details></div></div></details></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.5em;line-height:1.3;margin:0"><strong>🏗️Agentic RAG 및 CodeCompass 아키텍처 설계 논의 요약</strong></summary><div class="indented"><div style="display:contents" dir="auto"><p id="47bcc46e-d954-83d0-8bca-0155106f99cf" class="">본 문서는 CodeCompass 프로젝트의 핵심 엔진을 설계하기 위해 AI 모델과 논의된 아키텍처 구상 및 기술적 결론을 정리한 문서입니다.</p></div><div style="display:contents" dir="auto"><h3 id="b17cc46e-d954-838a-9a20-812a28d0fc09" class=""><strong>1. 정적 RAG vs Agentic CAG</strong></h3></div><div style="display:contents" dir="auto"><ul id="d98cc46e-d954-821d-9b0c-813889bfef20" class="bulleted-list"><li style="list-style-type:disc"><strong>전통적 RAG</strong>: 코드를 임베딩하여 벡터 DB에 넣고, 질문과 코사인 유사도가 높은 조각을 기계적으로 가져오는 방식 (단점: 문맥 파편화, 구조 파악 불가).</li></ul></div><div style="display:contents" dir="auto"><ul id="8d9cc46e-d954-8381-a221-814112899808" class="bulleted-list"><li style="list-style-type:disc"><strong>Agentic CAG</strong>: LLM의 초거대 컨텍스트 윈도우를 바탕으로, AI 에이전트가 직접 탐색 도구(<code>grep</code>, 파일 읽기 등)를 호출하여 능동적으로 코드를 찾아보고 읽는 방식. 검색 실패 시 사전 학습된 개발 지식을 바탕으로 유력한 다음 키워드를 논리적으로 재검색(Self-Correction).</li></ul></div><div style="display:contents" dir="auto"><h3 id="6c0cc46e-d954-83a5-ac0b-8186e12a47fa" class=""><strong>2. 궁극의 하이브리드: Agentic RAG</strong></h3></div><div style="display:contents" dir="auto"><p id="000cc46e-d954-821b-9762-0116660b2dde" class="">거대한 레포지토리 환경에서 순수 에이전트 방식의 &#x27;느린 탐색 속도&#x27;를 극복하기 위해, 메인 LLM과 쌍을 이루는 임베딩 모델로 RAG DB를 구축한 뒤 이를 에이전트의 &#x27;도구(MCP)&#x27;로 쥐어주는 방식.</p></div><div style="display:contents" dir="auto"><ul id="f10cc46e-d954-82bb-856c-01272aa08029" class="bulleted-list"><li style="list-style-type:disc">1단계: Vector DB 검색(MCP)을 통해 연관 파일 후보군을 1초 만에 좁힘.</li></ul></div><div style="display:contents" dir="auto"><ul id="739cc46e-d954-8228-b72f-010a32eca6c5" class="bulleted-list"><li style="list-style-type:disc">2단계: 로컬 탐색 도구(MCP)를 통해 해당 파일 및 주변 구조를 정밀하게 분석.</li></ul></div><div style="display:contents" dir="auto"><h3 id="2a7cc46e-d954-825c-b2f5-8167ba820790" class=""><strong>3. 계층적 트리 RAG (Tree-Based RAG) 구성 방식</strong></h3></div><div style="display:contents" dir="auto"><p id="e07cc46e-d954-83b4-92c6-8160913898b7" class="">실시간 파일 동기화를 배제하고 특정 시점의 정적(Static) 스냅샷을 분석하는 환경에서의 최적의 DB 구축 알고리즘.</p></div><div style="display:contents" dir="auto"><ul id="962cc46e-d954-83a6-81fb-01fa6b2c452f" class="bulleted-list"><li style="list-style-type:disc"><strong>상향식 요약 (Bottom-up Hierarchical Summarization)</strong><div style="display:contents" dir="auto"><ul id="1dacc46e-d954-835a-b357-01ef6cac076c" class="bulleted-list"><li style="list-style-type:circle">개별 최하위 파일의 벡터를 생성.</li></ul></div><div style="display:contents" dir="auto"><ul id="d30cc46e-d954-826c-81a6-01414793b8ee" class="bulleted-list"><li style="list-style-type:circle">상위 디렉토리를 벡터화할 때 하위 벡터들을 수학적으로 평균 내면 안 됨 (의미 훼손). 반드시 하위 텍스트들을 모아 <strong>LLM으로 자연어 요약을 생성한 뒤 그 요약본을 임베딩</strong>해야 함.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="e0ecc46e-d954-8262-8c43-815c2cdac3eb" class="bulleted-list"><li style="list-style-type:disc"><strong>구조화된 프롬프트 (Structured Prompting)</strong><div style="display:contents" dir="auto"><ul id="7bfcc46e-d954-8245-af18-81d83c31f490" class="bulleted-list"><li style="list-style-type:circle">디렉토리 요약 시 하위 파일들을 마크다운(<code>언어</code>)으로 명확히 구획지어 LLM에 전달.</li></ul></div><div style="display:contents" dir="auto"><ul id="2c1cc46e-d954-83ea-ad83-81102dca4f3c" class="bulleted-list"><li style="list-style-type:circle">단, 폴더가 너무 커서 컨텍스트 제한을 초과할 경우, 이어붙이기(순차 전송) 방식보다는 개별 파일 요약본을 만든 뒤 그 요약본들을 다시 합치는 방식 채택 권장.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><h3 id="1d8cc46e-d954-83cc-8cfe-817ac6070e49" class=""><strong>4. 스파게티 코드 및 의존성(Dependency) 문제 해결</strong></h3></div><div style="display:contents" dir="auto"><p id="e39cc46e-d954-8232-b6f6-019b86345661" class="">폴더(물리적 계층)를 무시하는 코드 참조 관계를 DB에 올바르게 기록하는 방법.</p></div><div style="display:contents" dir="auto"><ul id="ad1cc46e-d954-8394-a3c0-8178f1bfc91d" class="bulleted-list"><li style="list-style-type:disc">의존성 관계는 수학적 &#x27;벡터&#x27;로 저장하면 부정확해짐. 반드시 <strong>문자열 배열(Array) 형태의 메타데이터</strong>로 저장하여 정확한 매칭(Exact Match) 필터링에 사용해야 함.<div style="display:contents" dir="auto"><ul id="e04cc46e-d954-83b7-b379-018630fc4a40" class="bulleted-list"><li style="list-style-type:circle"><code>imports</code>: 내가 참조하는 파일들의 경로 (합집합 연산 적용)</li></ul></div><div style="display:contents" dir="auto"><ul id="5c7cc46e-d954-82a2-9279-01ef0f5ce2f4" class="bulleted-list"><li style="list-style-type:circle"><code>imported_by</code>: 나를 참조하는 역방향 파일 경로 (Fan-in)</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><h3 id="7e1cc46e-d954-83b0-acd5-81a4843731c3" class=""><strong>5. PostgreSQL (pgvector) 채택의 압도적 이점</strong></h3></div><div style="display:contents" dir="auto"><p id="bc8cc46e-d954-838a-a0e1-8112ceef1e76" class="">제안된 트리 구조 + 의존성 그래프 RAG를 구현하는 데 최적화된 데이터베이스.</p></div><div style="display:contents" dir="auto"><ul id="2dbcc46e-d954-8328-9d92-019f378fb332" class="bulleted-list"><li style="list-style-type:disc"><strong>관계형 연산의 힘</strong>: 벡터 유사도 검색 결과와, 파일 간의 의존성(관계형 데이터)을 한 번의 SQL <code>JOIN</code>으로 결합하여 조회 가능.</li></ul></div><div style="display:contents" dir="auto"><ul id="e2dcc46e-d954-826c-92d3-81e7451e0a79" class="bulleted-list"><li style="list-style-type:disc"><strong>재귀 쿼리 지원</strong>: <code>WITH RECURSIVE</code> 문법을 사용해 깊이(Depth) 기반의 폴더 트리 탐색이 압도적으로 빠름.</li></ul></div><div style="display:contents" dir="auto"><ul id="c0dcc46e-d954-827a-9a98-01d3331887bf" class="bulleted-list"><li style="list-style-type:disc"><strong>JSONB 인덱싱</strong>: 파일마다 가변적인 의존성 배열(<code>imports</code>) 데이터를 JSONB로 저장하고 고속으로 필터링 가능.</li></ul></div></div></details></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.5em;line-height:1.3;margin:0"><strong>🧠</strong>CodeMap 프로젝트: OpenAI 모델 선택 및 아키텍처 매칭 근거</summary><div class="indented"><div style="display:contents" dir="auto"><blockquote id="09ccc46e-d954-8241-8a79-8121a896a6d6" class=""><strong>NOTE</strong><br/>본 문서는 CodeMap 프로젝트(Agentic RAG 기반 소스코드 분석 시스템)의 핵심 엔진 구성을 위해 제안된 OpenAI 모델 조합(GPT-4o, text-embedding-3-large, GPT-4o-mini)의 타당성을 OpenAI 공식 문서 및 벤치마크 지표를 바탕으로 검증한 기술 검토 문서입니다.</blockquote></div><div style="display:contents" dir="auto"><hr id="41ccc46e-d954-83a9-81be-811c9490b039"/></div><div style="display:contents" dir="auto"><h3 id="80acc46e-d954-8332-b4ad-8194fabeab40" class="">1. 메인 에이전트 모델: <code>gpt-4o</code> (Agentic Search 및 판단 로직)</h3></div><div style="display:contents" dir="auto"><p id="0adcc46e-d954-82f4-8742-81f307c2d217" class="">CodeMap의 지능(Brain) 역할을 수행하며, 직접 파일 시스템 도구를 호출하고 코드를 탐색하는 메인 에이전트로 <code>gpt-4o</code>를 채택해야 하는 객관적인 이유입니다.</p></div><div style="display:contents" dir="auto"><h4 id="23bcc46e-d954-83fe-a636-01e62ba1b438" class="">📌 공식적인 도구 호출(Function Calling) 최적화 및 병렬 처리</h4></div><div style="display:contents" dir="auto"><p id="3f0cc46e-d954-82a8-8e58-012537338381" class=""><strong>객관적 근거</strong><div class="indented"><div style="display:contents" dir="auto"><p id="55ccc46e-d954-8371-bfe0-81e6bf31f8a9" class="">OpenAI는 공식 릴리즈를 통해 GPT-4o가 외부 시스템 API와 상호작용하는 도구 호출(Function Calling)에 있어 기존 모델 대비 비약적으로 향상된 성능을 지니고 있음을 명시했습니다. 특히, 여러 개의 도구를 한 번의 응답으로 실행하는 **병렬 도구 호출(Parallel Tool Calling)**을 완벽히 지원합니다.</p></div></div></p></div><div style="display:contents" dir="auto"><p id="66bcc46e-d954-8335-aeb8-81e4f543aa03" class=""><strong>프로젝트 매칭</strong><div class="indented"><div style="display:contents" dir="auto"><p id="738cc46e-d954-828a-ba6b-01f52649b011" class="">CodeMap은 제한 시간(20초) 및 제한 횟수(5회) 내에 <code>grep</code>, <code>tree</code> 등의 탐색 도구를 능동적으로 사용해야 합니다. GPT-4o의 검증된 병렬 도구 호출 능력은 Agentic RAG의 탐색 루프를 가장 빠르고 정확하게 완수할 수 있는 핵심 기술 기반이 됩니다.</p></div></div></p></div><div style="display:contents" dir="auto"><p id="024cc46e-d954-8216-9d3e-0147a98b2102" class=""><strong>공식 참조 문서</strong><div class="indented"><div style="display:contents" dir="auto"><p id="267cc46e-d954-8367-bc1b-819980715c98" class=""><a href="https://openai.com/index/hello-gpt-4o/">Hello GPT-4o (OpenAI 공식 블로그)</a></p></div></div></p></div><div style="display:contents" dir="auto"><h4 id="523cc46e-d954-8266-9188-81693c25ca92" class="">📌 다단계 추론(Multi-step Reasoning) 우위</h4></div><div style="display:contents" dir="auto"><p id="2e2cc46e-d954-8345-b863-01ac8ba2f811" class=""><strong>객관적 근거</strong><div class="indented"><div style="display:contents" dir="auto"><p id="533cc46e-d954-8332-a337-81b4064efc53" class="">업계의 다양한 에이전트 벤치마크(예: Hugging Face Agent Leaderboard)에서 GPT-4o는 복잡한 맥락을 이해하고 다단계 계획을 수립하는 영역에서 최상위권의 추론 점수를 기록하고 있습니다.</p></div></div></p></div><div style="display:contents" dir="auto"><p id="11bcc46e-d954-8389-aec7-819d690967ae" class=""><strong>프로젝트 매칭</strong><div class="indented"><div style="display:contents" dir="auto"><p id="3c1cc46e-d954-8388-868f-81c4c290f738" class="">얽혀있는 스파게티 코드의 의존성 구조를 해석하고, 첫 번째 탐색 실패 시 논리적으로 다음 탐색 경로를 유추하는 &quot;자가 교정(Self-Correction)&quot; 과정을 수행하려면 가장 지능이 높은 모델이 필수적입니다.</p></div></div></p></div><div style="display:contents" dir="auto"><hr id="ddfcc46e-d954-82b0-b13f-01de13d5382f"/></div><div style="display:contents" dir="auto"><h3 id="260cc46e-d954-8382-bb1f-819e56052f57" class="">2. 코드 임베딩 모델: <code>text-embedding-3-large</code> (RAG 및 pgvector 구축)</h3></div><div style="display:contents" dir="auto"><p id="0accc46e-d954-83e4-a249-01ed6fd3c29c" class="">방대한 코드와 문서를 수학적 벡터 공간으로 변환하여 정밀 검색을 가능하게 하는 임베딩 모델로 <code>text-embedding-3-large</code>를 채택해야 하는 이유입니다.</p></div><div style="display:contents" dir="auto"><h4 id="ecacc46e-d954-83cb-a9da-0198f636df6a" class="">📌 MTEB 및 MIRACL 벤치마크 점수 압도적 1위</h4></div><div style="display:contents" dir="auto"><p id="ee5cc46e-d954-8308-ae7b-81c3f17fa987" class=""><strong>객관적 근거</strong><div class="indented"><div style="display:contents" dir="auto"><p id="09ccc46e-d954-8298-9b25-814e957d1204" class="">2024년 1월에 발표된 공식 성능 평가에 따르면, 기존 세대인 <code>text-embedding-ada-002</code> 대비 검색 정확도가 획기적으로 상승했습니다.</p></div><div style="display:contents" dir="auto"><ul id="048cc46e-d954-8220-ab16-01d0958876a6" class="bulleted-list"><li style="list-style-type:disc"><strong>MTEB (영어 텍스트 평가)</strong>: <code>64.6%</code> (기존 61.0% 대비 상승)</li></ul></div><div style="display:contents" dir="auto"><ul id="6bdcc46e-d954-83bc-9a34-015332abb431" class="bulleted-list"><li style="list-style-type:disc"><strong>MIRACL (다국어 정보 검색 평가)</strong>: <code>54.9%</code> (기존 31.4% 대비 비약적 상승)</li></ul></div></div></p></div><div style="display:contents" dir="auto"><p id="f1ecc46e-d954-8202-92e3-816339b31f16" class=""><strong>프로젝트 매칭</strong><div class="indented"><div style="display:contents" dir="auto"><p id="9f9cc46e-d954-8362-924a-81df220346dd" class="">한국어로 작성된 주석 및 명세서(<code>README.md</code>)와 영문 소스코드가 혼재된 GitHub 환경에서 분석을 수행해야 합니다. 다국어 검색(MIRACL)에서 압도적인 점수를 획득한 이 모델은, 최대 3072차원의 세밀한 벡터를 통해 변수명 중복을 넘어선 &quot;코드의 미묘한 의미적 차이&quot;까지 정확히 찾아냅니다.</p></div></div></p></div><div style="display:contents" dir="auto"><p id="b0fcc46e-d954-8277-bfe9-0107476e80f1" class=""><strong>공식 참조 문서</strong><div class="indented"><div style="display:contents" dir="auto"><p id="8c9cc46e-d954-823a-b7e7-016881953b8d" class=""><a href="https://openai.com/index/new-embedding-models-and-api-updates/">New embedding models and API updates (OpenAI 공식 블로그)</a></p></div></div></p></div><div style="display:contents" dir="auto"><h4 id="d0ecc46e-d954-8286-86d3-816c4c38abd2" class="">📌 마트료시카 표현 학습(Matryoshka Representation Learning) 공식 지원</h4></div><div style="display:contents" dir="auto"><p id="654cc46e-d954-8264-a2d1-81bfd2f7a28d" class=""><strong>객관적 근거</strong><div class="indented"><div style="display:contents" dir="auto"><p id="e4dcc46e-d954-8309-a2a4-8117b876d103" class="">해당 모델은 <code>dimensions</code> API 파라미터를 사용하여 모델의 차원을 줄이더라도(예: 3072차원 -&gt; 1024차원) 임베딩의 핵심 정보력과 성능을 거의 그대로 유지하는 기능을 공식적으로 지원합니다.</p></div></div></p></div><div style="display:contents" dir="auto"><p id="7d1cc46e-d954-8298-bd51-017d25a6b289" class=""><strong>프로젝트 매칭</strong><div class="indented"><div style="display:contents" dir="auto"><p id="c12cc46e-d954-83a6-8328-012e97f23eef" class="">PostgreSQL의 pgvector를 활용하는 CodeMap 환경에서, 향후 DB 저장 공간 절약이나 벡터 인덱스 쿼리 속도 최적화가 필요해질 경우, 검색 품질을 희생하지 않으면서도 시스템 부하를 줄일 수 있는 강력한 아키텍처적 유연성을 제공합니다.</p></div></div></p></div><div style="display:contents" dir="auto"><hr id="546cc46e-d954-82ca-addd-0195f47b0d11"/></div><div style="display:contents" dir="auto"><h3 id="7c8cc46e-d954-8396-8e82-0124542071f1" class="">3. 하이브리드 병행 모델: <code>gpt-4o-mini</code> (Map-Reduce 요약 파이프라인)</h3></div><div style="display:contents" dir="auto"><p id="37fcc46e-d954-83f8-aa65-81ac8f2d8fff" class="">초기 데이터 구축 파이프라인에서 막대한 텍스트 처리를 담당하는 모델로 <code>gpt-4o-mini</code>를 병행 사용하는 &#x27;하이브리드 전략&#x27;을 채택해야 하는 이유입니다.</p></div><div style="display:contents" dir="auto"><h3 id="06acc46e-d954-83cc-91f5-013f7c83f13c" class="">📌 압도적인 비용 효율성 (Cost Efficiency)</h3></div><div style="display:contents" dir="auto"><p id="441cc46e-d954-82ce-9020-81e00453aa26" class=""><strong>객관적 근거</strong><div class="indented"><div style="display:contents" dir="auto"><p id="93fcc46e-d954-8290-976f-01869d81b230" class="">GPT-4o-mini의 가격 정책은 입력 토큰 100만 개당 <code>$0.15</code>로, 이전 세대인 GPT-3.5 Turbo 대비 <strong>60% 이상 저렴</strong>하며, 메인 모델인 GPT-4o와 비교하면 입력 기준 <strong>약 33배 저렴</strong>한 공식 단가를 가집니다.</p></div></div></p></div><div style="display:contents" dir="auto"><p id="6bacc46e-d954-8269-9196-8160d9ad4843" class=""><strong>프로젝트 매칭</strong><div class="indented"><div style="display:contents" dir="auto"><p id="ceecc46e-d954-82a3-a96a-81e5c0c92bc5" class="">CodeMap의 4대 핵심 기능 중 &quot;자동화된 문서화(Map-Reduce)&quot; 단계는 전체 코드 파일을 수십 번 반복해서 읽고 병합해야 하므로 막대한 입력 토큰을 소모합니다. 시스템 유지 보수 및 운영 비용 절감을 위해 전처리 과정에 이 모델을 배치하는 것은 필수적인 전략입니다.</p></div></div></p></div><div style="display:contents" dir="auto"><p id="5b1cc46e-d954-82e1-b2c6-819c9394221a" class=""><strong>공식 참조 문서</strong><div class="indented"><div style="display:contents" dir="auto"><p id="ba0cc46e-d954-8373-9148-0101b4915ba8" class=""><a href="https://openai.com/api/pricing/">OpenAI API Pricing (공식 단가표)</a></p></div></div></p></div><div style="display:contents" dir="auto"><h3 id="67bcc46e-d954-8312-9ee4-819a171c246e" class="">📌 소형 모델 중 최고 수준의 추론 능력 (MMLU)</h3></div><div style="display:contents" dir="auto"><p id="a1ccc46e-d954-8399-a8be-81c56c94ed9b" class=""><strong>객관적 근거</strong><div class="indented"><div style="display:contents" dir="auto"><p id="301cc46e-d954-822c-a860-81945a509751" class="">단순 언어 능력을 평가하는 MMLU 벤치마크에서 **<code>82.0%</code>**를 기록하여, 동급 경쟁 모델인 Gemini Flash(77.9%) 및 Claude Haiku(73.8%)를 공식적으로 앞서고 있습니다.</p></div></div></p></div><div style="display:contents" dir="auto"><p id="78acc46e-d954-8269-b785-8184d79b26fd" class=""><strong>프로젝트 매칭</strong><div class="indented"><div style="display:contents" dir="auto"><p id="201cc46e-d954-82be-a54a-013eb0d5fe7a" class="">저렴하다고 해서 문해력이 떨어진다면 코드 요약의 품질을 보장할 수 없습니다. 하지만 GPT-4o-mini는 비용 대비 뛰어난 인지 능력을 공식 지표로 증명하였으므로, 백그라운드에서 하위 폴더와 파일들의 역할을 요약하고 관계망을 도출하는 작업에 충분하고도 넘치는 성능을 발휘합니다.</p></div></div></p></div><div style="display:contents" dir="auto"><p id="8e7cc46e-d954-8237-8b0c-01de0289f350" class=""><strong>공식 참조 문서</strong><div class="indented"><div style="display:contents" dir="auto"><p id="48dcc46e-d954-82b2-9bdf-8116716b07dd" class=""><a href="https://openai.com/index/gpt-4o-mini-advancing-cost-efficient-intelligence/">GPT-4o mini: advancing cost-efficient intelligence (OpenAI 공식 블로그)</a></p></div></div></p></div></div></details></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.5em;line-height:1.3;margin:0"><strong>🗄️</strong>CodeCompass Agentic RAG &amp; DB 스키마 최종 아키텍처</summary><div class="indented"><div style="display:contents" dir="auto"><h3 id="524cc46e-d954-82bc-a5df-81f40a818b26" class="">1. 정적 RAG와 Agentic CAG의 결합</h3></div><div style="display:contents" dir="auto"><p id="b3dcc46e-d954-8323-86dd-811f371dc25f" class="">전통적인 RAG의 문맥 파편화 단점을 보완하기 위해, 메인 LLM과 임베딩 모델을 쌍으로 구성하고 에이전트가 직접 파일 탐색을 능동적으로 호출하는 하이브리드 RAG 방식을 채택합니다. 검색 실패 시 사전 학습된 지식을 통해 능동적 재검색(Self-Correction)을 수행합니다.</p></div><div style="display:contents" dir="auto"><h3 id="6eecc46e-d954-82f2-838f-81f525468469" class="">2. 계층적 트리 RAG (Tree-Based RAG)</h3></div><div style="display:contents" dir="auto"><p id="3dfcc46e-d954-824a-95cc-01450a310257" class="">개별 최하위 파일의 텍스트를 임베딩하고, 상위 디렉토리는 하위 파일 텍스트들을 묶어 마크다운 구조화 프롬프트로 LLM에 넘겨 &#x27;요약본&#x27;을 추출한 뒤 그 요약본을 임베딩합니다 (Bottom-up 방식). 이로써 폴더 레벨의 넓은 범위의 문맥 질문에도 완벽하게 대응합니다.</p></div><div style="display:contents" dir="auto"><h3 id="ff5cc46e-d954-827f-9808-0196d87d6bea" class="">3. PostgreSQL 기반 의존성 스키마 및 ERD</h3></div><div style="display:contents" dir="auto"><p id="595cc46e-d954-8286-a848-81e661974be1" class="">폴더 구조를 무시하는 스파게티 코드의 의존성 문제를 해결하기 위해, 의존 관계를 수학적 벡터(Embedding)가 아닌 명시적인 PostgreSQL 관계형 테이블(DEPENDENCY)로 분리 저장합니다. 유사도 검색(Vector Search)과 역방향 의존성 조회(SQL JOIN)를 동시에 실행하여 완벽한 방사형 지식 그래프를 구성합니다.</p></div><div style="display:contents" dir="ltr"><figure id="fa7cc46e-d954-82a0-98db-01231f24ca19"><div class="source"><a href="https://apption.co/embeds/b68e588b">https://apption.co/embeds/b68e588b</a></div></figure></div></div></details></div><div style="display:contents" dir="auto"><details open=""><summary style="font-weight:600;font-size:1.5em;line-height:1.3;margin:0">✂️ AST 기반 의미론적 코드 청킹(Semantic Chunking) 전략</summary><div class="indented"><div style="display:contents" dir="auto"><p id="43dcc46e-d954-8324-879d-014175339ad6" class="">코드 분할 시 단순 글자 수(Character-based)로 자르는 기존 방식은 반복문이나 클래스 선언부를 절단하여 문맥 훼손을 초래합니다. 이를 방지하기 위해 <code>Tree-sitter</code> 등 구문 분석 파서(Parser)를 도입하여 클래스(Class)와 함수(Function) 등 논리적 완전성을 지닌 <strong>AST(추상 구문 트리) 단위</strong>로 분할(Chunking)합니다.</p></div><div style="display:contents" dir="auto"><ul id="f50cc46e-d954-831d-ba8a-816b02b97132" class="bulleted-list"><li style="list-style-type:disc"><strong>문법적 무결성 보존</strong>: 클래스와 메서드의 경계를 정확히 인식하여 LLM에게 오염되지 않은 독립적이고 완전한 논리 단위(Chunk)를 제공합니다.</li></ul></div><div style="display:contents" dir="auto"><ul id="c9ccc46e-d954-829b-b55e-81c6574f738a" class="bulleted-list"><li style="list-style-type:disc"><strong>대용량 처리 (Stack &amp; Pop 분할 전송)</strong>: 디렉토리 단위의 거대한 텍스트를 처리할 때는 스택(Stack) 구조를 활용해 LLM 컨텍스트 한계(Token Limit) 직전에 Pop하고 분할 전송하여 중간 요약을 추출한 뒤, 최종 병합(Map-Reduce)하는 파이프라인을 구축합니다.</li></ul></div><div style="display:contents" dir="auto"><ul id="524cc46e-d954-82ff-94bf-0198281e3e8d" class="bulleted-list"><li style="list-style-type:disc"><strong>임베딩 모델 통합 전략</strong>: 무상태(Stateless)인 임베딩 모델의 한계를 극복하기 위해, 분할 생성된 여러 개의 벡터들을 백엔드에서 평균 연산(Mean Pooling)하여 해당 디렉토리/파일을 대변하는 단일 대표 벡터로 압축 저장합니다.</li></ul></div><div style="display:contents" dir="auto"><h3 id="9d7cc46e-d954-823e-a09f-81b133acd897" class="">📚 공식 출처 및 검증 링크</h3></div><div style="display:contents" dir="auto"><p id="f5dcc46e-d954-83f9-ac89-81a6a7563084" class="">이 전략이 업계 표준(Gold Standard)임을 증명하는 공식 레퍼런스입니다.</p></div><div style="display:contents" dir="auto"><ul id="074cc46e-d954-83ff-af65-8174f22d49b2" class="bulleted-list"><li style="list-style-type:disc"><strong><a href="https://docs.llamaindex.ai/en/stable/module_guides/loading/node_parsers/modules.html#codesplitter">LlamaIndex: CodeSplitter Node Parser</a></strong><div style="display:contents" dir="auto"><ul id="26acc46e-d954-835a-8cb7-8165e6bccc85" class="bulleted-list"><li style="list-style-type:circle"><strong>확인할 부분</strong>: 문서 상단의 <code>CodeSplitter</code> 설명을 보시면, *&quot;Splits based on the syntax tree of the code... using tree-sitter&quot;*라고 명시되어 있습니다. 텍스트 분할이 아닌 구문 트리(AST) 기반 분할을 공식 지원함을 확인할 수 있습니다.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="e86cc46e-d954-83d0-ad65-810810b83022" class="bulleted-list"><li style="list-style-type:disc"><strong><a href="https://python.langchain.com/docs/modules/data_connection/document_transformers/code_splitter">LangChain: Split code</a></strong><div style="display:contents" dir="auto"><ul id="02fcc46e-d954-82ab-8239-01897df3bd2b" class="bulleted-list"><li style="list-style-type:circle"><strong>확인할 부분</strong>: 문서 중간의 예시 코드를 보면 일반 문서와 다르게 <code>Language.PYTHON</code> 등을 명시하여 언어별 구문 특성을 살려 재귀적으로 분할하도록 가이드하고 있습니다.</li></ul></div></li></ul></div><div style="display:contents" dir="auto"><ul id="899cc46e-d954-8257-a569-01192b7a84d1" class="bulleted-list"><li style="list-style-type:disc"><strong><a href="https://tree-sitter.github.io/tree-sitter/">Tree-sitter Official Site</a></strong><div style="display:contents" dir="auto"><ul id="1cecc46e-d954-83d0-9f0d-01c855744198" class="bulleted-list"><li style="list-style-type:circle"><strong>확인할 부분</strong>: 메인 페이지의 &quot;Robust&quot; 및 &quot;General-purpose&quot; 섹션에서 코드가 수정되더라도 전체 AST 구조를 점진적 파싱(Incremental Parsing)하여 클래스/함수 경계를 정확히 유지하는 원리를 볼 수 있습니다.</li></ul></div></li></ul></div></div></details></div></div></article><span class="sans" style="font-size:14px;padding-top:2em"></span></body></html>
