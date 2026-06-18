@@ -223,3 +223,13 @@ export type WsEvent =
   | WsCompletedEvent
   | WsFailedEvent
   | WsErrorEvent;
+
+// ── Chat types ──────────────────────────────────────────────────────────────
+
+export type ChatMode = 'lite' | 'deep';
+
+export type StreamPhase =
+  | 'searching'
+  | 'building_context'
+  | 'generating'
+  | 'complete';
