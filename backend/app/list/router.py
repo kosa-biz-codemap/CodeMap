@@ -1,3 +1,10 @@
+"""
+분석 작업 REST API 라우터 (Controller/진입점)
+
+담당 API:
+  - API-001: GET /api/list/analysis (전체 분석 이력 목록 조회)
+"""
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
@@ -10,7 +17,12 @@ from app.list.schemas import (
 )
 from app.list.service import ListserviceDep
 
-router = APIRouter(tags=["Project List"])
+
+logger = logging.getLogger(__name__)
+# ──────────────────────────────────────────────
+# APIRouter 인스턴스 생성
+# ──────────────────────────────────────────────
+router = APIRouter(prefix="/api/list", tags=["Project List"])
 
 
 def verify_authorization(authorization: Annotated[str | None, Header()] = None) -> None:
@@ -25,9 +37,12 @@ def verify_authorization(authorization: Annotated[str | None, Header()] = None) 
             },
         )
 
-
+# ──────────────────────────────────────────────
+# API-001: 전체 분석 이력 목록 조회
+# GET /api/list/analysis
+# ──────────────────────────────────────────────
 @router.get(
-    "/api/list/analysis",
+    "/analysis",
     response_model=AnalysisJobListResponse,
     summary="전체 분석 이력 목록 조회",
     description="사용자가 이전에 분석을 시도했거나 완료한 저장소 분석 작업 목록을 페이지 단위로 조회합니다.",
