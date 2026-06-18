@@ -5,13 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, CheckCircle2, XCircle, Clock, Github, FolderOpen } from "lucide-react";
 import type { RepoSource } from "@/features/repository/components/RepoInput";
 import { useApp } from "@/common/contexts/AppContext";
-import { apiPath } from "@/features/analysis/api/api";
+import { fetchAnalysisHistory } from "@/features/analysis/api/api";
 
 interface AnalysisRow {
   job_id: string;
   source: RepoSource;
   path: string;
-  status: "running" | "completed" | "failed";
+  status: "queued" | "running" | "completed" | "failed";
   created_at: number;
   completed_at: number | null;
   total_pipeline_ms: number | null;
@@ -41,6 +41,11 @@ function formatRelativeTime(unixSeconds: number): string {
   return new Date(unixSeconds * 1000).toLocaleDateString();
 }
 
+function toUnixSeconds(value: string): number {
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? Date.now() / 1000 : timestamp / 1000;
+}
+
 export function HistoryList({ onSelect, activeJobId, refreshToken = 0 }: HistoryListProps) {
   const [items, setItems] = useState<AnalysisRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -53,30 +58,33 @@ export function HistoryList({ onSelect, activeJobId, refreshToken = 0 }: History
     setLoading(true);
     setError(null);
     try {
-      // TODO: Backend list endpoint not yet implemented
-      // Will be available at GET /api/repo/analyses or similar
-      const resp = await fetch(apiPath("/repo/analyses?limit=30"));
-      if (resp.status === 404) {
-        // Endpoint not available yet — silently show empty
-        setItems([]);
-        return;
-      }
-      if (!resp.ok) throw new Error(`${resp.status}`);
-      const data = await resp.json();
-      setItems(data.items || data.data || []);
-    } catch {
-      // Silently fail — history is optional
+      const response = await fetchAnalysisHistory(1, 30);
+      setItems(response.data.jobs.map((job) => ({
+        job_id: job.jobId,
+        source: "github",
+        path: job.repoUrl,
+        status: job.status,
+        created_at: toUnixSeconds(job.createdAt),
+        completed_at: job.status === "completed" ? toUnixSeconds(job.updatedAt) : null,
+        total_pipeline_ms: null,
+        error_message: job.errorMessage,
+        model_used: null,
+        force_refresh: false,
+      })));
+    } catch (requestError) {
       setItems([]);
+      setError(requestError instanceof Error ? requestError.message : t.historyList.loadFailed);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t.historyList.loadFailed]);
 
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load, refreshToken]);
 
   const STATUS_CONFIG: Record<AnalysisRow["status"], { color: string; icon: typeof CheckCircle2; label: string }> = {
+    queued: { color: "text-zinc-500 bg-zinc-500/10 border-zinc-500/30", icon: Clock, label: t.historyList.statusRunning },
     running: { color: "text-blue-500 bg-blue-500/10 border-blue-500/30", icon: RefreshCw, label: t.historyList.statusRunning },
     completed: { color: "text-green-500 bg-green-500/10 border-green-500/30", icon: CheckCircle2, label: t.historyList.statusDone },
     failed: { color: "text-red-500 bg-red-500/10 border-red-500/30", icon: XCircle, label: t.historyList.statusFailed },

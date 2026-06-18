@@ -1,4 +1,5 @@
 import type {
+  AnalysisHistoryResponse,
   AnalyzeRequest,
   AnalyzeResponse,
   JobStatusData,
@@ -10,6 +11,16 @@ const BASE_URL = `${BASE_PATH}/api`;
 export function apiPath(path: string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${BASE_URL}${normalizedPath}`;
+}
+
+function getAuthorizationHeader(): string {
+  if (typeof window === "undefined") return "Bearer frontend-client";
+  const token = localStorage.getItem("cm-access-token")
+    || localStorage.getItem("access_token")
+    || localStorage.getItem("accessToken")
+    || localStorage.getItem("token")
+    || "frontend-client";
+  return `Bearer ${token}`;
 }
 
 /**
@@ -49,6 +60,28 @@ export async function fetchJobStatus(
   if (!resp.ok) {
     throw new Error(`Failed to fetch job status: ${resp.status}`);
   }
+  return await resp.json();
+}
+
+export async function fetchAnalysisHistory(
+  page = 1,
+  limit = 30,
+): Promise<AnalysisHistoryResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  const resp = await fetch(apiPath(`/list/analysis?${params.toString()}`), {
+    headers: {
+      Authorization: getAuthorizationHeader(),
+    },
+  });
+
+  if (!resp.ok) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData?.message || errData?.detail?.message || `Failed to fetch analysis history: ${resp.status}`);
+  }
+
   return await resp.json();
 }
 
