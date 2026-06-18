@@ -59,8 +59,17 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def assemble_db_connection(self) -> "Settings":
-        if not self.DATABASE_URL:
+        # 1. DATABASE_URL이 비어있거나 생략된 경우 개별 설정으로 조립
+        if not self.DATABASE_URL or not self.DATABASE_URL.strip():
             self.DATABASE_URL = f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        # 2. 스킴(Scheme)이 잘못 설정되거나 누락된 경우 방어 처리
+        elif not self.DATABASE_URL.startswith("postgresql://") and not self.DATABASE_URL.startswith("postgresql+asyncpg://"):
+            # postgres:// 를 postgresql:// 로 표준 정정
+            if self.DATABASE_URL.startswith("postgres://"):
+                self.DATABASE_URL = self.DATABASE_URL.replace("postgres://", "postgresql://", 1)
+            # 스킴이 아예 누락된 경우 (예: "postgres:postgres@localhost...")
+            else:
+                self.DATABASE_URL = f"postgresql://{self.DATABASE_URL}"
         return self
 
 
