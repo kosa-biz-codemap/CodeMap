@@ -10,13 +10,15 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   mode?: ChatMode;
+  explorationSteps?: string[];
 }
 
 export interface StreamEvent {
-  type: "status" | "content" | "done" | "error";
+  type: "status" | "content" | "done" | "error" | "exploration";
   phase?: StreamPhase;
   content?: string;
   error?: string;
+  step?: string;
 }
 
 /**
@@ -36,7 +38,6 @@ export async function* streamChat(
     });
 
     if (!res.ok || !res.body) {
-      // Backend not available — fall back to simulation
       yield* simulateStream(message, mode);
       return;
     }
@@ -56,18 +57,17 @@ export async function* streamChat(
           try {
             const event: StreamEvent = JSON.parse(line.slice(6));
             yield event;
-          } catch { /* skip malformed */ }
+          } catch { /* skip */ }
         }
       }
     }
   } catch {
-    // Network error — fall back to simulation
     yield* simulateStream(message, mode);
   }
 }
 
 const SIMULATED_RESPONSES: Record<string, string> = {
-  architecture: `## 프로젝트 아키텍처 분석\n\n이 프로젝트는 **Feature-Sliced Design (FSD)** 패턴을 따르는 모노레포 구조입니다.\n\n### 주요 구조\n- \`frontend/\` — Next.js 16 + React 19 (App Router)\n- \`backend/\` — FastAPI + Python 3.12 (3-Tier DDD)\n- \`database/\` — PostgreSQL + pgvector\n\n### 프론트엔드 아키텍처\n\`\`\`\nsrc/\n├── app/          # Route pages (thin shells)\n├── common/       # Cross-cutting: hooks, types, i18n\n└── features/     # Domain modules\n\`\`\`\n\n### 백엔드 아키텍처\n각 도메인 모듈은 \`Router → Service → Repository\` 3-Tier 패턴을 따릅니다.`,
+  architecture: `## 프로젝트 아키텍처 분석\n\n이 프로젝트는 **Feature-Sliced Design (FSD)** 패턴을 따르는 모노레포 구조입니다.\n\n### 주요 구조\n- \`frontend/\` — Next.js 16 + React 19 (App Router)\n- \`backend/\` — FastAPI + Python 3.12 (3-Tier DDD)\n- \`database/\` — PostgreSQL + pgvector\n\n### 다이어그램\n\`\`\`mermaid\ngraph TD\n  Client["Frontend (Next.js)"] --> API["Backend (FastAPI)"]\n  API --> DB[("PostgreSQL")]\n  API --> LLM["OpenAI API"]\n\`\`\``,
   files: `## 핵심 파일 및 읽기 순서\n\n### 1단계: 진입점 파악\n1. \`frontend/src/app/layout.tsx\` — 루트 레이아웃\n2. \`frontend/src/app/page.tsx\` — 랜딩 페이지\n3. \`backend/app/main.py\` — FastAPI 진입점\n\n### 2단계: 핵심 기능\n4. \`frontend/src/features/analysis/\` — 분석 대시보드\n5. \`backend/app/repo/pipeline/\` — LangGraph 파이프라인\n6. \`backend/app/repo/service.py\` — 레포 분석 서비스\n\n### 3단계: 인프라\n7. \`database/init.sql\` — DB 스키마\n8. \`frontend/src/common/types/contracts.ts\` — API 계약`,
   default: `이 저장소를 분석한 결과를 바탕으로 답변드립니다.\n\n해당 질문에 대해 관련 소스코드 파일을 탐색하고 분석했습니다. 추가적인 질문이 있으시면 언제든 물어보세요!\n\n> 💡 **Tip**: 더 깊은 분석이 필요하시면 **Deep 모드**로 전환해 보세요.`,
 };
@@ -97,13 +97,23 @@ export async function* simulateStream(
   // Phase 1: Searching files
   yield { type: "status", phase: "searching" };
   await delay(baseDelay + Math.random() * 500);
+  yield { type: "exploration", step: "Analyzed repository structure" };
+  await delay(200);
 
   // Phase 2: Building context
   yield { type: "status", phase: "building_context" };
+  yield { type: "exploration", step: "Extracted context from semantic search" };
   await delay(baseDelay + Math.random() * 800);
+  if (mode === "deep") {
+    yield { type: "exploration", step: "Tracing dependency graph (Deep mode)" };
+    await delay(1000);
+    yield { type: "exploration", step: "Cross-referencing related files" };
+    await delay(800);
+  }
 
   // Phase 3: Generating
   yield { type: "status", phase: "generating" };
+  yield { type: "exploration", step: "Synthesizing final response" };
   await delay(400);
 
   // Stream content character by character (simulate typing)

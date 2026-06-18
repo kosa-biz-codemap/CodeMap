@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Trash2, MessageSquare } from "lucide-react";
+import { Send, Trash2, MessageSquare, Download } from "lucide-react";
 import { useApp } from "@/common/contexts/AppContext";
 import { ModeSelector } from "./ModeSelector";
 import { SuggestionChips } from "./SuggestionChips";
@@ -93,6 +93,17 @@ export function ChatInterface() {
             case "status":
               if (event.phase) setStreamPhase(event.phase);
               break;
+            case "exploration":
+              if (event.step) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId
+                      ? { ...m, explorationSteps: [...(m.explorationSteps || []), event.step!] }
+                      : m,
+                  ),
+                );
+              }
+              break;
             case "content":
               if (event.content) {
                 setMessages((prev) =>
@@ -153,6 +164,26 @@ export function ChatInterface() {
     setStreamPhase(null);
   };
 
+  // Export to Markdown
+  const handleExport = () => {
+    if (messages.length === 0) return;
+    
+    const content = messages.map(msg => {
+      const roleName = msg.role === "user" ? "User" : "CodeMap Assistant";
+      return `### ${roleName}\n\n${msg.content}\n`;
+    }).join("\n---\n\n");
+    
+    const blob = new Blob([`# CodeMap Analysis Report\n\n${content}`], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `codemap-export-${new Date().toISOString().slice(0,10)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const isEmpty = messages.length === 0;
 
   return (
@@ -189,6 +220,16 @@ export function ChatInterface() {
 
         <div className="flex items-center gap-2">
           <ModeSelector mode={mode} onChange={setMode} disabled={isStreaming} />
+          <div className="h-4 w-px bg-zinc-800 mx-1" />
+          <button
+            onClick={handleExport}
+            disabled={isEmpty || isStreaming}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ color: "var(--text-muted)" }}
+            title="대화 내보내기 (.md)"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
           <button
             onClick={handleClear}
             disabled={isEmpty || isStreaming}
