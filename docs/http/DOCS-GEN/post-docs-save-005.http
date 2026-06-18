@@ -1,3 +1,4 @@
+### 공통 오류 계약: ../_shared/ERROR-CONTRACT.http
 ### ============================================================================
 ### DOCS-GEN-API-005 | 생성 Markdown DB 저장
 ### Contract status: 기능 명세 기반 설계 계약 (구현 전)
@@ -23,4 +24,4 @@ Accept: application/json
 ### 201 Created
 ### {"code":201,"message":"created","data":{"documentId":"document-uuid","repoId":"3f7cc46e-d954-83ab-9f12-013b0c9d2a1e","version":1,"savedAt":"2026-06-18T10:00:00Z"}}
 ### 오류: 400 INVALID_MARKDOWN, 401 UNAUTHORIZED, 404 REPO_NOT_FOUND,
-###       409 DOCUMENT_VERSION_EXISTS, 500 DOCUMENT_SAVE_FAILED
+###       409 DOCUMENT_VERSION_EXISTS, 500 DATABASE_SAVE_FAILED

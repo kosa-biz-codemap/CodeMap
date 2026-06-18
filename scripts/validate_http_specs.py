@@ -15,6 +15,7 @@ from convert_notion_html_to_http import render_http, visible_text
 ROOT = Path(__file__).resolve().parents[1]
 HTTP_ROOT = ROOT / "docs" / "http"
 SOURCE_ROOT = HTTP_ROOT / "_source-spec"
+SHARED_ROOT = HTTP_ROOT / "_shared"
 MANIFEST = SOURCE_ROOT / "manifest.json"
 REQUEST_RE = re.compile(r"^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD|WEBSOCKET)\s+\S+", re.MULTILINE)
 ID_RE = re.compile(
@@ -62,7 +63,9 @@ def main() -> int:
 
     source_files = sorted(SOURCE_ROOT.rglob("*.http"))
     executable_files = sorted(
-        path for path in HTTP_ROOT.rglob("*.http") if SOURCE_ROOT not in path.parents
+        path
+        for path in HTTP_ROOT.rglob("*.http")
+        if SOURCE_ROOT not in path.parents and SHARED_ROOT not in path.parents
     )
     request_count = 0
     api_ids: Counter[str] = Counter()

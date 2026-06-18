@@ -1,3 +1,4 @@
+### 공통 오류 계약: ../_shared/ERROR-CONTRACT.http
 # ============================================================
 # API ID  : DOCS-GUARD-API-001
 # 기능명  : 민감정보 마스킹 검증
@@ -48,3 +49,5 @@ Content-Type: application/json
 
 # 에러 응답 목록:
 # 400 INVALID_CONTENT (입력검증): content 비어있음
+# 404 REPO_NOT_FOUND (DB): 저장소 없음
+# 500 GUARD_FAILED (검사): 민감정보 패턴 탐지 처리 실패

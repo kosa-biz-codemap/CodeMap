@@ -1,3 +1,4 @@
+### 공통 오류 계약: ../_shared/ERROR-CONTRACT.http
 # ============================================================
 # API ID  : RAG-EMBED-API-002
 # 기능명  : 임베딩 저장 상태 조회
@@ -40,3 +41,4 @@ GET {{baseUrl}}/api/embed/analysis/{{repo_id}}/status
 
 # Error Response: 401 Unauthorized
 # { "code": "UNAUTHORIZED", "message": "인증이 필요합니다." }
+# Markdown 에러 규칙: 404 REPO_NOT_FOUND / 500 DATABASE_ERROR

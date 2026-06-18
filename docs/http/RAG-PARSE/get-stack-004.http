@@ -1,3 +1,4 @@
+### 공통 오류 계약: ../_shared/ERROR-CONTRACT.http
 # ============================================================
 # API ID  : RAG-PARSE-API-004
 # 기능명  : 기술 스택 탐지 결과 조회
@@ -38,3 +39,4 @@ GET {{baseUrl}}/api/parse/analysis/{{repo_id}}/stack
 
 # Error Response: 401 Unauthorized
 # { "code": "UNAUTHORIZED", "message": "인증이 필요합니다." }
+# Markdown 에러 규칙: 404 REPO_NOT_FOUND / 500 STACK_DETECTION_FAILED

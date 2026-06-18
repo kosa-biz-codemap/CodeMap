@@ -1,3 +1,4 @@
+### 공통 오류 계약: ../_shared/ERROR-CONTRACT.http
 # ============================================================
 # API ID  : DOCS-GEN-API-004
 # 기능명  : 가이드북 파일 다운로드
@@ -26,4 +27,6 @@ Authorization: Bearer {{accessToken}}
 GET {{baseUrl}}/api/gen/docs/{{repo_id}}/download
 
 # Error Response: 401 Unauthorized
-# { "code": "UNAUTHORIZED", "message": "인증이 필요합니다." }
+# {"code":401,"message":"인증이 필요합니다.","data":null,"error":{"code":"UNAUTHORIZED","detail":null,"field":null,"retryable":false}}
+# Markdown 에러 규칙: 404 REPO_NOT_FOUND / 404 DOCS_NOT_FOUND /
+# 500 FILE_GENERATION_FAILED

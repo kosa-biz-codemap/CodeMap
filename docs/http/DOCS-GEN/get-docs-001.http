@@ -1,3 +1,4 @@
+### 공통 오류 계약: ../_shared/ERROR-CONTRACT.http
 # ============================================================
 # API ID  : DOCS-GEN-API-001
 # 기능명  : 온보딩 가이드북 조회
@@ -46,3 +47,4 @@ GET {{baseUrl}}/api/gen/docs/{{repo_id}}
 
 # 에러 응답 목록:
 # 404 DOCS_NOT_FOUND (DB): 가이드북 미생성
+# 401 UNAUTHORIZED / 404 REPO_NOT_FOUND / 500 DATABASE_ERROR

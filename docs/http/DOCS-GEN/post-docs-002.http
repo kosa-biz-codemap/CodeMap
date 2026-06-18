@@ -1,3 +1,4 @@
+### 공통 오류 계약: ../_shared/ERROR-CONTRACT.http
 # ============================================================
 # API ID  : DOCS-GEN-API-002
 # 기능명  : 가이드북 생성 트리거
@@ -44,4 +45,7 @@ Content-Type: application/json
 
 # 에러 응답 목록:
 # 409 DOCS_ALREADY_EXISTS (중복): 가이드북 존재, force=false
+# 404 REPO_NOT_FOUND (DB): 저장소 없음
+# 409 DOCS_GENERATION_IN_PROGRESS (중복): 생성 작업 진행 중
 # 422 ANALYSIS_NOT_COMPLETED (사전검증): RAG 파이프라인 미완료
+# 500 DOCS_GENERATION_FAILED (생성): LLM 또는 문서 생성 실패

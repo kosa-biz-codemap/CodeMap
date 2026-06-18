@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | 실행 명세 | `docs/http/{DOMAIN}/*.http` | API별 요청, 성공 응답, 오류 계약, 제약 조건 |
 | 원문 보관 | `docs/http/_source-spec/**/*.http` | 113개 Notion HTML의 본문을 누락 없이 주석형 HTTP로 보존 |
+| 공통 계약 | `docs/http/_shared/ERROR-CONTRACT.http` | REST/SSE/WS 오류 envelope, status, 재시도 규칙 |
 | 변환 명세 | `docs/03_API/*.md` | 도메인 단위 읽기용 통합 명세 초안 |
 | 검증 도구 | `scripts/validate_http_specs.py` | 원문 파일 수·토큰 보존율·요청 블록·placeholder 검증 |
 
@@ -69,6 +70,7 @@ python3 scripts/convert_notion_html_to_http.py \
   '/Users/gabriel/Downloads/Private & Shared 6'
 
 python3 scripts/validate_http_specs.py
+python3 scripts/validate_http_error_contracts.py
 ```
 
 현재 변환 결과는 `_source-spec/manifest.json`에 원본 상대 경로, SHA-256, 원문 토큰 수, 보존율과 대상 파일을 기록한다. 변환기는 Python 표준 라이브러리만 사용하며 프로젝트의 production dependency를 추가하지 않는다.
@@ -96,3 +98,7 @@ python3 scripts/validate_http_specs.py
 ```
 
 기존 PROJECT API 일부는 과거 명세의 평면형 `error` 문자열을 포함한다. 구현 전 공통 오류 envelope로 통일할지 명시적으로 결정해야 한다.
+
+현재 표준은 `docs/04_Decisions/ERROR_HANDLING.md`와
+`docs/http/_shared/ERROR-CONTRACT.http`의 `code/message/data/error` envelope이다. 과거
+평면형 예시는 호환성 확인 자료이며 신규 구현 계약으로 사용하지 않는다.

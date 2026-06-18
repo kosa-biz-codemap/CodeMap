@@ -4,6 +4,7 @@
 ### Endpoint: POST /api/graph/{repo_id}
 ### 관련 기능 ID: RAG-GRAPH-B-201
 ### 목적: import/imported_by 관계를 노드·엣지 그래프로 비동기 생성한다.
+### 공통 오류 계약: ../_shared/ERROR-CONTRACT.http
 ### ============================================================================
 @baseUrl = http://localhost:8000
 @accessToken = replace-me
@@ -23,5 +24,5 @@ Accept: application/json
 ### 202 Accepted
 ### {"code":202,"message":"accepted","data":{"graphId":"7f8a9b0c-1d2e-4f5a-9b0c-1d2e3f4a5b6c","status":"graph_queued"}}
 ### 필드: maxDepth(Integer, 선택, 기본 3), excludePaths(Array<String>, 선택, 기본 [])
-### 오류: 401 UNAUTHORIZED, 404 REPO_NOT_FOUND, 409 GRAPH_ALREADY_RUNNING,
-###       422 PARSE_NOT_COMPLETED, 500 GRAPH_GENERATION_FAILED
+### 사전 조건 오류(설계 보강): 401 UNAUTHORIZED, 404 REPO_NOT_FOUND,
+### 409 GRAPH_ALREADY_RUNNING, 422 PARSE_NOT_COMPLETED, 500 GRAPH_BUILD_FAILED

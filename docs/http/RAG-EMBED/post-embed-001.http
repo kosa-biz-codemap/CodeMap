@@ -1,3 +1,4 @@
+### 공통 오류 계약: ../_shared/ERROR-CONTRACT.http
 # ============================================================
 # API ID  : RAG-EMBED-API-001
 # 기능명  : 임베딩 생성 요청
@@ -54,3 +55,4 @@ Content-Type: application/json
 # 404 REPO_NOT_FOUND (DB): 저장소 없음
 # 409 EMBEDDING_IN_PROGRESS (중복): 임베딩 진행 중
 # 422 PARSE_NOT_COMPLETED (사전검증): 파싱 미완료
+# 500 EMBEDDING_FAILED (임베딩): 외부 API 또는 벡터 저장 실패

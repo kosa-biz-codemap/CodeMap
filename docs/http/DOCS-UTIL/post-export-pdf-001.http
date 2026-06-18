@@ -1,9 +1,10 @@
 ### ============================================================================
-### UTIL-API-001 | 가이드북 PDF 변환
-### Contract status: 보류 기능의 설계 계약 (Phase 2, 구현 전)
+### UTIL-API-001 | HTML-PDF 파일 렌더링 및 변환
+### Markdown source: docs/03_API/PHASE2_API_SPEC.md
 ### Endpoint: POST /api/gen/docs/{repo_id}/export/pdf
 ### 관련 기능 ID: DOCS-UTIL-B-201
-### 목적: 저장된 Markdown/HTML 가이드북을 PDF로 렌더링한다.
+### 상태: 시작 전 (Phase 2)
+### 공통 오류 계약: ../_shared/ERROR-CONTRACT.http
 ### ============================================================================
 @baseUrl = http://localhost:8000
 @accessToken = replace-me
@@ -12,10 +13,12 @@
 POST {{baseUrl}}/api/gen/docs/{{repoId}}/export/pdf
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
-Accept: application/json
+Accept: application/pdf
 
-{"locale":"ko-KR","includeTableOfContents":true}
+{"theme":"default","includeCodeHighlight":true}
 
-### 202 Accepted
-### {"code":202,"message":"accepted","data":{"exportId":"export-uuid","status":"queued","format":"pdf"}}
-### 오류: 401 UNAUTHORIZED, 404 DOCS_NOT_FOUND, 409 EXPORT_IN_PROGRESS, 500 PDF_RENDER_FAILED
+### 200 OK — binary response
+### Content-Type: application/pdf
+### Content-Disposition: attachment; filename="{repoName}_onboarding.pdf"
+### theme: default | dark | minimal
+### 오류: 401 UNAUTHORIZED, 404 REPO_NOT_FOUND, 404 DOCS_NOT_FOUND, 500 PDF_RENDER_FAILED
