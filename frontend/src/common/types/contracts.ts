@@ -159,6 +159,17 @@ export interface AnalyzeResponse {
   data: AnalysisData;
 }
 
+export type AnalysisProgressStatus = 'queued' | 'running' | 'completed' | 'failed';
+
+export interface AnalysisProgressMessage {
+  jobId: string;
+  status: AnalysisProgressStatus;
+  progress: number;
+  currentStep: string | null;
+  failedAgent: string | null;
+  errorMessage: string | null;
+}
+
 export interface GuardrailRegexBlock {
   original_text: string;
   rule_id: string;
