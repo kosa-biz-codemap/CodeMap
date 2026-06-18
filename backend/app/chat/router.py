@@ -25,6 +25,24 @@ async def chat(repo_id: UUID, request: ChatRequest, db: AsyncSession = Depends(g
     try:
         job, thread, mode, references = await service.prepare(repo_id, request)
     except ValueError as exc:
+        if str(exc) == "저장소 스냅샷이 아직 준비되지 않았습니다.":
+            async def fallback_stream():
+                yield _event({"type": "status", "phase": "generating"})
+                answer = (
+                    "⚠️ 아직 저장소 스냅샷 분석이 완료되지 않아 전체 아키텍처나 구조 기반 탐색을 수행할 수 없습니다.\n\n"
+                    "하지만 **단일 코드 스니펫 해석**, **일반적인 프로그래밍 지문**, **오류 메시지 원인 파악** 등은 "
+                    "현재 상태에서도 바로 답변해 드릴 수 있습니다."
+                )
+                for index in range(0, len(answer), 36):
+                    yield _event({"type": "content", "content": answer[index:index + 36]})
+                    await asyncio.sleep(0.01)
+                yield _event({"type": "suggestions", "suggestions": [
+                    "에러 메시지 의미 해석",
+                    "단편적인 코드 리뷰",
+                    "특정 프레임워크 사용법"
+                ]})
+                yield _event({"type": "done"})
+            return StreamingResponse(fallback_stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     async def stream():

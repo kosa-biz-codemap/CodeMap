@@ -5,6 +5,7 @@ import {
   Check,
   FolderOpen,
   Github,
+  Info,
   LoaderCircle,
   Search,
   Star,
@@ -38,6 +39,23 @@ type LocalFolderSelection = {
   skippedCount: number;
 };
 
+type FileHandleLike = {
+  kind: "file";
+  name: string;
+  getFile: () => Promise<File>;
+};
+
+type DirectoryHandleLike = {
+  kind: "directory";
+  name: string;
+  values: () => AsyncIterableIterator<FileHandleLike | DirectoryHandleLike>;
+};
+
+type LocalFileCandidate = {
+  file: File;
+  path: string;
+};
+
 const GITHUB_URL = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+?(?:\.git)?\/?$/;
 const MAX_LOCAL_FILES = 900;
 const MAX_LOCAL_FILE_BYTES = 5 * 1024 * 1024;
@@ -52,6 +70,22 @@ function formatStars(stars: number): string {
   if (stars >= 1_000_000) return `${(stars / 1_000_000).toFixed(1)}m`;
   if (stars >= 1_000) return `${(stars / 1_000).toFixed(stars >= 100_000 ? 0 : 1)}k`;
   return String(stars);
+}
+
+async function readDirectory(
+  directory: DirectoryHandleLike,
+  prefix: string[] = [],
+): Promise<LocalFileCandidate[]> {
+  const candidates: LocalFileCandidate[] = [];
+  for await (const entry of directory.values()) {
+    if (entry.kind === "directory") {
+      if (IGNORED_DIRECTORIES.has(entry.name)) continue;
+      candidates.push(...await readDirectory(entry, [...prefix, entry.name]));
+      continue;
+    }
+    candidates.push({ file: await entry.getFile(), path: [...prefix, entry.name].join("/") });
+  }
+  return candidates;
 }
 
 export function RepositoryLauncher({ onAnalyze }: RepositoryLauncherProps) {
@@ -69,13 +103,6 @@ export function RepositoryLauncher({ onAnalyze }: RepositoryLauncherProps) {
   const [isFocused, setIsFocused] = useState(false);
   const folderInputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
-
-  useEffect(() => {
-    const input = folderInputRef.current;
-    if (!input) return;
-    input.setAttribute("webkitdirectory", "");
-    input.setAttribute("directory", "");
-  }, []);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -148,20 +175,15 @@ export function RepositoryLauncher({ onAnalyze }: RepositoryLauncherProps) {
     }
   };
 
-  const handleFolderChange = () => {
-    const selectedFiles = Array.from(folderInputRef.current?.files || []);
-    if (!selectedFiles.length) return;
-    const relativePath = selectedFiles[0].webkitRelativePath || selectedFiles[0].name;
-    const folderName = relativePath.split("/")[0];
+  const applyFolderSelection = (folderName: string, candidates: LocalFileCandidate[]) => {
     const files: File[] = [];
     const paths: string[] = [];
     let totalBytes = 0;
     let skippedCount = 0;
 
-    for (const file of selectedFiles) {
-      const rawPath = file.webkitRelativePath || file.name;
-      const parts = rawPath.split("/").filter(Boolean);
-      const repositoryPath = parts[0] === folderName ? parts.slice(1) : parts;
+    for (const candidate of candidates) {
+      const { file } = candidate;
+      const repositoryPath = candidate.path.split("/").filter(Boolean);
       const filename = repositoryPath.at(-1) || file.name;
       const ignored = repositoryPath.slice(0, -1).some((part) => IGNORED_DIRECTORIES.has(part))
         || IGNORED_FILES.has(filename)
@@ -190,6 +212,43 @@ export function RepositoryLauncher({ onAnalyze }: RepositoryLauncherProps) {
       skippedCount,
     });
     setFormError("");
+  };
+
+  const handleFolderChange = () => {
+    const selectedFiles = Array.from(folderInputRef.current?.files || []);
+    if (!selectedFiles.length) return;
+    const relativePath = selectedFiles[0].webkitRelativePath || selectedFiles[0].name;
+    const folderName = relativePath.split("/")[0];
+    const candidates = selectedFiles.map((file) => {
+      const rawPath = file.webkitRelativePath || file.name;
+      const parts = rawPath.split("/").filter(Boolean);
+      return {
+        file,
+        path: (parts[0] === folderName ? parts.slice(1) : parts).join("/"),
+      };
+    });
+    applyFolderSelection(folderName, candidates);
+  };
+
+  const openFolderPicker = async () => {
+    setFormError("");
+    const picker = (window as Window & {
+      showDirectoryPicker?: (options?: { mode?: "read" }) => Promise<DirectoryHandleLike>;
+    }).showDirectoryPicker;
+
+    if (!picker) {
+      folderInputRef.current?.click();
+      return;
+    }
+
+    try {
+      const directory = await picker.call(window, { mode: "read" });
+      applyFolderSelection(directory.name, await readDirectory(directory));
+    } catch (error) {
+      if ((error as DOMException).name !== "AbortError") {
+        setFormError(t.hero.localFolderReadError);
+      }
+    }
   };
 
   const submitLocalFolder = async () => {
@@ -309,46 +368,67 @@ export function RepositoryLauncher({ onAnalyze }: RepositoryLauncherProps) {
           )}
         </form>
       ) : (
-        <div className="rounded-2xl border p-3 shadow-lg cm-card">
-          <input ref={folderInputRef} type="file" multiple className="hidden" onChange={handleFolderChange} />
+        <div className="rounded-2xl border p-2 shadow-lg cm-card">
+          <input
+            ref={(input) => {
+              folderInputRef.current = input;
+              input?.setAttribute("webkitdirectory", "");
+              input?.setAttribute("directory", "");
+            }}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFolderChange}
+          />
           <button
             type="button"
-            onClick={() => folderInputRef.current?.click()}
-            className="flex w-full items-center gap-3 rounded-xl border border-dashed px-4 py-4 text-left transition hover:border-blue-500/50 hover:bg-blue-500/5"
+            onClick={openFolderPicker}
+            className="flex w-full items-center gap-3 rounded-xl border border-dashed px-3 py-3 text-left transition hover:border-blue-500/50 hover:bg-blue-500/5"
             style={{ borderColor: selectedFolder ? "var(--accent-blue)" : "var(--border-input)" }}
           >
-            <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${selectedFolder ? "bg-emerald-500/10 text-emerald-400" : "bg-blue-500/10 text-blue-400"}`}>
-              {selectedFolder ? <Check className="size-5" /> : <FolderOpen className="size-5" />}
+            <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${selectedFolder ? "bg-emerald-500/10 text-emerald-400" : "bg-blue-500/10 text-blue-400"}`}>
+              {selectedFolder ? <Check className="size-4" /> : <FolderOpen className="size-4" />}
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-bold cm-text-primary">
+              <span className="block truncate text-xs font-bold cm-text-primary">
                 {selectedFolder?.name || t.hero.chooseFolder}
               </span>
-              <span className="mt-1 block text-[11px] leading-4 cm-text-muted">
-                {selectedFolder
-                  ? t.hero.folderSelected
-                      .replace("{count}", String(selectedFolder.files.length))
-                      .replace("{skipped}", String(selectedFolder.skippedCount))
-                  : t.hero.folderPickerHint}
+              <span className="mt-0.5 block text-[10px] leading-4 cm-text-muted">
+                {selectedFolder ? t.hero.folderReady : t.hero.folderPickerHint}
               </span>
             </span>
             <span className="shrink-0 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold cm-text-muted" style={{ borderColor: "var(--border-primary)" }}>
               {selectedFolder ? t.hero.chooseAgain : t.hero.browse}
             </span>
           </button>
-          <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-500/10 px-3 py-2.5 text-left text-[10px] leading-4 text-amber-500">
-            <span className="mt-1 size-1.5 shrink-0 rounded-full bg-amber-400" />
-            <p>{t.hero.localBridgeNotice}</p>
-          </div>
-          <button
-            type="button"
-            disabled={!selectedFolder || localUploading}
-            onClick={submitLocalFolder}
-            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 cm-btn-primary"
-          >
-            {localUploading && <LoaderCircle className="size-3.5 animate-spin" />}
-            {localUploading ? t.hero.localUploading : t.hero.localAnalyze}
-          </button>
+          {selectedFolder && (
+            <div className="flex items-center justify-between gap-3 px-1 pb-1 pt-2">
+              <div className="min-w-0 text-left">
+                <p className="truncate text-[10px] font-medium cm-text-muted">
+                  {t.hero.folderSelected.replace("{count}", String(selectedFolder.files.length))}
+                </p>
+                <p className="mt-0.5 flex items-center gap-1 text-[9px] cm-text-faint">
+                  {t.hero.folderSafetyNote}
+                  <span
+                    title={t.hero.localUploadDetail.replace("{skipped}", String(selectedFolder.skippedCount))}
+                    aria-label={t.hero.localUploadDetail.replace("{skipped}", String(selectedFolder.skippedCount))}
+                    className="inline-flex cursor-help"
+                  >
+                    <Info className="size-3" />
+                  </span>
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={localUploading}
+                onClick={submitLocalFolder}
+                className="flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[11px] font-bold disabled:cursor-not-allowed disabled:opacity-40 cm-btn-primary"
+              >
+                {localUploading ? <LoaderCircle className="size-3 animate-spin" /> : <ArrowRight className="size-3" />}
+                {localUploading ? t.hero.localUploading : t.hero.localAnalyze}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

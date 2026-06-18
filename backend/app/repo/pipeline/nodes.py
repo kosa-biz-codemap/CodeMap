@@ -1,4 +1,21 @@
-"""Grounded LangGraph nodes for cloning and inspecting repositories."""
+"""
+분석 파이프라인 단계별 LangGraph 노드 구현
+
+각 노드는 PipelineState를 입력받아 처리 후 갱신할 dict를 반환한다.
+clone_path는 job_id + CLONE_BASE_DIR로 항상 결정되므로 DB에 저장하지 않는다.
+os.path.exists()로 이미 Clone된 경우를 감지한다.
+
+참고한 실습 섹션:
+  [Sec09 - 노드 패턴]
+    kosa-langchain-practice/langchain/api/sec09_multi_agent/langgraph/nodes/
+    각 노드 함수의 입력/반환 구조 참고
+  [Sec05 - create_react_agent]
+    kosa-langchain-practice/langchain/api/sec05_create_agent/
+    Agent 생성 및 ainvoke() 실행 패턴 참고
+  [Sec08 - RAG Agent]
+    kosa-langchain-practice/langchain/api/sec08_rag/agent_rag.py
+    pgvector Tool을 Agent에 연결하는 패턴 참고 (향후 연동 예정)
+"""
 
 from __future__ import annotations
 
@@ -21,6 +38,9 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
+# ──────────────────────────────────────────────────────────────
+# 공통 헬퍼: SSE/WebSocket 이벤트 발행
+# ──────────────────────────────────────────────────────────────
 async def _publish(
     job_id: str,
     stage: PipelineStage,
@@ -37,6 +57,9 @@ async def _publish(
     ))
 
 
+# ──────────────────────────────────────────────────────────────
+# 공통 헬퍼: DB 분석 작업 상태 업데이트
+# ──────────────────────────────────────────────────────────────
 async def _update_db(job_id: str, **kwargs) -> None:
     async with async_session_factory() as session:
         repository = AnalysisJobRepository(session)
@@ -44,6 +67,16 @@ async def _update_db(job_id: str, **kwargs) -> None:
         await session.commit()
 
 
+# ──────────────────────────────────────────────────────────────
+# 노드 1: Git Clone
+#
+# [Sec09 - 노드 패턴]
+# kosa-langchain-practice/langchain/api/sec09_multi_agent/langgraph/nodes/account_node.py
+# PipelineState를 입력받아 Clone 완료 후 clone_path를 상태에 반환한다.
+#
+# clone_path는 job_id + CLONE_BASE_DIR로 항상 결정되므로 DB에 저장하지 않는다.
+# os.path.exists()로 이미 Clone된 경우를 감지하여 단계를 건너뛴다.
+# ──────────────────────────────────────────────────────────────
 async def clone_node(state: PipelineState) -> dict:
     job_id = state["job_id"]
     clone_path = os.path.join(settings.CLONE_BASE_DIR, job_id, "repo")
@@ -104,6 +137,17 @@ async def clone_node(state: PipelineState) -> dict:
         return {"status": JobStatus.FAILED.value, "error": str(exc)}
 
 
+# ──────────────────────────────────────────────────────────────
+# 노드 2: 코드 구조 분석 (Code Map)
+#
+# [Sec05 - create_react_agent]
+# kosa-langchain-practice/langchain/api/sec05_create_agent/ 참고
+# Agent를 생성하고 ainvoke()로 코드 구조를 분석한다.
+#
+# [Sec08 - RAG Agent]
+# kosa-langchain-practice/langchain/api/sec08_rag/agent_rag.py 참고
+# 추후 pgvector similarity_search Tool을 Agent에 연결하여 분석 정확도를 높인다.
+# ──────────────────────────────────────────────────────────────
 async def code_map_node(state: PipelineState) -> dict:
     job_id = state["job_id"]
     await _publish(job_id, PipelineStage.CODE_MAP, JobStatus.IN_PROGRESS, 28, "파일 구조와 기술 스택 분석 중")
@@ -134,6 +178,13 @@ async def code_map_node(state: PipelineState) -> dict:
         return {"status": JobStatus.FAILED.value, "error": str(exc)}
 
 
+# ──────────────────────────────────────────────────────────────
+# 노드 3: 문서 자동 생성 (Doc Generation)
+#
+# [Sec05 - create_react_agent]
+# kosa-langchain-practice/langchain/api/sec05_create_agent/ 참고
+# 코드 분석 결과를 바탕으로 파일/폴더 단위 요약 문서를 생성한다.
+# ──────────────────────────────────────────────────────────────
 async def doc_gen_node(state: PipelineState) -> dict:
     job_id = state["job_id"]
     await _publish(job_id, PipelineStage.DOC_GEN, JobStatus.IN_PROGRESS, 64, "분석 근거와 읽기 순서 구성 중")
@@ -150,6 +201,13 @@ async def doc_gen_node(state: PipelineState) -> dict:
     return {"analysis_report": report, "current_stage": PipelineStage.DOC_GEN.value, "progress": 72}
 
 
+# ──────────────────────────────────────────────────────────────
+# 노드 4: 온보딩 가이드 생성 (Onboarding)
+#
+# [Sec05 - create_react_agent]
+# kosa-langchain-practice/langchain/api/sec05_create_agent/ 참고
+# 신입 개발자를 위한 추천 읽기 순서, 수정 시작점, 위험 파일 목록을 생성한다.
+# ──────────────────────────────────────────────────────────────
 async def onboarding_node(state: PipelineState) -> dict:
     job_id = state["job_id"]
     await _publish(job_id, PipelineStage.ONBOARDING, JobStatus.IN_PROGRESS, 80, "온보딩 경로 생성 중")
@@ -171,6 +229,13 @@ async def onboarding_node(state: PipelineState) -> dict:
     return {"analysis_report": report, "current_stage": PipelineStage.ONBOARDING.value, "progress": 90}
 
 
+# ──────────────────────────────────────────────────────────────
+# 노드 5: 최종 결과 저장 (Report)
+#
+# [Sec09 - gather_node]
+# kosa-langchain-practice/langchain/api/sec09_multi_agent/langgraph/nodes/gather_node.py
+# 모든 이전 노드의 Agent 결과를 취합하여 최종 리포트를 DB에 저장한다.
+# ──────────────────────────────────────────────────────────────
 async def report_node(state: PipelineState) -> dict:
     job_id = state["job_id"]
     report = dict(state.get("analysis_report") or {})

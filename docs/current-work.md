@@ -18,3 +18,9 @@
 - Local-folder behavior: browsers send selected files with repository-relative paths. The server rebuilds them in the same isolated workspace used by cloned repositories, then runs the standard analysis pipeline.
 - Upload guardrails: 900 files, 5MB per file, 50MB total; dependency folders, build output, Git history, environment files, duplicate paths, and path traversal are rejected or excluded.
 - Next: deployment-level request body limits and temporary-workspace retention should be aligned with these application limits.
+
+## 2026-06-18 — Local folder picker polish
+
+- Fixed the fallback folder input so `webkitdirectory` is applied when the local-source tab mounts, preventing a regular file-only picker.
+- Prefer the native directory picker when the browser exposes it; retain the directory-input fallback for Safari and other browsers.
+- Removed the persistent upload-policy callout and reduced the selected-folder analysis action to a compact inline button.

@@ -11,16 +11,18 @@ export interface ChatMessage {
   mode?: ChatMode;
   explorationSteps?: string[];
   references?: CodeReference[];
+  suggestions?: string[];
 }
 
 export interface StreamEvent {
-  type: "status" | "content" | "done" | "error" | "exploration" | "references" | "thread";
+  type: "status" | "content" | "done" | "error" | "exploration" | "references" | "thread" | "suggestions";
   phase?: StreamPhase;
   content?: string;
   error?: string;
   step?: string;
   references?: CodeReference[];
   threadId?: string;
+  suggestions?: string[];
 }
 
 interface StreamChatOptions {

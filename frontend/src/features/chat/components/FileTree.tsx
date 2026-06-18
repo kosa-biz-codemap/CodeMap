@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { FileCode2, FileJson2, Search, TestTube2 } from "lucide-react";
 import type { WorkspaceFile } from "@/common/types/contracts";
+import { useApp } from "@/common/contexts/AppContext";
 
 interface FileTreeProps {
   repoName?: string;
@@ -26,14 +27,17 @@ export function FileTree({
     return files.filter((file) => file.path.toLowerCase().includes(normalized)).slice(0, 240);
   }, [files, query]);
 
+  const { theme } = useApp();
+  const isDark = theme === "dark";
+
   return (
-    <aside className={`flex h-full flex-col border-r border-zinc-800 bg-zinc-950 ${className}`}>
-      <div className="border-b border-zinc-800 px-3 py-3">
+    <aside className={`flex h-full flex-col border-r ${className} ${isDark ? "border-zinc-800 bg-zinc-950" : "border-zinc-200 bg-zinc-50"}`}>
+      <div className={`border-b px-3 py-3 ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
         <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500">Repository</p>
-        <h2 className="mt-1 truncate text-xs font-semibold text-zinc-200">{repoName}</h2>
-        <label className="mt-3 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/70 px-2.5 py-2">
+        <h2 className={`mt-1 truncate text-xs font-semibold ${isDark ? "text-zinc-200" : "text-zinc-800"}`}>{repoName}</h2>
+        <label className={`mt-3 flex items-center gap-2 rounded-lg border px-2.5 py-2 ${isDark ? "border-zinc-800 bg-zinc-900/70" : "border-zinc-200 bg-white"}`}>
           <Search className="size-3.5 text-zinc-600" />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="파일 검색" className="min-w-0 flex-1 bg-transparent text-[11px] text-zinc-300 outline-none placeholder:text-zinc-600" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="파일 검색" className={`min-w-0 flex-1 bg-transparent text-[11px] outline-none ${isDark ? "text-zinc-300 placeholder:text-zinc-600" : "text-zinc-700 placeholder:text-zinc-400"}`} />
         </label>
       </div>
       <div className="flex-1 overflow-y-auto px-2 py-2">
@@ -45,14 +49,17 @@ export function FileTree({
           <ul className="space-y-0.5">
             {filteredFiles.map((file) => {
               const Icon = file.kind === "test" ? TestTube2 : file.language === "JSON" ? FileJson2 : FileCode2;
-              const selected = activeFile === file.path;
               return (
                 <li key={file.path}>
                   <button
                     type="button"
                     onClick={() => onFileSelect?.(file.path)}
                     title={file.path}
-                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition ${selected ? "bg-blue-500/12 text-blue-300" : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"}`}
+                    className={`group flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 transition ${
+                      activeFile === file.path
+                        ? (isDark ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-600")
+                        : (isDark ? "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200" : "text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900")
+                    }`}
                   >
                     <Icon className="size-3.5 shrink-0" />
                     <span className="min-w-0 flex-1 truncate font-mono text-[10px]">{file.path}</span>

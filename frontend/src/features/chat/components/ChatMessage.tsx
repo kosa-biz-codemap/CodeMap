@@ -13,12 +13,14 @@ interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
   onReferenceClick?: (file: string, line: number) => void;
+  onSuggestionSelect?: (question: string) => void;
 }
 
 export const ChatMessageBubble = memo(function ChatMessageBubble({
   message,
   isStreaming,
   onReferenceClick,
+  onSuggestionSelect,
 }: ChatMessageProps) {
   const { t } = useApp();
   const [copied, setCopied] = useState(false);
@@ -165,6 +167,21 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
                   >
                     <FileCode2 className="size-3 shrink-0" />
                     <span className="truncate">{reference.file}:{reference.line}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {message.suggestions && message.suggestions.length > 0 && !isStreaming && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {message.suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => onSuggestionSelect?.(suggestion)}
+                    className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[10px] text-zinc-300 transition hover:bg-zinc-800 hover:text-white"
+                  >
+                    {suggestion}
                   </button>
                 ))}
               </div>
