@@ -6,15 +6,21 @@ DATABASE_URL, CLONE_DIR, OPENAI_API_KEY 등 핵심 설정값을 .env 파일
 또는 시스템 환경 변수에서 읽어온다.
 """
 
+import os
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+
+# backend/.env 파일의 절대 경로 계산 (실행 디렉토리에 구애받지 않도록 설정)
+current_dir = os.path.dirname(os.path.abspath(__file__))  # app/core
+backend_dir = os.path.dirname(os.path.dirname(current_dir))  # backend
+env_path = os.path.join(backend_dir, ".env")
 
 
 class Settings(BaseSettings):
     """애플리케이션 환경 설정 클래스"""
 
     # 데이터베이스 연결 URL (PostgreSQL + pgvector)
-    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/codemap"
+    DATABASE_URL: str = "postgresql://codemap_service:codemap@localhost:5432/codemap"
 
     # Git 저장소 clone 시 사용할 임시 디렉토리 경로
     CLONE_BASE_DIR: str = "/tmp/codemap/jobs"
@@ -41,7 +47,7 @@ class Settings(BaseSettings):
     # kosa-langchain-practice/langchain/api/sec05_create_agent/ 참고
     OPENAI_MODEL: str = "gpt-4o-mini"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": env_path, "env_file_encoding": "utf-8"}
 
 
 @lru_cache()
