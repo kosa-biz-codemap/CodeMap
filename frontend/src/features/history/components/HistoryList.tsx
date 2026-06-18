@@ -73,7 +73,7 @@ export function HistoryList({ onSelect, activeJobId, refreshToken = 0 }: History
   }, []);
 
   useEffect(() => {
-    void load();
+    queueMicrotask(() => void load());
   }, [load, refreshToken]);
 
   const STATUS_CONFIG: Record<AnalysisRow["status"], { color: string; icon: typeof CheckCircle2; label: string }> = {

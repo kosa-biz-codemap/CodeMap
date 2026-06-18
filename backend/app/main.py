@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.exceptions import register_exception_handlers
 from app.repo.router import router as repo_router
 from app.repo.websocket import ws_router
+from app.chat.router import router as chat_router
 
 # ──────────────────────────────────────────────
 # FastAPI 앱 인스턴스 생성
@@ -59,6 +60,8 @@ app.include_router(repo_router)
 # Project Repository 분석 WebSocket 엔드포인트 (API-006)
 app.include_router(ws_router)
 
+# Repository-scoped grounded chat and conversation history
+app.include_router(chat_router)
+
 # TODO: 추후 도메인별 라우터 추가 등록
-# app.include_router(chat_router, prefix="/api")
 # app.include_router(list_router, prefix="/api")

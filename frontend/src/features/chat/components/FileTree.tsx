@@ -1,169 +1,72 @@
 "use client";
 
-import { useState } from "react";
-import { Folder, FolderOpen, FileText, FileCode, FileImage, File, ChevronRight, ChevronDown } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-
-export interface FileNode {
-  name: string;
-  type: "file" | "directory";
-  children?: FileNode[];
-  path: string;
-  extension?: string;
-}
-
-const DUMMY_FILE_TREE: FileNode[] = [
-  {
-    name: "src",
-    type: "directory",
-    path: "/src",
-    children: [
-      {
-        name: "app",
-        type: "directory",
-        path: "/src/app",
-        children: [
-          { name: "layout.tsx", type: "file", path: "/src/app/layout.tsx", extension: "tsx" },
-          { name: "page.tsx", type: "file", path: "/src/app/page.tsx", extension: "tsx" },
-        ],
-      },
-      {
-        name: "features",
-        type: "directory",
-        path: "/src/features",
-        children: [
-          {
-            name: "chat",
-            type: "directory",
-            path: "/src/features/chat",
-            children: [
-              { name: "ChatInterface.tsx", type: "file", path: "/src/features/chat/ChatInterface.tsx", extension: "tsx" },
-              { name: "chatApi.ts", type: "file", path: "/src/features/chat/chatApi.ts", extension: "ts" },
-            ],
-          },
-        ],
-      },
-      { name: "globals.css", type: "file", path: "/src/globals.css", extension: "css" },
-    ],
-  },
-  {
-    name: "public",
-    type: "directory",
-    path: "/public",
-    children: [
-      { name: "favicon.ico", type: "file", path: "/public/favicon.ico", extension: "ico" },
-      { name: "logo.svg", type: "file", path: "/public/logo.svg", extension: "svg" },
-    ],
-  },
-  { name: "package.json", type: "file", path: "/package.json", extension: "json" },
-  { name: "README.md", type: "file", path: "/README.md", extension: "md" },
-];
-
-function getFileIcon(extension?: string) {
-  switch (extension) {
-    case "tsx":
-    case "ts":
-    case "jsx":
-    case "js":
-      return <FileCode className="w-4 h-4 text-blue-400 shrink-0" />;
-    case "css":
-      return <FileCode className="w-4 h-4 text-sky-400 shrink-0" />;
-    case "json":
-      return <FileText className="w-4 h-4 text-yellow-400 shrink-0" />;
-    case "md":
-      return <FileText className="w-4 h-4 text-stone-400 shrink-0" />;
-    case "svg":
-    case "png":
-    case "jpg":
-    case "ico":
-      return <FileImage className="w-4 h-4 text-purple-400 shrink-0" />;
-    default:
-      return <File className="w-4 h-4 text-gray-400 shrink-0" />;
-  }
-}
-
-interface TreeNodeProps {
-  node: FileNode;
-  level: number;
-}
-
-function TreeNode({ node, level }: TreeNodeProps) {
-  const [isOpen, setIsOpen] = useState(level < 1);
-  const isDir = node.type === "directory";
-
-  const toggle = () => {
-    if (isDir) setIsOpen(!isOpen);
-  };
-
-  return (
-    <div className="select-none">
-      <div
-        onClick={toggle}
-        className={`flex items-center gap-1.5 px-2 py-1.5 hover:bg-zinc-800/50 rounded-md cursor-pointer text-sm transition-colors ${
-          isDir ? "text-zinc-200" : "text-zinc-400 hover:text-zinc-200"
-        }`}
-        style={{ paddingLeft: `${level * 12 + 8}px` }}
-      >
-        {isDir ? (
-          <div className="flex items-center gap-1.5">
-            {isOpen ? (
-              <ChevronDown className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-            )}
-            {isOpen ? (
-              <FolderOpen className="w-4 h-4 text-amber-400 shrink-0" />
-            ) : (
-              <Folder className="w-4 h-4 text-amber-400 shrink-0" />
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 ml-5">
-            {getFileIcon(node.extension)}
-          </div>
-        )}
-        <span className="truncate">{node.name}</span>
-      </div>
-
-      {isDir && (
-        <AnimatePresence initial={false}>
-          {isOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeInOut" }}
-              className="overflow-hidden"
-            >
-              {node.children?.map((child) => (
-                <TreeNode key={child.path} node={child} level={level + 1} />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
-    </div>
-  );
-}
+import { useMemo, useState } from "react";
+import { FileCode2, FileJson2, Search, TestTube2 } from "lucide-react";
+import type { WorkspaceFile } from "@/common/types/contracts";
 
 interface FileTreeProps {
   repoName?: string;
+  files?: WorkspaceFile[];
+  activeFile?: string | null;
+  onFileSelect?: (file: string) => void;
   className?: string;
 }
 
-export function FileTree({ repoName = "Current Project", className = "" }: FileTreeProps) {
+export function FileTree({
+  repoName = "현재 프로젝트",
+  files = [],
+  activeFile,
+  onFileSelect,
+  className = "",
+}: FileTreeProps) {
+  const [query, setQuery] = useState("");
+  const filteredFiles = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return files.slice(0, 240);
+    return files.filter((file) => file.path.toLowerCase().includes(normalized)).slice(0, 240);
+  }, [files, query]);
+
   return (
-    <div className={`flex flex-col h-full bg-zinc-950 border-r border-zinc-800 ${className}`}>
-      <div className="px-4 py-3 border-b border-zinc-800 shrink-0">
-        <h2 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider truncate">
-          {repoName}
-        </h2>
+    <aside className={`flex h-full flex-col border-r border-zinc-800 bg-zinc-950 ${className}`}>
+      <div className="border-b border-zinc-800 px-3 py-3">
+        <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500">Repository</p>
+        <h2 className="mt-1 truncate text-xs font-semibold text-zinc-200">{repoName}</h2>
+        <label className="mt-3 flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/70 px-2.5 py-2">
+          <Search className="size-3.5 text-zinc-600" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="파일 검색" className="min-w-0 flex-1 bg-transparent text-[11px] text-zinc-300 outline-none placeholder:text-zinc-600" />
+        </label>
       </div>
-      <div className="flex-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-zinc-700">
-        {DUMMY_FILE_TREE.map((node) => (
-          <TreeNode key={node.path} node={node} level={0} />
-        ))}
+      <div className="flex-1 overflow-y-auto px-2 py-2">
+        {filteredFiles.length === 0 ? (
+          <div className="px-2 py-8 text-center text-[10px] leading-5 text-zinc-600">
+            분석이 완료되면 실제 파일 구조가 여기에 표시됩니다.
+          </div>
+        ) : (
+          <ul className="space-y-0.5">
+            {filteredFiles.map((file) => {
+              const Icon = file.kind === "test" ? TestTube2 : file.language === "JSON" ? FileJson2 : FileCode2;
+              const selected = activeFile === file.path;
+              return (
+                <li key={file.path}>
+                  <button
+                    type="button"
+                    onClick={() => onFileSelect?.(file.path)}
+                    title={file.path}
+                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition ${selected ? "bg-blue-500/12 text-blue-300" : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"}`}
+                  >
+                    <Icon className="size-3.5 shrink-0" />
+                    <span className="min-w-0 flex-1 truncate font-mono text-[10px]">{file.path}</span>
+                    <span className="text-[8px] text-zinc-700">{file.lines}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
-    </div>
+      <div className="border-t border-zinc-800 px-3 py-2 text-[9px] text-zinc-600">
+        {files.length ? `${files.length.toLocaleString()} files indexed` : "No snapshot loaded"}
+      </div>
+    </aside>
   );
 }

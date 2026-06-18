@@ -222,7 +222,7 @@ export default function Home() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {t.howItWorks.steps.map((item: any, i: number) => {
+            {t.howItWorks.steps.map((item, i) => {
               const colors = ["text-blue-400", "text-purple-400", "text-cyan-400", "text-green-400"];
               return (
                 <article key={i} className={`${cardClass} p-5 relative overflow-hidden group transition-colors`}>
@@ -269,7 +269,7 @@ export default function Home() {
           </h2>
           <p className={`text-lg mb-8 ${textSec}`}>{t.useCases.subtitle}</p>
           <div className="space-y-4">
-            {t.useCases.cases.map((c: any, i: number) => {
+            {t.useCases.cases.map((c, i) => {
               const colors = ["text-cyan-500", "text-purple-500", "text-red-500"];
               return (
                 <article key={i} className={`${cardClass} p-5 group transition-colors`}>
@@ -296,7 +296,7 @@ export default function Home() {
             {t.faq.title}
           </h2>
           <div className="space-y-4">
-            {t.faq.items.map((item: any, index: number) => (
+            {t.faq.items.map((item, index) => (
               <article key={index} className={`${cardClass} transition-colors`}>
                 <button
                   type="button"

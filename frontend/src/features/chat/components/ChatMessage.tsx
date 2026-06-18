@@ -2,7 +2,7 @@
 
 import { memo, useState } from "react";
 import { motion } from "framer-motion";
-import { Bot, User, Copy, Check, ChevronDown, ChevronRight, BrainCircuit } from "lucide-react";
+import { Bot, User, Copy, Check, ChevronRight, BrainCircuit, FileCode2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ChatMessage as ChatMessageType } from "@/features/chat/api/chatApi";
@@ -12,11 +12,13 @@ import { MermaidViewer } from "./MermaidViewer";
 interface ChatMessageProps {
   message: ChatMessageType;
   isStreaming?: boolean;
+  onReferenceClick?: (file: string, line: number) => void;
 }
 
 export const ChatMessageBubble = memo(function ChatMessageBubble({
   message,
   isStreaming,
+  onReferenceClick,
 }: ChatMessageProps) {
   const { t } = useApp();
   const [copied, setCopied] = useState(false);
@@ -73,8 +75,8 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
                   <ChevronRight className="w-3.5 h-3.5 transition-transform group-open/details:rotate-90 ml-auto" />
                 </summary>
                 <div className="pl-5 pr-2 py-2 mt-2 mb-4 border-l border-zinc-700/50 flex flex-col gap-2 text-xs text-zinc-500">
-                  {message.explorationSteps.map((step, idx) => (
-                    <div key={idx} className="flex items-start gap-2">
+                  {message.explorationSteps.map((step) => (
+                    <div key={step} className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 rounded-full bg-zinc-700 shrink-0 mt-1.5" />
                       <span>{step}</span>
                     </div>
@@ -150,6 +152,23 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
               />
             )}
             </div>
+
+            {message.references && message.references.length > 0 && !isStreaming && (
+              <div className="flex flex-wrap gap-1.5 border-t border-zinc-800/70 pt-3">
+                {message.references.map((reference) => (
+                  <button
+                    key={`${reference.file}:${reference.line}`}
+                    type="button"
+                    onClick={() => onReferenceClick?.(reference.file, reference.line)}
+                    className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-950/60 px-2 py-1 font-mono text-[9px] text-zinc-400 transition hover:border-blue-500/40 hover:text-blue-300"
+                    title={reference.snippet}
+                  >
+                    <FileCode2 className="size-3 shrink-0" />
+                    <span className="truncate">{reference.file}:{reference.line}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

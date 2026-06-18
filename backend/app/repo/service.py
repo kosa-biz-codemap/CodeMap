@@ -105,8 +105,8 @@ class AnalysisService:
         # 1. GitHub URL에서 owner, repo 이름 파싱
         owner, repo_name = self._parse_github_url(request.repoUrl)
 
-        # 2. 브랜치 미입력 시 기본값 main 설정
-        branch = request.branch or "main"
+        # 2. 브랜치 미입력 시 git이 원격 기본 브랜치를 자동 선택한다.
+        branch = request.branch or "default"
 
         # 3. 동일 저장소(레포)에 대한 중복 분석이 있는지 확인
         duplicate = await self.repository.check_duplicate_job(request.repoUrl, branch)
@@ -119,6 +119,8 @@ class AnalysisService:
             repo_name=repo_name,
             owner=owner,
             branch=branch,
+            model_used=request.model,
+            force_refresh=request.forceRefresh,
         )
 
         # 5. [Sec09 - supervisor.run()] 백그라운드에서 LangGraph 파이프라인 실행
@@ -136,6 +138,7 @@ class AnalysisService:
                 branch=job.branch,
                 status=JobStatus.IN_PROGRESS,
                 createdAt=job.created_at,
+                model=job.model_used,
             ),
         )
 
@@ -174,6 +177,12 @@ class AnalysisService:
                 branch=job.branch,
                 clonePath=clone_path,
                 status=JobStatus(job.status),
+                repoUrl=job.repo_url,
+                stage=job.stage,
+                progress=job.progress,
+                statusMessage=job.message,
+                model=job.model_used,
+                report=job.report_json,
                 createdAt=job.created_at,
                 updatedAt=job.updated_at,
             ),
@@ -310,6 +319,9 @@ class AnalysisService:
                 "branch": job.branch,
                 "owner": job.owner,
                 "repo_name": job.repo_name,
+                "model": job.model_used,
+                "force_refresh": job.force_refresh,
+                "analysis_report": job.report_json,
                 # clone_path는 None으로 시작한다.
                 # clone_node가 os.path.exists()로 실제 파일 존재를 확인하여
                 # 이미 Clone된 경우 단계를 건너끰다.
