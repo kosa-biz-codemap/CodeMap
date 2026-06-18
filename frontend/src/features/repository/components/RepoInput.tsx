@@ -78,14 +78,15 @@ export function RepoInput({
     let cancelled = false;
     (async () => {
       try {
-        const resp = await fetch(apiPath("/models"));
-        if (!resp.ok) return;
+        // TODO: Backend model catalog endpoint not yet implemented
+        const resp = await fetch(apiPath("/repo/models"));
+        if (!resp.ok) return; // Silently skip if not available
         const data = (await resp.json()) as ProviderCatalog;
         if (cancelled) return;
         setCatalog(data);
         setSelectedModel(data.default_model || data.models[0]?.id || "");
       } catch {
-        // Fallback or ignore
+        // Model catalog is optional — silently ignore
       }
     })();
     return () => {

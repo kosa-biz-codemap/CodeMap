@@ -7,7 +7,7 @@ import { ProgressPanel } from "@/features/analysis/components/ProgressPanel";
 import { ReportViewer } from "@/features/analysis/components/ReportViewer";
 import { HistoryList } from "@/features/history/components/HistoryList";
 import { useWebSocket } from "@/common/hooks/useWebSocket";
-import { startAnalysis, fetchReportJson, fetchReportHtml, buildWsUrl } from "@/features/analysis/api/api";
+import { startAnalysis, fetchJobStatus, buildWsUrl } from "@/features/analysis/api/api";
 import type {
   AgentName,
   AgentRuntimeStatus,
@@ -131,20 +131,17 @@ export default function AnalyzePage() {
         break;
       case "completed":
         setStatus("completed");
-        fetchReportJson(evt.job_id)
-          .then((data) => {
-            if ("recommendations" in data) {
-              setReport(data as ReportJsonResponse);
+        fetchJobStatus(evt.job_id)
+          .then((resp) => {
+            // Backend returns { code, message, data: { ... } }
+            if (resp.data) {
+              setReport(resp.data as unknown as ReportJsonResponse);
             }
           })
           .catch((err) => {
-            setStatus("failed");
-            setError(err.message || "Failed to fetch report data");
+            // Report fetch is optional — don't fail the whole flow
+            console.warn("Failed to fetch completion data:", err);
           });
-
-        fetchReportHtml(evt.job_id)
-          .then((html) => setHtmlReport(html))
-          .catch(() => {});
 
         setRefreshToken((r) => r + 1);
         break;
@@ -188,8 +185,11 @@ export default function AnalyzePage() {
     });
 
     try {
-      const res = await startAnalysis(input);
-      setJobId(res.job_id);
+      // Convert frontend format to backend AnalysisRequest: { repoUrl, branch? }
+      const res = await startAnalysis({
+        repoUrl: input.path,
+      });
+      setJobId(res.data.jobId);
     } catch (err: unknown) {
       setStatus("failed");
       setError(err instanceof Error ? err.message : "Analysis request failed.");
@@ -202,15 +202,13 @@ export default function AnalyzePage() {
       setStatus("completed");
       setError(null);
 
-      const resp = await fetchReportJson(clickedJobId);
-      if ("recommendations" in resp) {
-        setReport(resp as ReportJsonResponse);
+      const resp = await fetchJobStatus(clickedJobId);
+      if (resp.data) {
+        setReport(resp.data as unknown as ReportJsonResponse);
       } else {
         throw new Error("Report not completed yet.");
       }
 
-      const html = await fetchReportHtml(clickedJobId).catch(() => null);
-      setHtmlReport(html);
       setHistoricalJobId(clickedJobId);
     } catch (e) {
       alert(`Failed to load: ${e instanceof Error ? e.message : String(e)}`);
