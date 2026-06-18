@@ -218,6 +218,9 @@ sketch
 # Virtualenv
 # http://iamzed.com/2009/05/07/a-primer-on-virtualenv/
 [Bb]in
+
+# Locally generated Notion audit exports
+docs/http/_source-spec/
 [Ii]nclude
 [Ll]ib
 [Ll]ib64

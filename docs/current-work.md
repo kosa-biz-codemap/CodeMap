@@ -2,17 +2,16 @@
 
 ## 2026-06-18 — Notion HTML to HTTP API specification migration
 
-- Branch: `feat/integrated-workspace`
-- Goal: preserve every Notion HTML specification locally and strengthen executable `.http` API contracts.
+- Branch: `docs/http-api-specs`
+- Goal: strengthen executable `.http` API contracts while keeping generated Notion audit exports local.
 - Status: conversion and first API-contract reinforcement complete.
 
 ### Files and areas
 
-- `docs/http/`: 49 executable API specification files across 12 domains.
-- `docs/http/_source-spec/`: comment-only conversions of all 113 source HTML files.
-- `docs/http/_source-spec/manifest.json`: source path, SHA-256 and token coverage evidence.
+- `docs/http/`: executable API specification files across 12 domains.
 - `scripts/convert_notion_html_to_http.py`: standard-library-only converter.
-- `scripts/validate_http_specs.py`: preservation, traceability, request-block and placeholder validator.
+- `scripts/validate_http_specs.py`: request-block, API-ID and placeholder validator.
+- `docs/http/_source-spec/`: optional local audit output; excluded from Git.
 
 ### Validation
 
@@ -22,7 +21,7 @@ python3 -m py_compile scripts/convert_notion_html_to_http.py scripts/validate_ht
 git diff --check
 ```
 
-Latest result: 113/113 source files, 100% source-token coverage, 49 executable specs, 107 request blocks, and zero unmapped source feature/API IDs.
+Latest repository validation: 45 executable specs, 105 request blocks, 31 Markdown API contracts and 97 API-specific error rows. The local converter also confirmed 113/113 source files and 100% source-token coverage. Generated audit copies are no longer shared through Git.
 
 ### Contract decisions still required
 
