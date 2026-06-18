@@ -7,6 +7,7 @@ DATABASE_URL, CLONE_DIR, OPENAI_API_KEY 등 핵심 설정값을 .env 파일
 """
 
 import os
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -19,8 +20,15 @@ env_path = os.path.join(backend_dir, ".env")
 class Settings(BaseSettings):
     """애플리케이션 환경 설정 클래스"""
 
+    # 데이터베이스 상세 접속 정보 (로그인을 위한 계정 정보 포함)
+    DB_USER: str = "codemap_service"
+    DB_PASSWORD: str = "codemap"
+    DB_HOST: str = "localhost"
+    DB_PORT: int = 5432
+    DB_NAME: str = "codemap"
+
     # 데이터베이스 연결 URL (PostgreSQL + pgvector)
-    DATABASE_URL: str = "postgresql://codemap_service:codemap@localhost:5432/codemap"
+    DATABASE_URL: str = ""
 
     # Git 저장소 clone 시 사용할 임시 디렉토리 경로
     CLONE_BASE_DIR: str = "/tmp/codemap/jobs"
@@ -48,6 +56,12 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4o-mini"
 
     model_config = {"env_file": env_path, "env_file_encoding": "utf-8"}
+
+    @model_validator(mode="after")
+    def assemble_db_connection(self) -> "Settings":
+        if not self.DATABASE_URL:
+            self.DATABASE_URL = f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return self
 
 
 @lru_cache()
