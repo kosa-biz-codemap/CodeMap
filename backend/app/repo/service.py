@@ -17,6 +17,7 @@ import re
 from datetime import datetime, timezone
 from uuid import UUID
 
+import httpx
 from fastapi import BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,10 +25,12 @@ from app.core.config import get_settings
 from app.core.exceptions import (
     AlreadyInProgressError,
     CloneNotCompletedError,
+    CodeMapException,
     InvalidRepoUrlError,
     JobNotFoundError,
     PipelineAlreadyRunningError,
     PipelineStartFailedError,
+    RepositoryNotFoundError,
 )
 from app.repo.event_manager import event_manager
 from app.repo.models import AnalysisJob
@@ -43,6 +46,9 @@ from app.repo.schemas import (
     PipelineStartData,
     PipelineStartResponse,
     ProgressEvent,
+    RepoValidateData,
+    RepoValidateRequest,
+    RepoValidateResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -320,7 +326,7 @@ class AnalysisService:
 
         except Exception as exc:
             logger.exception("파이프라인 실행 실패 (job_id=%s)", job_id)
-            
+
             # DB 상태 FAILED로 갱신
             async with async_session_factory() as session:
                 repo = AnalysisJobRepository(session)
@@ -330,7 +336,7 @@ class AnalysisService:
                     message=f"파이프라인 실행 실패: {exc}",
                 )
                 await session.commit()
-            
+
             # SSE/WebSocket 에러 이벤트 발행
             await self._publish_event(
                 job_id=job_id,
@@ -369,3 +375,67 @@ class AnalysisService:
             timestamp=datetime.now(timezone.utc),
         )
         await event_manager.publish(job_id, event)
+
+
+# ──────────────────────────────────────────────
+# API-002: GitHub URL 형식 및 접근 가능 여부 검증 서비스
+# ──────────────────────────────────────────────
+class RepoValidateService:
+    """저장소 URL 검증 전용 서비스"""
+
+    async def validate_repo(
+        self,
+        request: RepoValidateRequest,
+    ) -> RepoValidateResponse:
+        match = GITHUB_URL_PATTERN.match(request.repoUrl.strip())
+        if not match:
+            raise InvalidRepoUrlError(
+                f"올바른 GitHub URL 형식이 아닙니다: {request.repoUrl}"
+            )
+
+        owner = match.group("owner")
+        repo_name = match.group("repo")
+        api_url = f"https://api.github.com/repos/{owner}/{repo_name}"
+
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                response = await client.get(
+                    api_url,
+                    headers={"User-Agent": "CodeMap"},
+                )
+
+            if response.status_code == 404:
+                raise RepositoryNotFoundError(
+                    "저장소가 없거나 접근할 수 없습니다."
+                )
+            if response.status_code >= 400:
+                raise CodeMapException(
+                    500,
+                    "GITHUB_API_ERROR",
+                    f"GitHub API 호출 중 오류가 발생했습니다: "
+                    f"HTTP {response.status_code}",
+                )
+
+            payload = response.json()
+        except RepositoryNotFoundError:
+            raise
+        except CodeMapException:
+            raise
+        except (httpx.RequestError, ValueError) as exc:
+            raise CodeMapException(
+                500,
+                "GITHUB_API_ERROR",
+                f"GitHub API 호출 중 오류가 발생했습니다: {exc}"
+            ) from exc
+
+        return RepoValidateResponse(
+            code=200,
+            message="success",
+            data=RepoValidateData(
+                valid=True,
+                repoName=repo_name,
+                owner=owner,
+                defaultBranch=payload.get("default_branch", "main"),
+                isPrivate=bool(payload.get("private", False)),
+            ),
+        )

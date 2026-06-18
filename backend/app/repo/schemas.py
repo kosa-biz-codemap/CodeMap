@@ -67,6 +67,41 @@ class AnalysisRequest(BaseModel):
     )
 
 
+# ──────────────────────────────────────────────
+# API-002: GitHub URL 검증 요청/응답 DTO
+# ──────────────────────────────────────────────
+class RepoValidateRequest(BaseModel):
+    """
+    POST /api/repo/validate 요청 본문 스키마
+
+    Clone 이전 단계에서 GitHub 저장소 URL 형식과 접근 가능 여부를
+    검증하기 위한 요청 DTO이다.
+    """
+    repoUrl: str = Field(
+        ...,
+        description="검증할 GitHub 저장소 URL",
+        examples=["https://github.com/username/my-project"],
+    )
+
+
+class RepoValidateData(BaseModel):
+    """API-002 성공 응답의 data 필드 스키마"""
+    valid: bool = Field(description="검증 통과 여부")
+    repoName: str = Field(description="저장소 이름")
+    owner: str = Field(description="저장소 소유자")
+    defaultBranch: str = Field(description="저장소 기본 브랜치")
+    isPrivate: bool = Field(description="private 저장소 여부")
+
+
+class RepoValidateResponse(BaseModel):
+    """
+    POST /api/repo/validate 성공 응답 스키마 (200 OK)
+    """
+    code: int = Field(default=200, description="HTTP 상태 코드")
+    message: str = Field(default="success", description="응답 메시지")
+    data: RepoValidateData
+
+
 
 # ──────────────────────────────────────────────
 # API-001: 프로젝트 등록 응답 내부 데이터 DTO

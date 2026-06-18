@@ -29,8 +29,10 @@ from app.repo.schemas import (
     JobStatus,
     JobStatusResponse,
     PipelineStartResponse,
+    RepoValidateRequest,
+    RepoValidateResponse,
 )
-from app.repo.service import AnalysisService
+from app.repo.service import AnalysisService, RepoValidateService
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +40,27 @@ logger = logging.getLogger(__name__)
 # APIRouter 인스턴스 생성
 # ──────────────────────────────────────────────
 router = APIRouter(tags=["Project Repository Analysis"])
+
+
+# ──────────────────────────────────────────────
+# API-002: GitHub URL 형식 및 접근 가능 여부 검증
+# POST /api/repo/validate
+# ──────────────────────────────────────────────
+@router.post(
+    "/api/repo/validate",
+    response_model=RepoValidateResponse,
+    summary="GitHub URL 형식 및 접근 가능 여부 검증",
+    description="입력된 GitHub 저장소 URL의 형식과 실제 접근 가능 여부를 확인한다.",
+    responses={
+        400: {"model": ErrorResponse, "description": "GitHub URL 형식 오류"},
+        404: {"model": ErrorResponse, "description": "저장소 없음 또는 접근 불가"},
+        500: {"model": ErrorResponse, "description": "GitHub API 호출 오류"},
+    },
+)
+async def validate_repo(request: RepoValidateRequest) -> RepoValidateResponse:
+    """Clone 이전 단계에서 저장소 URL을 검증한다."""
+    service = RepoValidateService()
+    return await service.validate_repo(request)
 
 
 # ──────────────────────────────────────────────
