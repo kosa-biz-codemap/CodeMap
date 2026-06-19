@@ -108,6 +108,10 @@ async def websocket_list_progress(websocket: WebSocket, job_id: str):
                 break
 
             message = _message_from_event(job_uuid, event)
+            if message == current_message:
+                continue
+
+            current_message = message
             await websocket.send_text(message.model_dump_json())
 
             if message.status in {"completed", "failed"}:
