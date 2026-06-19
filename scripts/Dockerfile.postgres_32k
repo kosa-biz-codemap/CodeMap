@@ -32,9 +32,11 @@ RUN curl -L https://ftp.postgresql.org/pub/source/v17.4/postgresql-17.4.tar.gz |
 RUN ./configure --prefix=/usr/lib/postgresql/17 --with-ssl=openssl --with-libxml --with-libxslt --with-blocksize=32
 RUN make -j$(nproc) && make install
 
-# pgvector 확장 모듈 소스 빌드 및 설치
+# pgvector 확장 모듈 소스 빌드 및 설치 (32KB 블록 크기에 맞추어 최대 차원 한계를 4000으로 확장 패치)
 WORKDIR /usr/src/pgvector
-RUN git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git .
+RUN git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git . && \
+    sed -i 's/#define HNSW_MAX_DIM 2000/#define HNSW_MAX_DIM 4000/g' src/hnsw.h && \
+    sed -i 's/#define IVFFLAT_MAX_DIM 2000/#define IVFFLAT_MAX_DIM 4000/g' src/ivfflat.h
 ENV PATH="/usr/lib/postgresql/17/bin:${PATH}"
 RUN make -j$(nproc) && make install
 
