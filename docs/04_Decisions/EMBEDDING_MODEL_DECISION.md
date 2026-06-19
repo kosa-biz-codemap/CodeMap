@@ -143,55 +143,337 @@ Lite/Thinking: 동일 인덱스, 검색 전략과 생성 모델로 차이
 > [!NOTE]
 > 2026-06-19 팀 논의 내용 기록. 원본 대화 참조: https://chatgpt.com/share/6a34cdd4-4e3c-83e8-8f47-5d8bafad82d7
 
-### Q. `large + dimensions=1536` 사용 시 검색 속도가 느려질 수 있지 않나?
+### 결론
 
-**결론: 우려 수준의 문제는 아님. 단 규모가 커지면 모니터링 필요.**
+**`text-embedding-3-large + dimensions=1536` 때문에 검색 속도가 심각하게 느려질 가능성은 낮다.**
 
-#### 속도에 영향을 주는 요소와 실제 부담
-
-임베딩 차원 수가 검색 속도에 영향을 주는 것은 맞지만, 실제 부담이 발생하는 구간은 아래와 같습니다.
-
-| 요소 | 설명 |
-| --- | --- |
-| **벡터 유사도 계산 자체** | 1536차원 코사인 유사도는 CPU/메모리 연산이라 빠름. 차원 2배 = 연산량 2배이지만 절대값이 작음 |
-| **ANN 인덱스 (IVFFlat)** | 1536차원은 pgvector IVFFlat 권장 범위 내. 수십만 chunk까지는 수십ms 내 검색 가능 |
-| **full scan (인덱스 없음)** | chunk 수천 개 수준에서는 full scan도 수ms 수준. 수십만 개부터 부담 증가 |
-| **네트워크/LLM 응답** | 실제 사용자 체감 지연의 대부분은 벡터 검색이 아닌 LLM 생성 단계에서 발생 |
-
-**MVP 규모 예상치**: 레포 1개 분석 시 chunk 수 = 수백~수천 개 수준. 이 규모에서는 1536차원 IVFFlat 검색이 병목이 되기 어렵습니다.
-
-#### Q. 서버가 64비트 공용 PC라서 크게 관계 없지 않나?
-
-**맞습니다. 다만 "64비트"보다 "RAM 용량"과 "pgvector 인덱스 설정"이 더 핵심 변수입니다.**
-
-| 환경 요소 | 검색 속도 영향 |
-| --- | --- |
-| **64비트 아키텍처** | SIMD 명령어(AVX2 등) 지원 → 벡터 연산 가속. 32비트 대비 실질적 이점 있음 |
-| **RAM 용량** | pgvector IVFFlat 인덱스가 메모리에 올라가야 빠름. RAM 부족 시 디스크 I/O 발생 |
-| **공용 PC 공유 부하** | 다른 프로세스와 CPU/RAM 경합 가능. 단독 서버 대비 불안정할 수 있음 |
-
-64비트 환경은 SIMD 명령어를 통해 벡터 연산 자체를 가속하므로 "크게 관계없다"는 의견이 맞습니다. 단, 공용 PC의 전체 RAM과 pgvector가 사용할 수 있는 메모리 여유분이 핵심입니다.
-
-#### Q. 문제가 생기면 MacBook Pro 64GB RAM을 활용하는 방법은?
-
-**충분히 현실적인 대안입니다.** 아래 방식으로 전환 가능합니다.
-
-| 방식 | 설명 |
-| --- | --- |
-| **PostgreSQL + pgvector 로컬 실행** | MacBook Pro에서 직접 실행. 64GB RAM → 대용량 인덱스도 메모리에 적재 가능 |
-| **포트 포워딩으로 팀 공유** | `ngrok` 또는 SSH 터널링으로 팀원이 로컬 DB에 접근하도록 구성 |
-| **Docker 기반** | `docker run -e POSTGRES_PASSWORD=... pgvector/pgvector` 로 즉시 실행 가능 |
-| **성능 이점** | Apple Silicon M-series는 통합 메모리 구조 → 메모리 대역폭이 일반 PC 대비 높아 벡터 연산에 유리 |
-
-### 정리: 속도 걱정 없이 `large + dims=1536`으로 진행해도 됩니다
+팀프로젝트 / MVP / 레포 단위 분석 규모에서 병목은 **검색 속도**가 아니라 아래 쪽에서 생길 가능성이 더 크다.
 
 ```
-MVP 규모 (레포 1개, chunk 수백~수천): 속도 이슈 없음
-중간 규모 (레포 수십 개, chunk 수만): IVFFlat + 적절한 lists 설정으로 대응
-대규모 (chunk 수십만+): HNSW 인덱스 전환 고려 또는 pgvector → Qdrant/Weaviate 마이그레이션
-
-현 단계 우선순위: 검색 속도보다 LLM 생성 품질과 청킹 전략이 훨씬 중요
+1. GitHub 레포 clone 시간
+2. 파일 읽기 / 필터링 / chunking 시간
+3. OpenAI API로 embedding 생성하는 시간
+4. LLM이 최종 분석 문서를 생성하는 시간
+5. DB 인덱스 없이 전체 vector scan 하는 경우
 ```
+
+즉, 걱정해야 할 포인트는 **"large 1536이라 검색이 느리다"** 보다:
+
+> **임베딩 생성 시간이 얼마나 걸리는가, 벡터 인덱스를 잘 잡았는가, chunk 수가 너무 많지 않은가**
+
+---
+
+### 6-1. "64비트 PC라서 괜찮다"는 의견 — 반은 맞고 반은 애매함
+
+64비트인 것은 기본 조건에 가깝고, 속도를 직접 보장하는 요소는 아니다.
+
+검색 속도에 더 중요한 요소:
+
+```
+CPU 성능
+RAM 용량
+SSD 여부
+PostgreSQL/벡터DB 설정
+인덱스 사용 여부
+chunk 개수
+동시 사용자 수
+벡터 차원 수
+```
+
+따라서 "64비트라서 괜찮다"보다:
+
+> **공용 PC의 RAM이 충분하고, SSD를 쓰고, 벡터 인덱스를 제대로 만들고, chunk 수가 과도하지 않으면 괜찮다**
+
+라고 보는 게 맞다.
+
+64비트 자체는 "큰 메모리를 쓸 수 있다"는 의미에 가깝지, 벡터 검색이 자동으로 빨라진다는 뜻은 아님.
+
+---
+
+### 6-2. `large + dimensions=1536`이면 3072보다 훨씬 부담이 적음
+
+핵심: large 기본 3072차원을 쓰는 게 아니라 **large 모델을 쓰되 결과 벡터를 1536차원으로 줄이는 것**이다.
+
+DB 검색 관점에서:
+
+```
+text-embedding-3-small 1536
+text-embedding-3-large dimensions=1536
+```
+
+둘 다 **검색 시 벡터 차원은 1536**이다. 검색 속도만 놓고 보면 두 모델의 차이는 "임베딩 모델 차이"가 아니라 **같은 1536차원 벡터를 검색하는 문제**가 된다.
+
+차이가 생기는 곳:
+
+```
+embedding 생성 단계:
+  small이 더 저렴하고 빠를 가능성이 높음
+  large가 더 비싸고 느릴 가능성이 있음
+
+vector search 단계:
+  둘 다 1536차원이면 검색 부담은 비슷함
+```
+
+따라서 팀원에게 이렇게 설명하면 된다.
+
+> `text-embedding-3-large + dimensions=1536`은 검색 단계에서는 1536차원 벡터를 쓰는 것이기 때문에, 3072차원 large를 그대로 쓰는 것보다 검색/저장 부담이 훨씬 낮다. 속도 차이는 검색보다 임베딩 생성 API 호출 쪽에서 더 생길 가능성이 크다.
+
+---
+
+### 6-3. 실제 병목은 "검색"보다 "임베딩 생성"일 가능성이 큼
+
+레포를 처음 분석할 때 각 chunk를 OpenAI embedding API에 보내야 한다.
+
+예시 — 레포에서 chunk가 500개 생기면:
+
+```
+500개 chunk
+→ embedding API 요청
+→ embedding 저장
+```
+
+이 단계가 시간이 걸린다. 반면 저장된 벡터에서 top-k 검색하는 건, 데이터가 엄청 많지 않으면 꽤 빠른 편이다.
+
+사용자 경험상 느리게 느껴지는 구간은 보통:
+
+```
+"레포 분석 중..."
+```
+
+이지,
+
+```
+"이미 분석된 레포에서 질문 검색 중..."
+```
+
+이 아닐 가능성이 크다.
+
+#### A. 최초 분석 속도
+
+```
+GitHub clone
+파일 필터링
+chunking
+embedding 생성      ← 느릴 수 있음 (한 번만 하는 작업)
+DB 저장
+```
+
+`large`를 쓰면 `small`보다 비용/응답 시간이 늘 수 있다. 하지만 **한 번만 하는 작업**이다.
+
+#### B. 질문 검색 속도
+
+```
+사용자 질문 embedding 생성 (1회)
+vector search                     ← 빠름
+관련 chunk top_k 추출
+LLM 답변 생성                     ← 가장 느린 구간
+```
+
+검색 자체보다 **질문 embedding 1회 + LLM 답변 생성**이 더 큰 비중이다.
+
+#### C. 온보딩 문서 생성 속도
+
+```
+섹션별 retrieval 여러 번
+LLM 요약 여러 번
+최종 문서 합치기
+```
+
+검색보다 LLM 생성 시간이 훨씬 클 가능성이 높다.
+
+---
+
+### 6-4. 공용 PC vs MacBook Pro 64GB
+
+#### 공용 PC로 충분한 경우
+
+```
+동시 사용자가 거의 없음
+분석하는 레포가 몇 개 안 됨
+chunk 수가 수천~수만 이하
+PostgreSQL + pgvector 또는 Chroma/FAISS 인덱스 사용
+SSD 사용
+RAM 16GB 이상
+```
+
+팀프로젝트 시연/MVP라면 보통 이 정도로 충분하다.
+
+#### MacBook Pro 64GB가 유리한 경우
+
+```
+Docker로 백엔드/프론트/DB/vector store를 같이 띄움
+레포 chunk 수가 많음
+여러 레포를 반복 분석함
+로컬 벡터DB/FAISS/Chroma를 메모리에 올림
+개발 중 재색인/테스트를 자주 함
+공용 PC 성능이나 권한이 불안정함
+```
+
+MacBook Pro는 **개발/테스트/데모 서버**로 좋은 선택이다.
+
+단, OpenAI 임베딩은 어차피 API 호출이기 때문에, MacBook RAM이 많다고 임베딩 API 자체가 빨라지는 건 아니다.
+
+MacBook Pro 64GB가 도와주는 건 주로:
+
+```
+로컬 DB
+Docker
+파일 처리
+벡터 인덱스
+동시 실행 안정성
+개발 환경 안정성
+```
+
+---
+
+### 6-5. 속도 걱정보다 "측정 가능하게 설계"하는 게 중요
+
+모델을 논쟁으로 정하기보다, **분석 파이프라인에서 아래 시간을 로그로 기록**하면 된다.
+
+```
+repo_clone_time
+file_scan_time
+chunking_time
+embedding_time
+db_insert_time
+indexing_time
+retrieval_time
+llm_generation_time
+total_analysis_time
+```
+
+예시 결과:
+
+```
+clone:          3.2s
+file scan:      0.8s
+chunking:       1.1s
+embedding:     18.5s   ← 병목
+db insert:      1.7s
+retrieval:      0.2s   ← 빠름
+llm generation: 25.0s  ← 병목
+```
+
+이 결과가 나오면 검색 속도 걱정은 별로 의미 없고, **embedding과 generation을 최적화**해야 하는 것이다. 이런 방식으로 설계하면 팀 내 의사결정도 훨씬 깔끔해진다.
+
+---
+
+### 6-6. 속도 문제가 생기면 최적화 우선순위
+
+속도가 걱정된다면 모델을 바로 낮추기보다 아래 순서로 최적화한다.
+
+#### 1순위: 불필요 파일 제외 (가장 중요)
+
+```
+.git / node_modules / dist / build
+.venv / venv / __pycache__ / coverage
+.cache / .next
+이미지, 동영상, 폰트
+lock 파일 일부 (package-lock.json 등)
+minified 파일
+```
+
+이걸 안 하면 임베딩 비용과 시간이 폭발한다.
+
+#### 2순위: chunk 수 제한
+
+처음부터 모든 파일을 다 임베딩하지 말고, 중요 파일 중심으로 가도 충분하다.
+
+```
+README
+package/requirements/pyproject
+Dockerfile / docker-compose.yml
+.env.example
+src/app 주요 코드
+router/controller/service/model/config
+```
+
+#### 3순위: 캐싱
+
+같은 레포/같은 commit hash는 다시 임베딩하지 않도록 구성한다.
+
+```
+캐시 키: repo_url + commit_hash + file_path + content_hash
+```
+
+#### 4순위: 배치 임베딩
+
+```
+Bad:  chunk 1개당 API 1번 → API overhead 큼
+Good: chunk 여러 개를 batch로 API 요청 → 훨씬 효율적
+```
+
+#### 5순위: 인덱스 사용
+
+pgvector를 쓴다면 HNSW나 IVFFlat 인덱스를 반드시 사용한다. 데이터가 적을 때는 큰 차이가 안 나도, chunk가 늘어나면 필수이다.
+
+#### 6순위: Lite / Thinking 분리
+
+속도 최적화는 임베딩 모델을 둘로 나누기보다 retrieval/LLM 쪽에서 나누는 게 좋다.
+
+```
+Lite 모드:
+  top_k 5
+  섹션 수 적게
+  짧은 답변
+  빠른 생성 모델 (GPT-4o-mini)
+
+Thinking 모드:
+  top_k 15~20
+  섹션별 multi-query
+  reranking
+  상세 답변
+  강한 생성 모델 (GPT-4o)
+```
+
+---
+
+### 6-7. 임베딩을 Lite/Thinking에서 다르게 하면 속도 이점이 있을까?
+
+기술적으로 가능하지만 **초기에는 비추천**이다.
+
+예를 들어 `Lite: small 1536 / Thinking: large 1536`으로 분리하면 아래 문제가 생긴다.
+
+```
+DB 테이블/컬렉션 2개 필요
+저장공간 증가
+재임베딩 로직 필요
+검색 결과 차이 디버깅 어려움
+구현 복잡도 증가
+```
+
+**권장 방향:**
+
+```
+임베딩은 large dimensions=1536으로 통일
+Lite/Thinking은 검색량과 생성 모델로 분리
+```
+
+---
+
+### 6-8. 최종 판단 요약
+
+```
+text-embedding-3-large + dimensions=1536 사용:
+  검색 속도 리스크는 크지 않음
+
+주의할 병목:
+  검색보다 embedding 생성 시간, LLM 생성 시간, chunk 수
+
+64비트 PC:
+  필수 조건에 가깝지만 속도 보장의 핵심은 아님
+  진짜 핵심: RAM, SSD, 인덱스 설정, chunk 수
+
+MacBook Pro 64GB:
+  개발/테스트/데모 서버로 충분히 활용 가능
+  다만 OpenAI API 임베딩 자체를 빠르게 만드는 건 아님
+
+추천:
+  large 1536으로 통일하고,
+  성능 로그를 찍어서 실제 병목을 보고 최적화
+```
+
+> **한마디 정리**: `large + dimensions=1536` 때문에 검색이 느려질까 봐 걱정하기보다는, **chunk 수 관리·배치 임베딩·캐싱·벡터 인덱스·LLM 생성 시간을 관리하는 게 훨씬 중요하다.**
 
 ---
 
@@ -202,3 +484,4 @@ MVP 규모 (레포 1개, chunk 수백~수천): 속도 이슈 없음
 > - [pgvector 인덱싱 가이드](https://github.com/pgvector/pgvector#indexing)
 > - 관련 내부 문서: [`docs/04_Decisions/MODEL_SELECTION_EVIDENCE.md`](MODEL_SELECTION_EVIDENCE.md)
 > - 관련 기능 명세: [`docs/03_Specifications/rag/RAG_EMBED_SPEC.md`](../03_Specifications/rag/RAG_EMBED_SPEC.md)
+
