@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # DB 마이그레이션 및 컨테이너 초기화 자동 실행 스크립트
 echo "Initializing CodeMap database schema..."
 
@@ -15,7 +16,7 @@ docker cp "$(dirname "$0")/../database/." postgresql-17:/tmp/database/
 
 ## 3. 스키마 적용
 echo "Applying database schema init.sql..."
-docker exec postgresql-17 psql -U codemap -d codemap -f /tmp/database/init.sql
+docker exec postgresql-17 psql -v ON_ERROR_STOP=1 -U codemap -d codemap -f /tmp/database/init.sql
 
 ## 4. 임시 파일 삭제
 echo "Cleaning up temporary SQL files from container..."
