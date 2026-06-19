@@ -57,3 +57,41 @@ class AnalysisProgressMessage(BaseModel):
     currentStep: str | None = Field(default=None, description="현재 실행 중인 분석 단계명")
     failedAgent: str | None = Field(default=None, description="실패 단계 또는 실패 에이전트")
     errorMessage: str | None = Field(default=None, description="실패 사유")
+
+
+# ──────────────────────────────────────────────
+# 저장소 사전 검증 요청 DTO
+# ──────────────────────────────────────────────
+class ListValidateRequest(BaseModel):
+    '''
+    저장소 사전 검증 요청 DTO
+    '''
+    repo_url: str = Field(alias="repoUrl", description="GitHub 저장소 URL")
+    branch: Optional[str] = Field(default=None, description="분석 대상 브랜치")
+
+
+# ──────────────────────────────────────────────
+# 저장소 사전 검증 결과 데이터 DTO
+# ──────────────────────────────────────────────
+class ListValidateData(BaseModel):
+    '''
+    저장소 사전 검증 결과 데이터 DTO
+    '''
+    model_config = ConfigDict(populate_by_name=True)
+
+    is_valid: bool = Field(alias="isValid", description="저장소 유효성 여부")
+    file_count: int = Field(alias="fileCount", description="저장소 파일 수")
+    total_size_kb: float = Field(alias="totalSizeKb", description="저장소 총 크기(KB)")
+    warning_message: Optional[str] = Field(default=None, alias="warningMessage", description="경고 메시지")
+
+
+# ──────────────────────────────────────────────
+# 저장소 사전 검증 응답 DTO
+# ──────────────────────────────────────────────
+class ListValidateResponse(BaseModel):
+    '''
+    저장소 사전 검증 응답 DTO
+    '''
+    code: int = Field(default=200, description="HTTP 상태 코드")
+    message: str = Field(default="success", description="응답 메시지")
+    data: ListValidateData

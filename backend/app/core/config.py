@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     # kosa-langchain-practice/langchain/api/sec05_create_agent/ 참고
     OPENAI_MODEL: str = "gpt-4o-mini"
 
+    ## GitHub API 호출 시 사용할 개인 액세스 토큰
+    GITHUB_TOKEN: str = ""
+
     model_config = {"env_file": env_path, "env_file_encoding": "utf-8"}
 
     @model_validator(mode="after")

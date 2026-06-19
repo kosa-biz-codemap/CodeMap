@@ -3,7 +3,11 @@ CREATE TABLE IF NOT EXISTS code_chunks (
     id UUID PRIMARY KEY,
     file_id UUID NOT NULL REFERENCES source_files(id) ON DELETE CASCADE,
     chunk_summary TEXT NOT NULL,
-    embedding_vector vector(3072), -- OpenAI text-embedding-3-large 3072차원 기본 설정
+    start_line INTEGER,
+    end_line INTEGER,
+    symbol VARCHAR(255),
+    language VARCHAR(50),
+    embedding_vector vector(1536), -- text-embedding-3-large 1536차원 설정
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
