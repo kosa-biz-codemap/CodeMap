@@ -303,14 +303,34 @@ class PipelineStartResponse(BaseModel):
 # ──────────────────────────────────────────────
 # 공통 에러 응답 DTO
 # ──────────────────────────────────────────────
+class ErrorDetail(BaseModel):
+    """표준 에러 응답의 상세 정보 스키마"""
+    code: str = Field(
+        description="도메인 에러 코드"
+    )
+    detail: Optional[str] = Field(
+        default=None,
+        description="디버깅용 안전 상세 정보"
+    )
+    field: Optional[str] = Field(
+        default=None,
+        description="오류가 발생한 요청 필드"
+    )
+    retryable: bool = Field(
+        description="자동 재시도 가능 여부"
+    )
+
+
 class ErrorResponse(BaseModel):
-    """통일된 에러 응답 스키마"""
+    """표준 에러 응답 스키마"""
     code: int = Field(
         description="HTTP 상태 코드"
     )
-    error: str = Field(
-        description="에러 코드 (예: INVALID_REPO_URL)"
-    )
     message: str = Field(
-        description="에러 메시지"
+        description="사용자 표시용 에러 메시지"
     )
+    data: None = Field(
+        default=None,
+        description="에러 응답에서는 항상 null"
+    )
+    error: ErrorDetail
