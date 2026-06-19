@@ -27,9 +27,12 @@
 
 **구현 노트**
 
+- 모델: `text-embedding-3-large` + `dimensions=1536`
+  - large 모델의 다국어(한국어↔영어) 검색 강점 유지
+  - 1536차원으로 저장 용량·pgvector IVFFlat 호환성 확보
+  - 결정 근거: [`docs/04_Decisions/EMBEDDING_MODEL_DECISION.md`](../../04_Decisions/EMBEDDING_MODEL_DECISION.md)
 - 배치 크기: 100개 청크
-- 총 차원: 3072-dim 벡터
-- API 호출 실패 시 지수 백오프 재시도
+- API 호출 실패 시 지수 백오프 재시도 (최대 3회)
 
 
 ### RAG-EMBED-B-301: pgvector 저장
@@ -46,7 +49,8 @@
 **구현 노트**
 
 - pgvector extension 활성화
-- `code_chunks` 테이블: id, project_id, content, embedding, file_path, start_line, end_line, symbol, language
+- `code_chunks` 테이블: id, project_id, content, embedding(vector(1536)), file_path, start_line, end_line, symbol, language
+- 인덱스 타입: **IVFFlat** (1536차원 → pgvector 권장 범위 내 정상 동작)
 - 배치 upsert로 성능 최적화
 
 
