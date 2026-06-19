@@ -31,3 +31,6 @@ CREATE INDEX IF NOT EXISTS idx_analysis_jobs_repo_branch ON analysis_jobs (repo_
 CREATE UNIQUE INDEX IF NOT EXISTS uq_analysis_jobs_in_progress
 ON analysis_jobs (repo_url, branch)
 WHERE status = 'IN_PROGRESS';
+
+-- 테이블 소유권 이전
+ALTER TABLE analysis_jobs OWNER TO codemap_service;

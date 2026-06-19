@@ -11,3 +11,6 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 
 -- 메시지 히스토리 순서별 조회 최적화 인덱스
 CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation ON chat_messages (conversation_id, created_at);
+
+-- 테이블 소유권 이전
+ALTER TABLE chat_messages OWNER TO codemap_service;

@@ -13,3 +13,12 @@ CREATE TABLE IF NOT EXISTS code_chunks (
 
 -- 코사인 유사도 검색을 위한 HNSW 인덱스 구축
 CREATE INDEX IF NOT EXISTS code_chunks_vector_idx ON code_chunks USING hnsw (embedding_vector vector_cosine_ops);
+
+-- 기존 테이블이 존재할 경우 대비하여 누락된 컬럼 추가 (하위 호환성)
+ALTER TABLE code_chunks ADD COLUMN IF NOT EXISTS start_line INTEGER;
+ALTER TABLE code_chunks ADD COLUMN IF NOT EXISTS end_line INTEGER;
+ALTER TABLE code_chunks ADD COLUMN IF NOT EXISTS symbol VARCHAR(255);
+ALTER TABLE code_chunks ADD COLUMN IF NOT EXISTS language VARCHAR(50);
+
+-- 테이블 소유권 이전
+ALTER TABLE code_chunks OWNER TO codemap_service;

@@ -9,3 +9,6 @@ CREATE TABLE IF NOT EXISTS chat_conversations (
 
 -- 대화 세션 역순 조회 최적화 인덱스
 CREATE INDEX IF NOT EXISTS idx_chat_conversations_repo ON chat_conversations (repo_id, updated_at DESC);
+
+-- 테이블 소유권 이전
+ALTER TABLE chat_conversations OWNER TO codemap_service;

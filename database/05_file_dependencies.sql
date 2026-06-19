@@ -5,3 +5,6 @@ CREATE TABLE IF NOT EXISTS file_dependencies (
     target_file_path TEXT NOT NULL, -- 참조(import)하고 있는 대상 파일 경로
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 테이블 소유권 이전
+ALTER TABLE file_dependencies OWNER TO codemap_service;

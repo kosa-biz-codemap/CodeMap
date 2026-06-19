@@ -8,3 +8,6 @@ CREATE TABLE IF NOT EXISTS source_files (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 테이블 소유권 이전
+ALTER TABLE source_files OWNER TO codemap_service;
