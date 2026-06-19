@@ -20,6 +20,7 @@ from langgraph.graph import END, START, StateGraph
 from app.repo.pipeline.nodes import (
     clone_node,
     code_map_node,
+    embed_node,
     doc_gen_node,
     onboarding_node,
     report_node,
@@ -103,6 +104,7 @@ class AnalysisPipelineSupervisor:
         # 1. [Sec09 - add_node] 각 파이프라인 단계를 노드로 등록
         graph.add_node("clone", clone_node)
         graph.add_node("code_map", code_map_node)
+        graph.add_node("embed", embed_node)
         graph.add_node("doc_gen", doc_gen_node)
         graph.add_node("onboarding", onboarding_node)
         graph.add_node("report", report_node)
@@ -119,6 +121,11 @@ class AnalysisPipelineSupervisor:
         )
         graph.add_conditional_edges(
             "code_map",
+            _check_failure,
+            {"success": "embed", "failed": END},
+        )
+        graph.add_conditional_edges(
+            "embed",
             _check_failure,
             {"success": "doc_gen", "failed": END},
         )

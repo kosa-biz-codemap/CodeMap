@@ -31,8 +31,9 @@ class PipelineStage(str, Enum):
     """분석 파이프라인의 각 단계를 정의하는 열거형"""
     CLONE = "CLONE"           # 저장소 복제 (0~20%)
     CODE_MAP = "CODE_MAP"     # 코드 구조 분석 (21~50%)
-    DOC_GEN = "DOC_GEN"       # 문서 자동 생성 (51~70%)
-    ONBOARDING = "ONBOARDING" # 온보딩 가이드 생성 (71~90%)
+    EMBED = "EMBED"           # 코드 벡터화 (51~65%)
+    DOC_GEN = "DOC_GEN"       # 문서 자동 생성 (66~80%)
+    ONBOARDING = "ONBOARDING" # 온보딩 가이드 생성 (81~90%)
     REPORT = "REPORT"         # 최종 결과 DB 저장 (91~100%)
 
 

@@ -184,6 +184,42 @@ async def code_map_node(state: PipelineState) -> dict:
 
 
 # ──────────────────────────────────────────────────────────────
+# 노드 2.5: 코드 벡터화 (Embed)
+#
+# 코드 맵 분석이 완료된 후, 파일을 파싱하여 청크 단위로 나누고
+# OpenAI 임베딩을 통해 벡터화하여 DB에 저장한다.
+# ──────────────────────────────────────────────────────────────
+async def embed_node(state: PipelineState) -> dict:
+    job_id = state["job_id"]
+    await _publish(job_id, PipelineStage.EMBED, JobStatus.IN_PROGRESS, 57, "코드 벡터화 시작")
+    try:
+        from app.embed.service import EmbedService
+        async with async_session_factory() as session:
+            service = EmbedService(session)
+            job_id_uuid = UUID(job_id)
+            result = await service.embed_repository(job_id_uuid, state["clone_path"])
+        
+        report = dict(state.get("analysis_report") or {})
+        report["embed_stats"] = result
+        
+        await _update_db(
+            job_id,
+            status=JobStatus.IN_PROGRESS.value,
+            stage=PipelineStage.EMBED.value,
+            progress=65,
+            message=f"{result['embedded_chunks']}개 청크 벡터화 완료",
+            report_json=report,
+        )
+        await _publish(job_id, PipelineStage.EMBED, JobStatus.IN_PROGRESS, 65, "벡터 DB 저장 완료")
+        return {"analysis_report": report, "current_stage": PipelineStage.EMBED.value, "progress": 65}
+    except Exception as exc:
+        logger.exception("Embed failed for job %s", job_id)
+        await _update_db(job_id, status=JobStatus.FAILED.value, message=f"임베딩 실패: {exc}")
+        await _publish(job_id, PipelineStage.EMBED, JobStatus.FAILED, 55, f"임베딩 실패: {exc}")
+        return {"status": JobStatus.FAILED.value, "error": str(exc)}
+
+
+# ──────────────────────────────────────────────────────────────
 # 공통 헬퍼: LLM 기반 문서 생성 (doc_gen / onboarding 공용)
 #
 # [Sec05 - ChatOpenAI] app/chat/service.py의 LLM 호출 패턴을 그대로 적용한다.
