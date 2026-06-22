@@ -55,6 +55,7 @@ class RefreshRequest(BaseModel):
 
 class RefreshData(BaseModel):
     accessToken: str
+    refreshToken: str
     expiresIn: int = 3600
 
 

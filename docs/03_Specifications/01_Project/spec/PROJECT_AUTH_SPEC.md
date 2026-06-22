@@ -268,6 +268,7 @@ Zustand store에서 인증 상태(isLoggedIn, user, accessToken)를 전역 관�
   "message": "success",
   "data": {
     "accessToken": "eyJhbGci...",
+    "refreshToken": "eyJhbGci...",
     "expiresIn": 3600
   }
 }

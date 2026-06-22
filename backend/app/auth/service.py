@@ -161,15 +161,30 @@ class AuthService:
         except JWTError:
             raise InvalidRefreshTokenError()
 
-        # 4. 새 Access Token 발급
+        # 4. 새 토큰 발급 (Access & Refresh - Rotation)
         new_access_token = create_access_token(
             user_id=payload["sub"], email=payload["email"]
         )
+        new_refresh_token = _create_refresh_token(
+            user_id=payload["sub"], email=payload["email"]
+        )
 
-        logger.info("[AUTH] 토큰 갱신: user_id=%s", payload["sub"])
+        # 5. 기존 토큰 삭제 후 새 토큰 저장
+        await self.repo.delete_refresh_token(refresh_token)
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS
+        )
+        # rt_record.user_id는 UUID 객체이므로 그대로 사용 가능
+        await self.repo.save_refresh_token(
+            user_id=rt_record.user_id, token=new_refresh_token, expires_at=expires_at
+        )
+        await self.db.commit()
+
+        logger.info("[AUTH] 토큰 갱신 (Rotation): user_id=%s", payload["sub"])
         return RefreshResponse(
             data=RefreshData(
                 accessToken=new_access_token,
+                refreshToken=new_refresh_token,
                 expiresIn=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             )
         )

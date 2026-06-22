@@ -44,6 +44,7 @@ export interface RefreshResponse {
   message: string;
   data: {
     accessToken: string;
+    refreshToken: string;
     expiresIn: number;
   };
 }
@@ -134,7 +135,7 @@ export async function refreshAccessToken(): Promise<string | null> {
       return null;
     }
     const data: RefreshResponse = await resp.json();
-    saveTokens(data.data.accessToken);
+    saveTokens(data.data.accessToken, data.data.refreshToken);
     return data.data.accessToken;
   } catch {
     clearTokens();

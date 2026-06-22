@@ -128,7 +128,11 @@ class AuthRefreshTests(unittest.TestCase):
         mock_svc = mock_service_class.return_value
         mock_svc.refresh = AsyncMock(
             return_value=RefreshResponse(
-                data=RefreshData(accessToken="new-access-token", expiresIn=3600)
+                data=RefreshData(
+                    accessToken="new-access-token",
+                    refreshToken="new-refresh-token",
+                    expiresIn=3600,
+                )
             )
         )
 
@@ -138,6 +142,7 @@ class AuthRefreshTests(unittest.TestCase):
         )
         self.assertEqual(resp.status_code, 200)
         self.assertIn("accessToken", resp.json()["data"])
+        self.assertIn("refreshToken", resp.json()["data"])
 
     @patch("app.auth.router.AuthService")
     def test_refresh_invalid_token(self, mock_service_class):
