@@ -57,18 +57,55 @@ pip install -r requirements.txt
 ### 1.1. 환경 변수(.env) 설정
 
 > [!CAUTION]
-> - **`.env` 파일 생성 필수 (명령 시행 불가 경고)**: 보안 하드코딩 원천 제거 조치로 인해 데이터베이스 접속 정보와 클론 저장소 경로 등의 기본값이 소스코드 내에서 완전히 삭제되었습니다. 따라서 **로컬 개발/테스트 기동 시 프로젝트 내에 `.env` 파일이 존재하지 않거나 필수 설정들이 누락되어 있다면 uvicorn 서버 실행, pytest 테스트 등의 그 어떤 파이썬 명령 시행도 불가능(`ValueError` 예외 유발)합니다.** 반드시 아래 예시를 참고하여 `.env` 파일을 선제적으로 구축해 주십시오.
+> - **`.env` 파일 생성 필수 (명령 시행 불가 경고)**: 보안 하드코딩 원천 제거 조치로 인해 데이터베이스 접속 정보와 클론 저장소 경로 등의 기본값이 소스코드 내에서 완전히 삭제되었습니다. 따라서 **로컬 개발/테스트 기동 시 프로젝트 내에 `.env` 파일이 존재하지 않거나 필수 설정들이 누락되어 있다면 uvicorn 서버 실행, pytest 테스트 등의 그 어떤 파이썬 명령 시행도 불가능(`ValueError` 예외 유발)합니다.** 반드시 아래 제공되는 자동 생성 스크립트 실행 또는 예시를 참고하여 `.env` 파일을 선제적으로 구축해 주십시오.
 
-현재 백엔드 코드(`config.py`)는 보안성 극대화를 위해 어떠한 데이터베이스 접속 비밀번호나 클론 파일 임시 경로도 코드 내에 하드코딩하지 않습니다. 따라서 서버를 기동하기 전에 반드시 백엔드 디렉토리 하위에 `.env` 파일을 수동으로 구성해 주셔야 합니다.
+#### ⚙️ 로컬 환경 변수 온보딩 및 구동 흐름도
 
-#### 📍 로컬용 `.env` 파일 예시 (`backend/.env`)
+```mermaid
+graph TD
+    Start([프로젝트 클론 & 환경 세팅]) --> CheckEnv{".env 파일 존재 여부"}
+    
+    CheckEnv -- "없음 (최초 온보딩)" --> RunCommand["FastAPI 실행 또는 pytest 구동 시도"]
+    RunCommand --> Crash["ValueError 발생 (구동 즉시 차단)"]
+    Crash --> Info["가이드: 'python setup_env.py' 실행 안내"]
+    Info --> ExecScript["setup_env.py 스크립트 실행"]
+    
+    ExecScript --> CheckGlobalToken{"시스템 전역 환경 변수에<br>GITHUB_TOKEN 존재 여부"}
+    CheckGlobalToken -- "존재함" --> GenerateInject[".env 생성 시 전역 토큰 자동 주입"]
+    CheckGlobalToken -- "없음" --> GenerateEmpty[".env 생성 시 GITHUB_TOKEN='' 빈 값 처리"]
+    
+    GenerateInject --> EditEnv["개발자가 .env 열어 DB 비밀번호 등 나머지 필수값 입력"]
+    GenerateEmpty --> EditEnv
+    EditEnv --> Restart["서버 및 테스트 재구동 시도"]
+    Restart --> CheckEnv
+    
+    CheckEnv -- "존재함" --> LoadConfig["config.py에서 환경 변수 로드"]
+    LoadConfig --> Validate["Settings model_validator 검증"]
+    Validate --> CheckValid{"필수 설정 누락 또는 오류 여부"}
+    CheckValid -- "누락/오류 발견" --> Crash
+    CheckValid -- "검증 통과 (정상)" --> Launch([FastAPI 서버 기동 uvicorn & pytest 통과])
+```
+
+> [!NOTE]
+> **전역 GITHUB_TOKEN 자동 연동 및 특이 케이스 배제**: `setup_env.py` 실행 시 시스템 환경 변수에 이미 GITHUB_TOKEN이 지정되어 있다면 해당 값을 감지하여 `.env` 생성 시 자동으로 주입(백필)해 줍니다. 단, 로컬에 다른 필수 설정(DB 접속 정보 등)이 전혀 없는데 오직 `GITHUB_TOKEN`만 시스템 환경 변수나 기존 파일에 단독으로 선언되어 있는 특이 케이스는 실질적인 정상 개발 환경으로 보지 않으며 본 구동 흐름 및 스크립트 분기에서 별도로 고려하지 않습니다. 이러한 특이 상태에서는 기존 파일을 정리한 후 스크립트를 재실행해야 합니다.
+
+현재 백엔드 코드(`config.py`)는 보안성 극대화를 위해 어떠한 데이터베이스 접속 비밀번호나 클론 파일 임시 경로도 코드 내에 하드코딩하지 않습니다. 따라서 서버를 기동하기 전에 반드시 백엔드 디렉토리 하위에 `.env` 파일을 구성해 주셔야 합니다.
+
+#### 🛠️ 자동 생성 스크립트를 통한 구성
+백엔드 폴더(`backend/`) 내에 제공되는 `setup_env.py` 스크립트를 실행하면 튜토리얼용 기본값과 필수 키 뼈대가 포함된 `.env` 파일이 자동으로 생성됩니다.
+```bash
+# 가상환경이 활성화된 상태에서 실행
+python setup_env.py
+```
+
+#### 📍 로컬용 `.env` 파일 구성 템플릿 (`backend/.env`)
 ```env
-# 1. 데이터베이스 접속 상세 정보 (로컬용 설정)
-DB_USER=codemap_service
-DB_PASSWORD=codemap
+# 1. 데이터베이스 접속 상세 정보 (로컬 튜토리얼용 설정)
+DB_USER=postgres
+DB_PASSWORD=""
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=codemap
+DB_NAME=codemap_db
 
 # 2. 데이터베이스 연결 URL (DATABASE_URL 생략 시 위 접속 정보들로 동적 조립됨)
 DATABASE_URL=
@@ -79,9 +116,9 @@ CLONE_BASE_DIR_WINDOWS=C:/temp/codemap/jobs
 CLONE_BASE_DIR_UNIX=/tmp/codemap/jobs
 
 # 4. 외부 서비스 API 키 설정
-OPENAI_API_KEY=your-openai-api-key-here
+OPENAI_API_KEY=""
 OPENAI_MODEL=gpt-4o-mini
-GITHUB_TOKEN=your-github-personal-access-token-here
+GITHUB_TOKEN=""
 
 # 5. 애플리케이션 실행 모드
 DEBUG=True
@@ -90,7 +127,7 @@ DEBUG=True
 > [!IMPORTANT]
 > - `CLONE_BASE_DIR` 값을 비워두면(`""`), 구동 중인 OS 환경을 스스로 판별하여 Windows인 경우 `CLONE_BASE_DIR_WINDOWS` 값을, Unix/Linux인 경우 `CLONE_BASE_DIR_UNIX` 값을 자동으로 채워 구동합니다.
 > - **필수 경로 및 환경 설정 검증**: 로컬 개발/테스트 구동 시 반드시 환경별 `CLONE_BASE_DIR_WINDOWS` 또는 `CLONE_BASE_DIR_UNIX`가 `.env` 파일 내에 정의되어 있어야 합니다. 정의되지 않은 채 서버를 기동하거나 테스트를 수행할 경우 즉시 `ValueError` 예외가 발생하므로 주의하시기 바랍니다.
-> - `GITHUB_TOKEN`은 비공개 저장소를 분석하거나, GitHub API의 Rate Limit(시간당 호출 제한)을 방지하기 위해 발급받아 등록하는 것을 강력히 권장합니다.
+> - `DB_PASSWORD`, `GITHUB_TOKEN`, `OPENAI_API_KEY`와 같은 보안 필수값은 스크립트를 통해 생성된 후 반드시 개발자 본인의 로컬 환경 세팅값으로 알맞게 편집해 채우셔야 합니다. GITHUB_TOKEN은 GitHub API의 Rate Limit을 예방하기 위해 발급 후 입력을 강력 권장합니다.
 
 # 5. FastAPI 서버 실행 (HTTPS 적용)
 uvicorn app.main:app --reload --ssl-keyfile certs/localhost-key.pem --ssl-certfile certs/localhost.pem
