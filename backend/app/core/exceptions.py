@@ -280,6 +280,8 @@ def _build_http_exception_response(exc: HTTPException | StarletteHTTPException) 
     detail = exc.detail
     if isinstance(detail, dict):
         error_val = detail.get("error")
+        ## FastAPI의 RequestValidationError 등 일부 커스텀 핸들러 또는 외부 서드파티 라이브러리가
+        ## error 필드를 dict 형태로 내려보내는 특수 예외 상황에 대응하기 위한 방어적 분기 처리
         if isinstance(error_val, dict):
             error_code = error_val.get("code") or _default_error_code(exc.status_code)
             error_detail = detail.get("detail") or error_val.get("detail")
