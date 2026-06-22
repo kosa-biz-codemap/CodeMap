@@ -25,27 +25,39 @@ _BINARY_EXTS = {
     ".woff", ".woff2", ".ttf", ".eot", ".mp4", ".mp3", ".wav",
     ".pyc", ".so", ".dll", ".exe", ".bin",
 }
+# 민감 파일 — content를 읽지 않는다(EMBED/LLM 입력으로 비밀이 유출되는 것을 방지).
+# repo/service.py의 EXCLUDED_FILE_NAMES/EXCLUDED_FILE_EXTENSIONS와 동일 정책.
+_SENSITIVE_FILE_NAMES = {
+    ".env", ".env.local", ".env.development", ".env.production", ".env.staging",
+    "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519",
+    "id_rsa.pub", "id_dsa.pub", "id_ecdsa.pub", "id_ed25519.pub",
+}
+_SENSITIVE_FILE_EXTS = {".pem", ".key", ".p12", ".pfx", ".keystore", ".jks"}
 # content를 읽을 최대 크기 (초과 시 생략)
 _MAX_CONTENT_BYTES = 1_000_000
 
-# 진입점 파일 우선순위 (앞일수록 우선; RAG-PARSE-B-203)
-_ENTRY_STEMS = ["main", "__main__", "app", "server", "index", "manage", "cli", "wsgi", "asgi"]
+# 진입점 파일 우선순위 (앞일수록 우선; RAG-PARSE-B-203). page=Next.js App Router 진입점.
+_ENTRY_STEMS = ["main", "__main__", "app", "server", "index", "page", "manage", "cli", "wsgi", "asgi"]
 # 진입점으로 인정할 코드 확장자 (index.html/main.css 같은 비코드 파일 오탐 방지)
-_ENTRY_EXTS = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".go", ".rb", ".java", ".rs", ".kt"}
+_ENTRY_EXTS = {".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go", ".rb", ".java", ".rs", ".kt"}
 
 
 def _read_text(path: Path) -> str | None:
-    """텍스트 파일이면 내용을 반환, 바이너리/대용량/오류면 None."""
+    """텍스트 파일 내용을 반환. 바이너리/민감파일/대용량/빈파일/오류면 None."""
+    # 민감 파일(.env, 키류)은 content를 읽지 않는다 — EMBED/LLM 유출 방지.
+    if path.name in _SENSITIVE_FILE_NAMES or path.suffix.lower() in _SENSITIVE_FILE_EXTS:
+        return None
     if path.suffix.lower() in _BINARY_EXTS:
         return None
     try:
         if path.stat().st_size > _MAX_CONTENT_BYTES:
             return None
-        return path.read_text(encoding="utf-8")
+        content = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         # 디코딩 불가(바이너리)면 content를 생략한다. errors="replace"로 오염된
-        # 텍스트가 청킹·임베딩으로 유입되는 것을 방지(PR #47 리뷰 반영).
+        # 텍스트가 청킹·임베딩으로 유입되는 것을 방지.
         return None
+    return content or None  # 빈 파일은 ""가 아니라 None으로 통일
 
 
 async def analyze_directory(clone_path: str) -> list[ParsedFile]:
@@ -68,6 +80,10 @@ def _analyze_directory_sync(clone_path: str) -> list[ParsedFile]:
         return nodes
 
     for path in root.rglob("*"):
+        # symlink는 건너뛴다 — clone 디렉토리 밖(host 파일/비밀)을 가리킬 수 있어
+        # content가 EMBED/LLM로 유출되는 root-escape를 차단한다.
+        if path.is_symlink():
+            continue
         rel_parts = path.relative_to(root).parts
         if any(part in _EXCLUDED_DIRS for part in rel_parts):
             continue
