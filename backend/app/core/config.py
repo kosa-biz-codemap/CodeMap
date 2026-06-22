@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     # Refresh Token 만료 시간 (일), 기본 7일
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # 내부 서버 간 호출 전용 서비스 토큰
+    SERVICE_TOKEN: str = "service-token"
+
     model_config = {"env_file": env_path, "env_file_encoding": "utf-8", "extra": "ignore"}
 
     @model_validator(mode="after")

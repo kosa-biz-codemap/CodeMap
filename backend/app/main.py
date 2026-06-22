@@ -15,13 +15,7 @@ from app.list.websocket import ws_router as list_ws_router
 from app.repo.router import router as repo_router
 from app.repo.websocket import ws_router as repo_ws_router
 from app.chat.router import router as chat_router
-
-# parse_router는 PR #68 머지 후 활성화 (현재 main에서는 빈 파일)
-try:
-    from app.parse.router import router as parse_router
-    _parse_router_available = True
-except ImportError:
-    _parse_router_available = False
+from app.parse.router import router as parse_router
 
 # ──────────────────────────────────────────────
 # FastAPI 앱 인스턴스 생성
@@ -78,9 +72,8 @@ app.include_router(repo_ws_router)
 # Repository-scoped grounded chat and conversation history
 app.include_router(chat_router)
 
-# RAG-PARSE 분석 API (PR #68 머지 후 활성화)
-if _parse_router_available:
-    app.include_router(parse_router)
+# RAG-PARSE 분석 API (API-001 등)
+app.include_router(parse_router)
 
 # TODO: 추후 도메인별 라우터 추가 등록
 # app.include_router(list_router, prefix="/api")
