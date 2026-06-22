@@ -1,8 +1,7 @@
 name: CodeMap Backend Deploy (CI/CD)
 
 on:
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -15,7 +14,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       # ── 가상환경 의존성 설치 및 백엔드 스모크 테스트 실행 (필요 시 활성화)
       - name: Install dependencies

@@ -30,11 +30,12 @@ env_path = os.path.join(backend_dir, ".env")
 # ──────────────────────────────────────────────
 def fetch_github_variables() -> None:
     """
-    환경 변수에 GITHUB_TOKEN이 존재하는 경우, GitHub 저장소 Actions Variables API를
-    호출하여 정의된 비민감 환경 변수들을 자동으로 가져와 os.environ에 백필(Backfill)합니다.
+    환경 변수에 GITHUB_TOKEN 및 명시적인 연동 활성화 플래그(FETCH_REMOTE_VARS=true)가 존재하는 경우,
+    GitHub 저장소 Actions Variables API를 호출하여 정의된 비민감 환경 변수들을 os.environ에 백필(Backfill)합니다.
     """
+    fetch_vars = os.environ.get("FETCH_REMOTE_VARS", "").lower() == "true"
     token = os.environ.get("GITHUB_TOKEN", "").strip()
-    if not token:
+    if not fetch_vars or not token:
         return
 
     owner, repo = "", ""
@@ -174,7 +175,9 @@ class Settings(BaseSettings):
                 if not self.CLONE_BASE_DIR_UNIX or not self.CLONE_BASE_DIR_UNIX.strip():
                     raise ValueError("Unix/Linux 환경을 위한 CLONE_BASE_DIR_UNIX 설정이 누락되었습니다.")
                 self.CLONE_BASE_DIR = self.CLONE_BASE_DIR_UNIX.strip()
-            self.CLONE_BASE_DIR = self.CLONE_BASE_DIR.replace("\\", "/")
+
+        # CLONE_BASE_DIR 경로 정규화 (역슬래시를 슬래시로 통일하고 말미 구분자 제거)
+        self.CLONE_BASE_DIR = self.CLONE_BASE_DIR.replace("\\", "/").rstrip("/")
 
         # 2. DATABASE_URL이 비어있거나 생략된 경우 URL.create()로 동적 조립 (특수문자 이스케이프 대응)
         if not self.DATABASE_URL or not self.DATABASE_URL.strip():
