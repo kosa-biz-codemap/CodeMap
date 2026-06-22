@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/parse/analysis", tags=["RAG Parse"])
 
 def _build_directory_tree(files: list[dict], repo_name: str) -> str:
     tree_lines = [f"{repo_name}/"]
-    paths = sorted([f["path"] for f in files])
+    paths = sorted([f.get("path") for f in files if isinstance(f, dict) and f.get("path")])
     
     tree_dict = {}
     for p in paths:
@@ -79,6 +79,7 @@ async def get_parse_analysis(repo_id: UUID, db: AsyncSession = Depends(get_db)):
             },
             "configFiles": config_files,
             "readmeSummary": rj.get("readme_summary") or "",
+            "files": files,
             "fileCount": len(files),
             "analyzedAt": job.updated_at.isoformat() if job.updated_at else None
         }
