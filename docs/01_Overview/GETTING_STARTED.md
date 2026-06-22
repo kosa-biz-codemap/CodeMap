@@ -54,6 +54,44 @@ source venv/bin/activate
 # 4. 필수 라이브러리 설치
 pip install -r requirements.txt
 
+### 1.1. 환경 변수(.env) 설정
+
+> [!CAUTION]
+> - **`.env` 파일 생성 필수 (명령 시행 불가 경고)**: 보안 하드코딩 원천 제거 조치로 인해 데이터베이스 접속 정보와 클론 저장소 경로 등의 기본값이 소스코드 내에서 완전히 삭제되었습니다. 따라서 **로컬 개발/테스트 기동 시 프로젝트 내에 `.env` 파일이 존재하지 않거나 필수 설정들이 누락되어 있다면 uvicorn 서버 실행, pytest 테스트 등의 그 어떤 파이썬 명령 시행도 불가능(`ValueError` 예외 유발)합니다.** 반드시 아래 예시를 참고하여 `.env` 파일을 선제적으로 구축해 주십시오.
+
+현재 백엔드 코드(`config.py`)는 보안성 극대화를 위해 어떠한 데이터베이스 접속 비밀번호나 클론 파일 임시 경로도 코드 내에 하드코딩하지 않습니다. 따라서 서버를 기동하기 전에 반드시 백엔드 디렉토리 하위에 `.env` 파일을 수동으로 구성해 주셔야 합니다.
+
+#### 📍 로컬용 `.env` 파일 예시 (`backend/.env`)
+```env
+# 1. 데이터베이스 접속 상세 정보 (로컬용 설정)
+DB_USER=codemap_service
+DB_PASSWORD=codemap
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=codemap
+
+# 2. 데이터베이스 연결 URL (DATABASE_URL 생략 시 위 접속 정보들로 동적 조립됨)
+DATABASE_URL=
+
+# 3. 임시 파일 다운로드 경로 (비워두면 아래의 OS별 설정값이 자동 로드됨)
+CLONE_BASE_DIR=
+CLONE_BASE_DIR_WINDOWS=C:/temp/codemap/jobs
+CLONE_BASE_DIR_UNIX=/tmp/codemap/jobs
+
+# 4. 외부 서비스 API 키 설정
+OPENAI_API_KEY=your-openai-api-key-here
+OPENAI_MODEL=gpt-4o-mini
+GITHUB_TOKEN=your-github-personal-access-token-here
+
+# 5. 애플리케이션 실행 모드
+DEBUG=True
+```
+
+> [!IMPORTANT]
+> - `CLONE_BASE_DIR` 값을 비워두면(`""`), 구동 중인 OS 환경을 스스로 판별하여 Windows인 경우 `CLONE_BASE_DIR_WINDOWS` 값을, Unix/Linux인 경우 `CLONE_BASE_DIR_UNIX` 값을 자동으로 채워 구동합니다.
+> - **필수 경로 및 환경 설정 검증**: 로컬 개발/테스트 구동 시 반드시 환경별 `CLONE_BASE_DIR_WINDOWS` 또는 `CLONE_BASE_DIR_UNIX`가 `.env` 파일 내에 정의되어 있어야 합니다. 정의되지 않은 채 서버를 기동하거나 테스트를 수행할 경우 즉시 `ValueError` 예외가 발생하므로 주의하시기 바랍니다.
+> - `GITHUB_TOKEN`은 비공개 저장소를 분석하거나, GitHub API의 Rate Limit(시간당 호출 제한)을 방지하기 위해 발급받아 등록하는 것을 강력히 권장합니다.
+
 # 5. FastAPI 서버 실행 (HTTPS 적용)
 uvicorn app.main:app --reload --ssl-keyfile certs/localhost-key.pem --ssl-certfile certs/localhost.pem
 ```
