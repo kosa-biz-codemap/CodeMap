@@ -72,7 +72,7 @@ cd frontend
 pnpm install
 
 # 3. Next.js 개발 서버 실행 (HTTPS 적용)
-pnpm next dev --experimental-https --experimental-https-key ../backend/certs/localhost-key.pem --experimental-https-cert ../backend/certs/localhost.pem
+pnpm dev -- --experimental-https --experimental-https-key ../backend/certs/localhost-key.pem --experimental-https-cert ../backend/certs/localhost.pem
 ```
 > 정상 실행 시 `https://localhost:3000` 으로 서버가 열립니다.
 > 만약 윈도우 환경에서 `localhost` 인증서 문제나 권한 문제가 있다면, 브라우저에서 안전하지 않음으로 이동을 클릭하여 신뢰를 허용해 주십시오.
