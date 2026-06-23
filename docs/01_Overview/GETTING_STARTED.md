@@ -122,6 +122,13 @@ GITHUB_TOKEN=""
 
 # 5. 애플리케이션 실행 모드
 DEBUG=True
+
+# 6. RAG 임베딩 설정 (기본 임베딩 스펙 정의)
+EMBEDDING_MODEL=text-embedding-3-large
+EMBEDDING_DIMENSIONS=1536
+EMBEDDING_BATCH_SIZE=100
+EMBEDDING_MAX_RETRIES=3
+
 ```
 
 > [!IMPORTANT]

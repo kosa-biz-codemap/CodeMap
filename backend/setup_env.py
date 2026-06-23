@@ -50,6 +50,12 @@ DEBUG=true
 # 5. OpenAI Configuration
 OPENAI_API_KEY=""
 OPENAI_MODEL=gpt-4o-mini
+
+# 6. RAG Embedding Configuration
+EMBEDDING_MODEL=text-embedding-3-large
+EMBEDDING_DIMENSIONS=1536
+EMBEDDING_BATCH_SIZE=100
+EMBEDDING_MAX_RETRIES=3
 """
 
     try:
