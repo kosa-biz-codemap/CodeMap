@@ -1,4 +1,5 @@
 import os
+import logging
 from dataclasses import dataclass
 from typing import Annotated, Optional
 from urllib.parse import quote as url_quote
@@ -36,6 +37,9 @@ BINARY_EXTENSIONS = {
     ".so", ".dylib", ".class", ".pyc", ".db", ".sqlite",
     ".woff", ".woff2", ".ttf", ".eot", ".mp3", ".mp4",
 }
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -155,7 +159,15 @@ class ListService:
                         raise ValidationFailedError(
                             f"GitHub API 호출 중 오류가 발생했습니다: HTTP {response.status_code}"
                         )
-                    target_branch = response.json().get("default_branch", "main")
+                    try:
+                        repo_info = response.json()
+                        if not isinstance(repo_info, dict):
+                            raise ValidationFailedError("API 응답 형식이 올바르지 않습니다.")
+                        target_branch = repo_info.get("default_branch")
+                        if not target_branch:
+                            raise ValidationFailedError("저장소 정보에서 기본 브랜치(default_branch)를 찾을 수 없습니다.")
+                    except (ValueError, TypeError) as exc:
+                        raise ValidationFailedError(f"저장소 정보 파싱 중 오류가 발생했습니다: {exc}")
 
                 ## 이슈 #별도 제안: 브랜치명 URL encoding (슬래시 등 특수문자 대응)
                 encoded_branch = url_quote(target_branch, safe="")
@@ -177,7 +189,11 @@ class ListService:
         except CodeMapException:
             raise
         except Exception as exc:
-            raise ValidationFailedError(f"GitHub API 호출 중 오류가 발생했습니다: {exc}") from exc
+            logger.exception("GitHub 저장소 사전 검증 중 예상치 못한 오류 발생", exc_info=exc)
+            raise ValidationFailedError("GitHub 저장소 정보를 가져오는 중 서버 오류가 발생했습니다.") from exc
+
+        # API-005 스펙 준수: 제한 기준 설정값 DTO 상시 반환용 기본 인스턴스 생성
+        limit = PreValidateLimit(fileCount=100, fileSizeKb=100)
 
         ## 이슈 #별도 제안: truncated 응답 처리
         ## GitHub Trees API는 큼 저장소에서 truncated=true를 내립니다.
@@ -192,6 +208,7 @@ class ListService:
                     total_size_kb=0,
                     warning_message="저장소가 너무 커서 GitHub API가 파일 목록을 누락(truncated)했습니다. 세부 파일 필터링 없이 전체 분석이 불가능합니다.",
                     is_truncated=True,
+                    limit=limit,
                 ),
             )
 
@@ -221,23 +238,22 @@ class ListService:
         total_size_kb = (total_size + 1023) // 1024
         max_file_size_kb = (max_file_size + 1023) // 1024 if max_file_size > 0 else 0
 
+        if file_count == 0:
+            raise ValidationFailedError("저장소 내에 분석 가능한 파일이 없습니다.")
+
         ## 이슈 #4 수정: warning_message를 먼저 생성하고 is_valid는 단일 소스로 통일
         warning_message = None
         warning_code = None
-        limit = None
 
         if file_count > 100 and any_file_exceeds_100kb:
             warning_message = "저장소 파일 수와 개별 파일 용량 제한을 모두 초과하였습니다. 핵심 파일만 선별하여 분석을 진행해야 합니다."
             warning_code = "REPO_LIMIT_EXCEEDED"
-            limit = PreValidateLimit(fileCount=100, fileSizeKb=100)
         elif file_count > 100:
             warning_message = "저장소 파일 수가 100개를 초과합니다. 핵심 파일만 선별하여 분석을 진행해야 합니다."
             warning_code = "FILE_COUNT_EXCEEDED"
-            limit = PreValidateLimit(fileCount=100, fileSizeKb=100)
         elif any_file_exceeds_100kb:
             warning_message = "100KB를 초과하는 대용량 파일이 존재합니다. 해당 파일은 분석 대상에서 제외되거나 제한적으로 분석될 수 있습니다."
             warning_code = "FILE_SIZE_EXCEEDED"
-            limit = PreValidateLimit(fileCount=100, fileSizeKb=100)
 
         is_valid = warning_message is None
 
