@@ -103,10 +103,42 @@ class ParseServiceFeatureTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("backend/app/service.py", by_path["backend/app/main.py"].imports)
         self.assertIn("backend/app/config.py", by_path["backend/app/service.py"].imports)
 
+    @unittest.skipUnless(_has("analyze_imports"), "analyze_imports(B-208) 미구현")
+    async def test_imports_resolve_from_package_import_module(self):
+        # `from pkg import mod` / `from . import mod`(import한 이름이 모듈인 형태)도
+        # 내부 파일로 정규화되어야 한다 (PR #73 리뷰 보완).
+        files = [
+            rag_schemas.ParsedFile(
+                path="pkg/a.py",
+                file_type="FILE",
+                depth=1,
+                content="from . import c\nfrom backend.app import service\n",
+            ),
+            rag_schemas.ParsedFile(path="pkg/c.py", file_type="FILE", depth=1, content="x = 1\n"),
+            rag_schemas.ParsedFile(
+                path="backend/app/service.py", file_type="FILE", depth=2, content="y = 2\n"
+            ),
+        ]
+        analyzed = await parse_service.analyze_imports(files)
+        by_path = {item.path: item for item in analyzed}
+        self.assertIn("pkg/c.py", by_path["pkg/a.py"].imports)
+        self.assertIn("backend/app/service.py", by_path["pkg/a.py"].imports)
+
     @unittest.skipUnless(_has("parse_readme"), "parse_readme(B-201) 미구현")
     async def test_missing_readme_returns_none_without_model_call(self):
         empty = FIXTURE_REPO / "frontend"
         self.assertIsNone(await parse_service.parse_readme(str(empty)))
+
+    @unittest.skipUnless(_has("parse_readme"), "parse_readme(B-201) 미구현")
+    async def test_existing_readme_returns_summary(self):
+        # README가 있으면 비어있지 않은 요약을 반환. LLM 응답 문구에 의존하지 않도록
+        # _summarize_with_llm을 None으로 mock(휴리스틱 폴백 고정)해 결정성 확보. (#74 리뷰 보완)
+        from app.parse import readme as readme_module
+
+        with patch.object(readme_module, "_summarize_with_llm", AsyncMock(return_value=None)):
+            summary = await parse_service.parse_readme(str(FIXTURE_REPO))
+        self.assertIsInstance(summary, str)
+        self.assertTrue(summary.strip())
 
 
 @unittest.skipUnless(PARSE_READY, "PARSE 파이프라인 진입점이 아직 구현되지 않음")
