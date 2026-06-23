@@ -782,6 +782,24 @@ class AnalysisService:
         except Exception as exc:
             # RAG 인덱싱 실패는 분석 결과에 영향을 주지 않는다(분석은 이미 완료).
             logger.exception("[RAG 인덱싱] 실패 (분석 결과 영향 없음) job=%s: %s", job_id, exc)
+            
+            # 실패 시 report_json에 rag_index.status = "failed" 명시 (무한 대기 방지)
+            try:
+                from app.core.database import async_session_factory
+                async with async_session_factory() as session:
+                    repo = AnalysisJobRepository(session)
+                    job = await repo.get_job_by_id(UUID(job_id))
+                    if job:
+                        report = dict(job.report_json or {})
+                        report["rag_index"] = {"status": "failed", "chunks": 0}
+                        await repo.update_job_status(
+                            job_id=UUID(job_id),
+                            status=job.status,
+                            report_json=report,
+                        )
+                        await session.commit()
+            except Exception as inner_exc:
+                logger.error("[RAG 인덱싱] 실패 상태 업데이트 중 오류 발생 job=%s: %s", job_id, inner_exc)
 
     # ──────────────────────────────────────────
     # 이벤트 발행 헬퍼
