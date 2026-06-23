@@ -22,6 +22,7 @@ from app.parse.manifest import (
 )
 from app.parse.imports import analyze_imports
 from app.parse.readme import parse_readme
+from app.parse.summary import build_hierarchical_summary
 
 __all__ = [
     "analyze_directory",
@@ -32,4 +33,5 @@ __all__ = [
     "detect_tech_stack",
     "analyze_imports",
     "parse_readme",
+    "build_hierarchical_summary",
 ]
