@@ -16,6 +16,8 @@
   run_parse_pipeline : 오케스트레이터                        (통합)
 """
 
+from uuid import UUID
+
 from app.parse.directory import analyze_directory, find_entry_points
 from app.parse.chunking import chunk_by_ast
 from app.parse.manifest import (
@@ -34,6 +36,116 @@ from app.parse.summary import (
     build_folder_summaries,
     build_hierarchical_summary,
 )
+from app.parse.schemas import (
+    ParseResult,
+    ParsedFile,
+    TechStackItem,
+    LanguageCompositionItem,
+    EntryPointItem,
+)
+
+
+def _directory_tree(files: list[ParsedFile], repo_name: str) -> str:
+    tree_lines = [f"{repo_name}/"]
+    paths = sorted(node.path for node in files if node.path)
+
+    tree_dict = {}
+    for p in paths:
+        parts = p.split("/")
+        current = tree_dict
+        for part in parts:
+            if part not in current:
+                current[part] = {}
+            current = current[part]
+
+    def render_tree(node, prefix=""):
+        lines = []
+        keys = list(node.keys())
+        for i, key in enumerate(keys):
+            is_last = i == len(keys) - 1
+            connector = "└── " if is_last else "├── "
+            suffix = "/" if node[key] else ""
+            lines.append(f"{prefix}{connector}{key}{suffix}")
+            if node[key]:
+                extension = "    " if is_last else "│   "
+                lines.extend(render_tree(node[key], prefix + extension))
+        return lines
+
+    tree_lines.extend(render_tree(tree_dict))
+    return "\n".join(tree_lines)
+
+
+async def run_structure_agent(files: list[ParsedFile]) -> list[ParsedFile]:
+    """B-210 구조 분석 agent hook.
+
+    현재는 앞선 deterministic parse 단계들이 이미 채운 ParsedFile 목록을 그대로
+    반환한다. 추후 LLM 기반 구조 agent가 필요해지면 이 함수 안에서만 교체한다.
+    """
+    return files
+
+
+async def run_parse_pipeline(
+    *,
+    job_id: UUID,
+    repo_name: str,
+    owner: str,
+    branch: str,
+    clone_path: str,
+) -> ParseResult:
+    """RAG-PARSE B-210 통합 파이프라인을 실행해 ParseResult를 반환한다."""
+    readme_summary = await parse_readme(clone_path)
+    files = await analyze_directory(clone_path)
+    entry_points = await find_entry_points(files)
+    files = await tag_config_files(files)
+
+    run_commands = await extract_run_commands(files)
+    run_command_details = await extract_run_command_details(files)
+    
+    tech_stack_details_raw = await detect_tech_stack_details(files)
+    tech_stack_details = [TechStackItem(**i) for i in tech_stack_details_raw]
+    tech_stack = sorted(list({str(i.name) for i in tech_stack_details}))
+
+    language_composition_raw = analyze_language_composition(files)
+    language_composition = [LanguageCompositionItem(**i) for i in language_composition_raw]
+
+    files = await chunk_by_ast(files)
+    files = await analyze_imports(files)
+    files = await run_structure_agent(files)
+
+    files, master_summary = await build_hierarchical_summary(files)
+    file_map = await build_file_map(files)
+    heatmap = await build_heatmap(files, file_map=file_map)
+    file_summaries = await build_file_summaries(files)
+    folder_summaries = await build_folder_summaries(files)
+    config_files = [
+        node.path
+        for node in files
+        if node.file_type == "FILE" and (node.metadata or {}).get("is_config")
+    ]
+    entry_point_details = [EntryPointItem(path=p, type="auto", reason="파이프라인 휴리스틱 추출") for p in entry_points]
+
+    return ParseResult(
+        job_id=job_id,
+        repo_name=repo_name,
+        owner=owner,
+        branch=branch,
+        readme_summary=readme_summary,
+        tech_stack=tech_stack,
+        tech_stack_details=tech_stack_details,
+        language_composition=language_composition,
+        run_commands=run_commands,
+        run_command_details=run_command_details,
+        entry_points=entry_points,
+        entry_point_details=entry_point_details,
+        config_files=config_files,
+        master_summary=master_summary,
+        folder_summaries=folder_summaries,
+        file_summaries=file_summaries,
+        file_map=file_map,
+        heatmap=heatmap,
+        directory_tree=_directory_tree(files, repo_name),
+        files=files,
+    )
 
 __all__ = [
     "analyze_directory",
@@ -52,4 +164,6 @@ __all__ = [
     "build_file_summaries",
     "build_folder_summaries",
     "build_hierarchical_summary",
+    "run_structure_agent",
+    "run_parse_pipeline",
 ]
