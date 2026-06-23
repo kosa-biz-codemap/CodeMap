@@ -19,8 +19,48 @@ class ParseRouterTests(unittest.TestCase):
             status="COMPLETED",
             report_json={
                 "files": [
-                    {"path": "backend/app/main.py", "metadata": {}},
-                    {"path": "backend/requirements.txt", "metadata": {"is_config": True}}
+                    {
+                        "path": "backend/app/main.py",
+                        "file_type": "FILE",
+                        "content": "from fastapi import FastAPI\napp = FastAPI()\n",
+                        "metadata": {},
+                    },
+                    {
+                        "path": "backend/requirements.txt",
+                        "file_type": "FILE",
+                        "content": "fastapi==0.115.0\nsqlalchemy==2.0.0\nasyncpg==0.30.0\n",
+                        "metadata": {"is_config": True},
+                    },
+                    {
+                        "path": "frontend/package.json",
+                        "file_type": "FILE",
+                        "content": '{"dependencies": {"next": "16.0.0", "react": "19.0.0"}}',
+                        "metadata": {"is_config": True},
+                    },
+                    {
+                        "path": "frontend/src/app.ts",
+                        "file_type": "FILE",
+                        "content": "const app = 1;\nconsole.log(app);\n",
+                        "metadata": {},
+                    },
+                    {
+                        "path": "README.md",
+                        "file_type": "FILE",
+                        "content": "# Test repo\nBackend and frontend sample.\n",
+                        "metadata": {},
+                    },
+                    {
+                        "path": "Dockerfile",
+                        "file_type": "FILE",
+                        "content": "FROM python:3.12-slim\n",
+                        "metadata": {"is_config": True},
+                    },
+                    {
+                        "path": "docker-compose.yml",
+                        "file_type": "FILE",
+                        "content": "services:\n  db:\n    image: postgres:16\n",
+                        "metadata": {"is_config": True},
+                    },
                 ],
                 "tech_stack": ["Python", "FastAPI"],
                 "run_commands": ["pip install -r requirements.txt", "uvicorn app.main:app"],
@@ -43,8 +83,34 @@ class ParseRouterTests(unittest.TestCase):
         self.assertEqual(data["data"]["techStack"], ["Python", "FastAPI"])
         self.assertEqual(data["data"]["runCommands"]["install"], "pip install -r requirements.txt")
         self.assertIn("└── requirements.txt", data["data"]["directoryTree"])
-        self.assertEqual(len(data["data"]["files"]), 2)
+        self.assertEqual(len(data["data"]["files"]), 7)
         self.assertEqual(data["data"]["files"][0]["path"], "backend/app/main.py")
+
+    @patch("app.parse.router.AnalysisJobRepository")
+    def test_get_parse_stack_returns_object_mapping(self, mock_repo_class):
+        mock_repo_instance = mock_repo_class.return_value
+        mock_repo_instance.get_job_by_id = AsyncMock(return_value=self.mock_job)
+
+        response = self.client.get(f"/api/parse/analysis/{self.job_id}/stack")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()["data"]
+        by_name = {item["name"]: item for item in data["techStack"]}
+        self.assertEqual(by_name["FastAPI"]["version"], "0.115.0")
+        self.assertEqual(by_name["FastAPI"]["category"], "framework")
+        self.assertEqual(by_name["FastAPI"]["source"], "backend/requirements.txt")
+        self.assertEqual(by_name["Next.js"]["version"], "16.0.0")
+        self.assertEqual(by_name["Python"]["version"], "3.12")
+        self.assertEqual(by_name["PostgreSQL"]["version"], "16")
+        languages = {item["language"]: item for item in data["languageComposition"]}
+        self.assertEqual(languages["Config"]["lines"], 8)
+        self.assertEqual(languages["Python"]["lines"], 2)
+        self.assertEqual(languages["TypeScript"]["lines"], 2)
+        self.assertEqual(languages["Markdown"]["lines"], 2)
+        self.assertGreater(languages["Config"]["percentage"], 0)
+        self.assertEqual(data["runCommands"]["install"], "pip install -r requirements.txt")
+        self.assertEqual(data["runCommands"]["run"], "uvicorn app.main:app")
+        self.assertIsNone(data["runCommands"]["build"])
 
     @patch("app.parse.router.AnalysisJobRepository")
     def test_get_parse_analysis_not_found(self, mock_repo_class):
