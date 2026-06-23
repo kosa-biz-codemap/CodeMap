@@ -16,6 +16,8 @@
   run_parse_pipeline : 오케스트레이터                        (통합)
 """
 
+from uuid import UUID
+
 from app.parse.directory import analyze_directory, find_entry_points
 from app.parse.chunking import chunk_by_ast
 from app.parse.manifest import (
@@ -34,6 +36,79 @@ from app.parse.summary import (
     build_folder_summaries,
     build_hierarchical_summary,
 )
+from app.parse.schemas import ParseResult, ParsedFile
+
+
+def _directory_tree(files: list[ParsedFile], repo_name: str) -> str:
+    paths = sorted(node.path for node in files)
+    lines = [repo_name]
+    for path in paths:
+        depth = path.count("/")
+        lines.append(f"{'  ' * depth}- {path.rsplit('/', 1)[-1]}")
+    return "\n".join(lines)
+
+
+async def run_structure_agent(files: list[ParsedFile]) -> list[ParsedFile]:
+    """B-210 구조 분석 agent hook.
+
+    현재는 앞선 deterministic parse 단계들이 이미 채운 ParsedFile 목록을 그대로
+    반환한다. 추후 LLM 기반 구조 agent가 필요해지면 이 함수 안에서만 교체한다.
+    """
+    return files
+
+
+async def run_parse_pipeline(
+    *,
+    job_id: UUID,
+    repo_name: str,
+    owner: str,
+    branch: str,
+    clone_path: str,
+) -> ParseResult:
+    """RAG-PARSE B-210 통합 파이프라인을 실행해 ParseResult를 반환한다."""
+    readme_summary = await parse_readme(clone_path)
+    files = await analyze_directory(clone_path)
+    entry_points = await find_entry_points(files)
+    files = await tag_config_files(files)
+
+    run_commands = await extract_run_commands(files)
+    run_command_details = await extract_run_command_details(files)
+    tech_stack = await detect_tech_stack(files)
+
+    files = await chunk_by_ast(files)
+    files = await analyze_imports(files)
+    files = await run_structure_agent(files)
+
+    files, master_summary = await build_hierarchical_summary(files)
+    file_map = await build_file_map(files)
+    heatmap = await build_heatmap(files)
+    file_summaries = await build_file_summaries(files)
+    folder_summaries = await build_folder_summaries(files)
+    config_files = [
+        node.path
+        for node in files
+        if node.file_type == "FILE" and (node.metadata or {}).get("is_config")
+    ]
+
+    return ParseResult(
+        job_id=job_id,
+        repo_name=repo_name,
+        owner=owner,
+        branch=branch,
+        readme_summary=readme_summary,
+        tech_stack=tech_stack,
+        run_commands=run_commands,
+        run_command_details=run_command_details,
+        entry_points=entry_points,
+        config_files=config_files,
+        master_summary=master_summary,
+        folder_summaries=folder_summaries,
+        file_summaries=file_summaries,
+        file_map=file_map,
+        heatmap=heatmap,
+        directory_tree=_directory_tree(files, repo_name),
+        files=files,
+    )
 
 __all__ = [
     "analyze_directory",
@@ -52,4 +127,6 @@ __all__ = [
     "build_file_summaries",
     "build_folder_summaries",
     "build_hierarchical_summary",
+    "run_structure_agent",
+    "run_parse_pipeline",
 ]
