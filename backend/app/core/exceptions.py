@@ -197,6 +197,23 @@ class InvalidRefreshTokenError(CodeMapException):
 
 
 # ──────────────────────────────────────────────
+# AGENT-SEARCH 관련 예외
+# ──────────────────────────────────────────────
+class InvalidPatternError(CodeMapException):
+    """정규식 패턴이 잘못되었을 때 발생 (400)"""
+
+    def __init__(self, message: str = "잘못된 검색 패턴입니다."):
+        super().__init__(400, "INVALID_PATTERN", message)
+
+
+class TargetFileNotFoundError(CodeMapException):
+    """조회할 대상 파일 또는 디렉토리가 없을 때 발생 (404)"""
+
+    def __init__(self, message: str = "대상 파일 또는 디렉토리를 찾을 수 없습니다."):
+        super().__init__(404, "TARGET_NOT_FOUND", message)
+
+
+# ──────────────────────────────────────────────
 # FastAPI 전역 예외 핸들러 등록 함수
 # ──────────────────────────────────────────────
 def register_exception_handlers(app: FastAPI) -> None:
