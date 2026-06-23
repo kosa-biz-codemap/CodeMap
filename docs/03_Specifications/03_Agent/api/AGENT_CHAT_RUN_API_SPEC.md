@@ -140,21 +140,11 @@ event: completed
 data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","status":"completed"}
 ```
 
-### 에러 응답
+### 연동 흐름 다이어그램
 
-| HTTP Status | Error Code | 발생 시점 | 설명 |
-| --- | --- | --- | --- |
-| 401 | `UNAUTHORIZED` | 인증 검증 | 토큰 누락 또는 만료 |
-| 404 | `AGENT_RUN_NOT_FOUND` | run 조회 | run 없음 |
-| 500 | `AGENT_STREAM_FAILED` | stream 처리 | stream 초기화 또는 전송 실패 |
+API-001(run 생성)과 API-002(SSE stream) 연동 흐름을 시퀀스 다이어그램으로 표현합니다.
 
----
-
-## Phase 2: API 흐름 시퀀스 다이어그램
-
-> _레퍼런스: Full Stack AI Agent Template 프로젝트 — API 명세에 시퀀스 다이어그램을 포함하여 프론트엔드 개발자가 전체 연동 흐름을 즉시 파악할 수 있도록 구성_
-
-### 정상 흐름 (Happy Path)
+#### 정상 흐름 (Happy Path)
 
 ```mermaid
 sequenceDiagram
@@ -207,7 +197,7 @@ sequenceDiagram
     FE-->>User: 최종 답변 렌더링
 ```
 
-### Worker 실패 시 Partial Evidence 흐름
+#### Worker 실패 시 Partial Evidence 흐름
 
 ```mermaid
 sequenceDiagram
@@ -228,3 +218,11 @@ sequenceDiagram
     Service-->>FE: SSE event: answer_delta
     Service-->>FE: SSE event: completed
 ```
+
+### 에러 응답
+
+| HTTP Status | Error Code | 발생 시점 | 설명 |
+| --- | --- | --- | --- |
+| 401 | `UNAUTHORIZED` | 인증 검증 | 토큰 누락 또는 만료 |
+| 404 | `AGENT_RUN_NOT_FOUND` | run 조회 | run 없음 |
+| 500 | `AGENT_STREAM_FAILED` | stream 처리 | stream 초기화 또는 전송 실패 |
