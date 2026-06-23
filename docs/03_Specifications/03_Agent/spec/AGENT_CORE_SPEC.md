@@ -24,6 +24,7 @@
 | AGENT-CORE-B-203 | agent 실행 시간 측정 | Backend | Phase 1 |
 | AGENT-CORE-B-204 | agent 실패 처리 | Backend | Phase 1 |
 | AGENT-CORE-F-201 | ReportJsonResponse 필드 확정 | Frontend | Phase 1 |
+| AGENT-CORE-B-205 | Error Recovery 시나리오 Decision Tree | Backend | Phase 2 |
 
 ---
 
@@ -198,3 +199,58 @@ streaming
 | Evidence 보존 | 실패해도 이미 수집된 `worker_results` metadata는 조회 가능해야 합니다. |
 | 비밀 보호 | 에러 detail에 secret 값, 토큰, private path를 노출하지 않습니다. |
 | 사용자 표시 메시지 분리 | 내부 debug detail과 사용자 메시지를 분리합니다. |
+
+---
+
+## Phase 2
+
+### AGENT-CORE-B-205: Error Recovery 시나리오 Decision Tree
+
+| 항목 | 내용 |
+| --- | --- |
+| 분류 | Backend |
+| 모듈명 | CORE |
+
+**설명**
+
+실패 유형별 복구 경로를 Decision Tree 형태로 정의합니다. Phase 1의 단순 에러 코드 목록을 넘어서, 다양한 실패 시나리오에서 업무가 어떻게 처리되는지 코드로 담습니다.
+_(레퍼런스: Cicada, ChatRepos AI 프로젝트)_
+
+**Recovery Decision Tree**
+
+```text
+실패 발생
+└── Supervisor 실패?
+│   ├── YES → [AGENT_RUN_FAILED] 터미널 이벤트, partial evidence 0건
+│   └── NO  → 다음 단계
+└── Route Node 보안 로직 차단?
+    ├── YES → [AGENT_ROUTE_BLOCKED] 로그 남기고 무해한 메시지만 사용자에게
+    └── NO  → Worker 실패
+        ├── 일부 Worker 실패?
+        │   ├── partial evidence 있음?
+        │   │   ├── YES → [PARTIAL_EVIDENCE_CONTINUE] Evidence Aggregator 진입
+        │   │   └── NO  → [AGENT_EVIDENCE_NOT_FOUND] 다음
+        │   └── 모든 Worker 실패 → [AGENT_WORKER_FAILED] 다음
+        └── Evidence Aggregator 실패?
+            ├── YES → [AGENT_EVIDENCE_NOT_FOUND] raw evidence metadata는 보존
+            └── NO  → Final Answer Agent 실패?
+                ├── YES → [AGENT_STREAM_FAILED] partial answer 있으면 기존 부분 반환
+                └── NO  → [COMPLETED] 정상 종료
+```
+
+**시나리오별 처리 정의**
+
+| 시나리오 | 정책 코드 | 사용자 메시지 | partial evidence 반환 |
+| --- | --- | --- | --- |
+| Supervisor 실패 | `AGENT_RUN_FAILED` | "요청 처리 중 오류가 발생했습니다" | ✕ |
+| Route Node 보안 차단 | `AGENT_ROUTE_BLOCKED` | "사용 정책에 의해 접근이 제한되었습니다" | ✕ |
+| 일부 Worker 실패 + partial evidence 있음 | `PARTIAL_EVIDENCE_CONTINUE` | "일부 검색을 완료하지 못했으나 찾은 근거로 답변합니다" | ● |
+| 모든 Worker 실패 | `AGENT_WORKER_FAILED` | "코드를 검색하는 중 문제가 발생했습니다" | ✕ |
+| Evidence 없음 | `AGENT_EVIDENCE_NOT_FOUND` | "관련 코드를 찾지 못했습니다" | raw metadata ○ |
+| Final Answer 실패 | `AGENT_STREAM_FAILED` | "답변 생성 중 오류가 발생했습니다" | partial ○ |
+
+**구현 요구사항**
+
+- `PARTIAL_EVIDENCE_CONTINUE` 정책은 `chat/service.py`가 Evidence Aggregator 완료 시 충분한 evidence가 있는지 판단하여 관리
+- `AGENT_ROUTE_BLOCKED`는 `failed` 상태가 아니라 `policy_blocked`로 별도 분류하는 것을 Phase 2에서 검토
+- terminal event payload에 `recoveryScenario` 필드 추가하여 프론트가 적절한 UI를 표시할 수 있게 함

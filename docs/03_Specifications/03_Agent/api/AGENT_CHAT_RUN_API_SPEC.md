@@ -147,3 +147,84 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","status":"completed"}
 | 401 | `UNAUTHORIZED` | 인증 검증 | 토큰 누락 또는 만료 |
 | 404 | `AGENT_RUN_NOT_FOUND` | run 조회 | run 없음 |
 | 500 | `AGENT_STREAM_FAILED` | stream 처리 | stream 초기화 또는 전송 실패 |
+
+---
+
+## Phase 2: API 흐름 시퀀스 다이어그램
+
+> _레퍼런스: Full Stack AI Agent Template 프로젝트 — API 명세에 시퀀스 다이어그램을 포함하여 프론트엔드 개발자가 전체 연동 흐름을 즉시 파악할 수 있도록 구성_
+
+### 정상 흐름 (Happy Path)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant FE as Frontend
+    participant Router as chat/router.py
+    participant Service as chat/service.py
+    participant Graph as agent_graph/graph.py
+    participant FA as final_answer_agent.py
+
+    User->>FE: 질문 입력
+    FE->>Router: POST /api/chat/{repo_id}/runs
+    Router->>Service: run 생성 요청
+    Service-->>Router: runId, streamUrl (202 Accepted)
+    Router-->>FE: 202 { runId, streamUrl }
+
+    FE->>Router: GET /api/chat/{repo_id}/runs/{run_id}/stream
+    Router-->>FE: SSE 연결 수립
+
+    Service->>Graph: graph.ainvoke(initial_state)
+    Graph-->>Service: event: graph_started
+    Service-->>FE: SSE event: graph_started
+
+    Graph-->>Service: event: supervisor_plan
+    Service-->>FE: SSE event: supervisor_plan
+
+    Graph-->>Service: event: route_validated
+    Service-->>FE: SSE event: route_validated
+
+    par 병렬 Worker 실행
+        Graph-->>Service: event: worker_result (search)
+        and
+        Graph-->>Service: event: worker_result (grep)
+        and
+        Graph-->>Service: event: worker_result (read)
+    end
+    Service-->>FE: SSE event: worker_result ×N
+
+    Graph-->>Service: event: evidence_compacted
+    Service-->>FE: SSE event: evidence_compacted
+
+    Service->>FA: compact_context 전달
+    loop 스트리밍
+        FA-->>Service: answer_delta 토큰
+        Service-->>FE: SSE event: answer_delta
+    end
+
+    Service-->>FE: SSE event: completed
+    FE-->>User: 최종 답변 렌더링
+```
+
+### Worker 실패 시 Partial Evidence 흐름
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Service as chat/service.py
+    participant Graph as agent_graph/graph.py
+    participant FA as final_answer_agent.py
+    actor FE as Frontend
+
+    Graph-->>Service: event: worker_result (search, grep 성공)
+    Note over Graph: read_worker 타임아웃/실패
+    Graph-->>Service: event: worker_result (read — partial)
+    Graph-->>Service: event: evidence_compacted (status: partial)
+    Service-->>FE: SSE event: evidence_compacted
+
+    Service->>FA: partial compact_context 전달
+    FA-->>Service: answer_delta (근거 부족 안내 포함)
+    Service-->>FE: SSE event: answer_delta
+    Service-->>FE: SSE event: completed
+```
