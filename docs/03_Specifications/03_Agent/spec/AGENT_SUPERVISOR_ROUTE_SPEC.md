@@ -64,6 +64,55 @@
 - Supervisor 출력은 제안일 뿐이며 최종 권한 판단은 Route Node가 합니다.
 - `.env`, token, key, secret, private file 접근을 요구하는 질문은 `riskLevel`을 올립니다.
 
+**access_plan JSON 예시**
+
+일반 질문 (find_file):
+
+```json
+{
+  "rewrittenQuery": "login signin auth authentication 로그인 인증",
+  "intent": "find_file",
+  "selectedWorkers": ["search", "grep", "read"],
+  "allowedPaths": ["backend/app", "frontend/src"],
+  "blockedPatterns": [".env", "*.key", "node_modules"],
+  "riskLevel": "normal",
+  "searchHints": ["login", "signin", "auth", "authentication", "session"],
+  "reason": "사용자가 로그인 관련 코드 위치를 묻고 있으므로 인증 관련 키워드로 검색 및 grep 수행 후 후보 파일을 읽습니다."
+}
+```
+
+민감 경로 접근 질문:
+
+```json
+{
+  "rewrittenQuery": "database connection configuration 데이터베이스 연결 설정",
+  "intent": "explain_flow",
+  "selectedWorkers": ["search", "grep", "read"],
+  "allowedPaths": ["backend/app/core", "backend/app/db"],
+  "blockedPatterns": [".env", "*.pem", "alembic/versions"],
+  "riskLevel": "sensitive",
+  "searchHints": ["database", "connection", "pool", "session", "engine"],
+  "reason": "DB 설정 파일에 credential이 포함될 수 있어 riskLevel을 올립니다. Route Node에서 secret 파일 접근을 추가 검증합니다."
+}
+```
+
+아키텍처 파악 질문:
+
+```json
+{
+  "rewrittenQuery": "project directory structure architecture 프로젝트 구조 아키텍처",
+  "intent": "architecture",
+  "selectedWorkers": ["dir", "search"],
+  "allowedPaths": ["backend", "frontend"],
+  "blockedPatterns": ["node_modules", "__pycache__", ".git"],
+  "riskLevel": "normal",
+  "searchHints": ["router", "service", "model", "schema"],
+  "reason": "프로젝트 전체 구조 파악이 필요하므로 dir worker로 구조를 먼저 파악하고 search로 핵심 모듈을 찾습니다."
+}
+```
+
+> `searchHints`는 Supervisor가 `rewrittenQuery` 외에 추가로 제안하는 키워드 목록입니다. Search Worker와 Grep Worker가 보조 검색어로 활용합니다. `CodeMapState.access_plan` 객체 안에 포함됩니다.
+
 ---
 
 ## AGENT-ROUTE-B-201: Route Node plan 검증

@@ -49,23 +49,91 @@ Worker는 사용자에게 직접 답변하지 않습니다. 답변 문장 생성
 
 ---
 
+## Worker-Tool 바인딩 패턴
+
+### Code Worker (Dir / Grep / Read)
+
+- tool wrapper 함수를 직접 호출 (LLM `tool_call` 불필요)
+- 패턴: `result = tool_fn(validated_args)` → evidence shape 변환 → `worker_results` append
+- tool은 `agent_graph/tools/` 디렉토리에 순수 함수로 정의
+
+### LLM Worker (Search, Reasoning)
+
+- LangChain `ChatModel.bind_tools([tool])` + `tool_call` 패턴 사용
+- LLM이 `tool_call` 메시지를 생성하면 worker가 tool을 실행하고 결과를 evidence로 변환
+- `tool_call` 실패 시 재시도 정책: 최대 2회, 실패 시 partial evidence 기록
+
+### Tool 시그니처 요약
+
+| Tool | 파일 | 입력 | 출력 |
+| --- | --- | --- | --- |
+| `search` | `tools/search.py` | query, top_k, filters | list[SearchResult] |
+| `dir` | `tools/dir.py` | path, depth, exclude_patterns | DirTree |
+| `grep` | `tools/grep.py` | pattern, paths, is_regex, max_results | list[GrepMatch] |
+| `read` | `tools/read.py` | path, line_start, line_end | FileContent |
+
+---
+
 ## AGENT-WORKER-B-201: Search Worker Agent
 
 | 항목 | 내용 |
 | --- | --- |
 | 분류 | Backend |
 | 모듈명 | WORKER |
+| 성격 | LLM Agent (`tool_call` 기반) |
 | 구현 위치 | `agent_graph/workers/search_worker.py` |
 
 **설명**
 
 한국어 자연어 질문, 오타, 축약 표현을 코드 검색용 query로 확장하고 embedding/vector search 또는 metadata search 전략을 실행합니다.
 
+**입력**
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `rewritten_query` | String | Supervisor가 정리한 검색 질의 |
+| `search_hints` | Array\<String\> | Supervisor가 제안한 키워드, 동의어, alias 목록 |
+| `allowed_paths` | Array\<String\> | Route Node가 검증한 탐색 허용 경로 |
+| `embedding_config` | Object | 사용할 임베딩 모델/차원 설정 (`EMBEDDING_MODEL_DECISION.md` 참조) |
+
 **구현 노트**
 
-- LLM query rewrite를 사용할 수 있습니다.
-- 검색 모델과 embedding dimension은 RAG embedding 결정 문서를 따릅니다.
-- 결과는 snippet을 과도하게 요약하지 않고 evidence로 반환합니다.
+- LLM을 활용한 query rewrite: 한국어 오타 교정, 축약 표현 확장, 코드 관련 동의어(login → signin, auth, authentication 등) 생성
+- search tool (`agent_graph/tools/search.py`) 호출을 통해 pgvector 기반 semantic/hybrid search 실행
+- embedding 모델과 dimension은 `EMBEDDING_MODEL_DECISION.md` 문서 기준 적용
+- 검색 결과는 score 기준 정렬 후 상위 N건을 evidence로 변환
+- snippet을 과도하게 요약하지 않고 원본 evidence shape로 반환
+- 검색 결과가 부족할 경우 query 변형 재시도 가능 (최대 2회)
+
+**search tool 호출 인터페이스**
+
+```python
+search_tool.invoke({
+    "query": str,           # rewritten_query 또는 변형 query
+    "top_k": int,           # 검색 결과 상위 N건 (기본 10)
+    "filters": {
+        "paths": list[str], # allowed_paths 기반 필터
+        "languages": list[str]  # 선택적 언어 필터
+    }
+}) -> list[SearchResult]
+```
+
+`SearchResult` shape:
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `path` | str | repo 내부 상대 경로 |
+| `lineStart` | int | 시작 라인 |
+| `lineEnd` | int | 종료 라인 |
+| `score` | float | similarity score |
+| `snippet` | str | 원본 코드 조각 |
+| `metadata` | Object | `{ language, chunk_type, embedding_model }` |
+
+**완료 조건**
+
+- search tool 호출 결과를 evidence shape로 변환하여 `worker_results`에 append
+- 검색 실패 시 빈 결과를 evidence로 기록하고 `AGENT_WORKER_FAILED`를 발생시키지 않음 (검색 결과 없음은 실패가 아님)
+- query rewrite 이력을 metadata에 포함
 
 ---
 

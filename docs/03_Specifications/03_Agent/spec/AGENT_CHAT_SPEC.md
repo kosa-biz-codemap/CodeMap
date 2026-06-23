@@ -154,6 +154,37 @@ LangGraph 실행과 사용자-facing stream 사이의 조정자입니다. `chat/
 - 답변에는 사용한 파일 경로와 line range가 포함됩니다.
 - `worker_results` 원본 내용을 LLM 중간 요약만으로 대체하지 않습니다.
 
+**System Prompt 설계 원칙**
+
+Final Answer Agent의 system prompt는 다음 원칙을 반영하여 구성합니다.
+
+| 원칙 | 설명 |
+| --- | --- |
+| Evidence-First | `compact_context.evidences`에 포함된 코드 스니펫과 파일 경로를 근거로 답변합니다. 근거 없는 추측, 학습 데이터 기반 답변을 금지합니다. |
+| Citation 필수 | 답변에서 코드나 로직을 언급할 때 반드시 파일 경로와 line range를 명시합니다. 형식: `파일경로:L시작-L종료` |
+| Raw Data 직접 참조 | Route Node나 중간 agent의 자연어 요약이 아니라, `worker_results`/`compact_context`의 원본 snippet을 직접 읽고 답변합니다. |
+| 근거 부족 투명성 | `compact_context.status`가 `insufficient`이면 "찾을 수 있는 근거가 부족합니다"를 명시하고, 있는 근거만으로 부분 답변합니다. |
+| 한국어 우선 | 사용자 질문이 한국어이면 한국어로 답변합니다. 코드 용어와 파일 경로는 원문 그대로 표기합니다. |
+| 도구 미보유 | Final Answer Agent는 파일 시스템, 검색, grep 등 도구를 직접 호출하지 않습니다. 추가 검색이 필요하면 사용자에게 후속 질문을 제안합니다. |
+
+**답변 포맷 가이드**
+
+| 요소 | 규칙 |
+| --- | --- |
+| 코드 블록 | 관련 코드 snippet을 Markdown fenced code block으로 포함하고, 언어 태그와 파일 경로를 명시합니다. |
+| 파일 경로 | repo 내부 상대 경로로 표기합니다. 예: `backend/app/chat/router.py:L42-L58` |
+| 구조 설명 | 함수 호출 흐름이나 import 관계를 설명할 때 순서 목록을 사용합니다. |
+| 복수 파일 | 여러 파일이 관련되면 파일별로 섹션을 나누어 설명합니다. |
+| citation 목록 | 답변 말미에 `📎 참조 파일` 섹션으로 사용된 evidence의 파일 경로, line range, evidence ID를 목록으로 정리합니다. |
+
+**근거 부족 시 응답 전략**
+
+| 상황 | 응답 |
+| --- | --- |
+| evidence 0건 | "요청하신 내용과 관련된 코드를 찾지 못했습니다. 다른 키워드로 다시 질문해 주세요." |
+| evidence 1~2건, 낮은 score | 있는 근거로 부분 답변 후 "추가 검색이 필요할 수 있습니다"를 안내합니다. |
+| `security_result`에 blocked path 존재 | "일부 경로는 보안 정책에 의해 접근이 제한되었습니다"를 답변에 포함합니다. |
+
 ### AGENT-CHAT-B-203: SSE 스트리밍 이벤트 제어
 
 | 항목 | 내용 |

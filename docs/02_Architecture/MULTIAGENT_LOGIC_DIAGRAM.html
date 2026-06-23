@@ -740,7 +740,7 @@
             </article>
           </div>
 
-          <div class="wide-arrow">↓ plan_json · rewritten_query를 State에 write</div>
+          <div class="wide-arrow">↓ access_plan · rewritten_query를 State에 write</div>
 
           <div class="row single">
             <article class="card code" onclick="showInfo('orchestrator')">
@@ -831,7 +831,7 @@
               <span>login, signin, auth, authentication, 회원가입, register</span>
             </div>
             <div class="state-item">
-              <strong>plan_json</strong>
+              <strong>access_plan</strong>
               <span>intent, selected_workers, allowed_paths, risk_level, parallel_groups</span>
             </div>
             <div class="state-item">
@@ -975,7 +975,7 @@ const INFO = {
   },
   state: {
     title: "CodeMapState Shared Memory",
-    body: "LangGraph의 공유 상태입니다. user_query, rewritten_query, plan_json, allowed_paths, worker_results, compact_context, final_answer를 저장합니다. LLM끼리 말로 전달하는 직렬 릴레이를 줄여 정보 유실을 낮춥니다."
+    body: "LangGraph의 공유 상태입니다. user_query, rewritten_query, access_plan, allowed_paths, worker_results, compact_context, final_answer를 저장합니다. LLM끼리 말로 전달하는 직렬 릴레이를 줄여 정보 유실을 낮춥니다."
   },
   finalReturn: {
     title: "Final Answer 출력",
