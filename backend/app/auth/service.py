@@ -6,6 +6,7 @@ AUTH 도메인 Service 계층 (PROJECT-AUTH)
 
 import logging
 from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -56,6 +57,7 @@ def _create_refresh_token(user_id: str, email: str) -> str:
         "sub": user_id,
         "email": email,
         "type": "refresh",
+        "jti": str(uuid4()),
         "exp": expire,
         "iat": now,
     }

@@ -6,7 +6,10 @@ Mock 전략: AuthService 전체를 patch하여 DB 없이 라우터 계층만 테
 """
 
 import unittest
-from unittest.mock import AsyncMock, patch
+from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
@@ -158,6 +161,38 @@ class AuthRefreshTests(unittest.TestCase):
         )
         self.assertEqual(resp.status_code, 401)
         self.assertEqual(resp.json()["error"]["code"], "INVALID_REFRESH_TOKEN")
+
+
+class AuthServiceRotationTests(unittest.IsolatedAsyncioTestCase):
+    """Refresh Token Rotation 서비스 로직 회귀 테스트"""
+
+    async def test_refresh_rotation_issues_distinct_refresh_token(self):
+        """같은 사용자 토큰 갱신 시 새 refreshToken은 기존 토큰과 달라야 한다."""
+        from app.auth.service import AuthService, _create_refresh_token
+
+        user_id = uuid4()
+        email = "test@example.com"
+        old_refresh_token = _create_refresh_token(user_id=str(user_id), email=email)
+
+        service = AuthService(MagicMock())
+        service.db.commit = AsyncMock()
+        service.repo = MagicMock()
+        service.repo.get_refresh_token = AsyncMock(
+            return_value=SimpleNamespace(
+                user_id=user_id,
+                expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+            )
+        )
+        service.repo.delete_refresh_token = AsyncMock(return_value=1)
+        service.repo.save_refresh_token = AsyncMock()
+
+        response = await service.refresh(old_refresh_token)
+
+        self.assertNotEqual(response.data.refreshToken, old_refresh_token)
+        service.repo.save_refresh_token.assert_awaited_once()
+        saved_kwargs = service.repo.save_refresh_token.await_args.kwargs
+        self.assertEqual(saved_kwargs["user_id"], user_id)
+        self.assertEqual(saved_kwargs["token"], response.data.refreshToken)
 
 
 class AuthLogoutTests(unittest.TestCase):
