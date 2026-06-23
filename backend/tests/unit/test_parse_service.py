@@ -21,6 +21,7 @@ FUNCTION_NAMES = {
     "extract_run_commands",
     "detect_tech_stack",
     "detect_tech_stack_details",
+    "analyze_language_composition",
     "chunk_by_ast",
     "analyze_imports",
     "build_hierarchical_summary",
@@ -169,6 +170,29 @@ class ParseServiceFeatureTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(by_name["Go"]["version"], "1.22")
         self.assertEqual(by_name["SolidJS"]["source"], "package.json")
         self.assertEqual(by_name["Litestar"]["source"], "pyproject.toml")
+
+    @unittest.skipUnless(_has("analyze_language_composition"), "analyze_language_composition 미구현")
+    async def test_language_composition_counts_lines_by_extension(self):
+        files = [
+            rag_schemas.ParsedFile(path="README.md", file_type="FILE", depth=0, content="# Title\nBody\n"),
+            rag_schemas.ParsedFile(path="src/app.ts", file_type="FILE", depth=1, content="a\nb\nc\n"),
+            rag_schemas.ParsedFile(path="api/main.py", file_type="FILE", depth=1, content="x\ny\n"),
+            rag_schemas.ParsedFile(path="docker-compose.yml", file_type="FILE", depth=0, content="services:\n"),
+            rag_schemas.ParsedFile(path="workflow.yml", file_type="FILE", depth=0, content="name: ci\n"),
+            rag_schemas.ParsedFile(path="schema.sql", file_type="FILE", depth=0, content="select 1;\n"),
+            rag_schemas.ParsedFile(path="empty.py", file_type="FILE", depth=0, content=None),
+        ]
+
+        composition = parse_service.analyze_language_composition(files)
+        by_language = {item["language"]: item for item in composition}
+
+        self.assertEqual(by_language["TypeScript"]["lines"], 3)
+        self.assertEqual(by_language["Markdown"]["lines"], 2)
+        self.assertEqual(by_language["Python"]["lines"], 2)
+        self.assertEqual(by_language["Config"]["lines"], 1)
+        self.assertEqual(by_language["YAML"]["lines"], 1)
+        self.assertEqual(by_language["SQL"]["lines"], 1)
+        self.assertAlmostEqual(sum(item["percentage"] for item in composition), 100.0, delta=0.2)
 
     @unittest.skipUnless(_has("chunk_by_ast"), "chunk_by_ast(B-207) 미구현")
     async def test_ast_chunking_keeps_line_and_type_metadata(self):

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.repo.repository import AnalysisJobRepository
 from app.core.exceptions import RepositoryNotFoundError, ParseResultNotFoundError
+from app.parse.language import analyze_language_composition
 from app.parse.manifest import detect_tech_stack_details
 from app.parse.schemas import ParsedFile
 
@@ -88,6 +89,7 @@ async def get_parse_stack(repo_id: UUID, db: AsyncSession = Depends(get_db)):
     files = rj.get("files", [])
     parsed_files = _report_files_to_parsed(files if isinstance(files, list) else [])
     tech_stack = await detect_tech_stack_details(parsed_files)
+    language_composition = analyze_language_composition(parsed_files)
 
     return {
         "code": 200,
@@ -95,6 +97,7 @@ async def get_parse_stack(repo_id: UUID, db: AsyncSession = Depends(get_db)):
         "data": {
             "repoId": job.id,
             "techStack": tech_stack,
+            "languageComposition": language_composition,
             "runCommands": _run_commands_response(rj.get("run_commands", [])),
         },
     }

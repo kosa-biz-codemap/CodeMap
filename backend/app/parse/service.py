@@ -23,6 +23,7 @@ from app.parse.manifest import (
 )
 from app.parse.imports import analyze_imports
 from app.parse.readme import parse_readme
+from app.parse.language import analyze_language_composition
 
 __all__ = [
     "analyze_directory",
@@ -34,4 +35,5 @@ __all__ = [
     "detect_tech_stack_details",
     "analyze_imports",
     "parse_readme",
+    "analyze_language_composition",
 ]

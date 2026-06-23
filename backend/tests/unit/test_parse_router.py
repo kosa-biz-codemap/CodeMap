@@ -19,7 +19,12 @@ class ParseRouterTests(unittest.TestCase):
             status="COMPLETED",
             report_json={
                 "files": [
-                    {"path": "backend/app/main.py", "file_type": "FILE", "metadata": {}},
+                    {
+                        "path": "backend/app/main.py",
+                        "file_type": "FILE",
+                        "content": "from fastapi import FastAPI\napp = FastAPI()\n",
+                        "metadata": {},
+                    },
                     {
                         "path": "backend/requirements.txt",
                         "file_type": "FILE",
@@ -31,6 +36,18 @@ class ParseRouterTests(unittest.TestCase):
                         "file_type": "FILE",
                         "content": '{"dependencies": {"next": "16.0.0", "react": "19.0.0"}}',
                         "metadata": {"is_config": True},
+                    },
+                    {
+                        "path": "frontend/src/app.ts",
+                        "file_type": "FILE",
+                        "content": "const app = 1;\nconsole.log(app);\n",
+                        "metadata": {},
+                    },
+                    {
+                        "path": "README.md",
+                        "file_type": "FILE",
+                        "content": "# Test repo\nBackend and frontend sample.\n",
+                        "metadata": {},
                     },
                     {
                         "path": "Dockerfile",
@@ -66,7 +83,7 @@ class ParseRouterTests(unittest.TestCase):
         self.assertEqual(data["data"]["techStack"], ["Python", "FastAPI"])
         self.assertEqual(data["data"]["runCommands"]["install"], "pip install -r requirements.txt")
         self.assertIn("└── requirements.txt", data["data"]["directoryTree"])
-        self.assertEqual(len(data["data"]["files"]), 5)
+        self.assertEqual(len(data["data"]["files"]), 7)
         self.assertEqual(data["data"]["files"][0]["path"], "backend/app/main.py")
 
     @patch("app.parse.router.AnalysisJobRepository")
@@ -85,6 +102,12 @@ class ParseRouterTests(unittest.TestCase):
         self.assertEqual(by_name["Next.js"]["version"], "16.0.0")
         self.assertEqual(by_name["Python"]["version"], "3.12")
         self.assertEqual(by_name["PostgreSQL"]["version"], "16")
+        languages = {item["language"]: item for item in data["languageComposition"]}
+        self.assertEqual(languages["Config"]["lines"], 8)
+        self.assertEqual(languages["Python"]["lines"], 2)
+        self.assertEqual(languages["TypeScript"]["lines"], 2)
+        self.assertEqual(languages["Markdown"]["lines"], 2)
+        self.assertGreater(languages["Config"]["percentage"], 0)
         self.assertEqual(data["runCommands"]["install"], "pip install -r requirements.txt")
         self.assertEqual(data["runCommands"]["run"], "uvicorn app.main:app")
         self.assertIsNone(data["runCommands"]["build"])

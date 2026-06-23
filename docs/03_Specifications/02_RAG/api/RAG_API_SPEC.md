@@ -274,6 +274,10 @@ Accept: application/json
 | data.techStack[].version | String | 버전 (탐지된 경우) |
 | data.techStack[].category | String | 분류 (language, framework, database, infra 등) |
 | data.techStack[].source | String | 탐지 출처 파일 경로 |
+| data.languageComposition | Array<Object> | 실제 소스 라인 기준 언어 구성 |
+| data.languageComposition[].language | String | 언어 또는 설정 유형 |
+| data.languageComposition[].lines | Integer | 해당 언어/유형의 총 라인 수 |
+| data.languageComposition[].percentage | Number | 전체 라인 대비 비율 |
 | data.runCommands.install | String | 의존성 설치 명령어 |
 | data.runCommands.run | String | 실행 명령어 |
 | data.runCommands.build | String | 빌드 명령어 (없으면 null) |
@@ -292,6 +296,11 @@ Accept: application/json
       { "name": "Next.js", "version": "16.0.0", "category": "framework", "source": "frontend/package.json" },
       { "name": "PostgreSQL", "version": "16", "category": "database", "source": "scripts/docker-compose.yml" },
       { "name": "pgvector", "version": "0.8.0", "category": "extension", "source": "scripts/docker-compose.yml" }
+    ],
+    "languageComposition": [
+      { "language": "Markdown", "lines": 9941, "percentage": 35.1 },
+      { "language": "TypeScript", "lines": 7089, "percentage": 25.0 },
+      { "language": "Python", "lines": 6901, "percentage": 24.4 }
     ],
     "runCommands": {
       "install": "pip install -r requirements.txt",
