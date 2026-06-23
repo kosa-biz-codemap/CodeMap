@@ -18,13 +18,20 @@ from app.core.exceptions import (
 )
 from app.list.models import AnalysisJobDetailModel, AnalysisJobListModel
 from app.list.repository import AnalysisJobListRepository
-from app.list.schemas import PreValidateData, PreValidateResponse
+from app.list.schemas import PreValidateData, PreValidateResponse, PreValidateLimit
 from app.repo.service import (
     EXCLUDED_DIRS,
     EXCLUDED_FILE_EXTENSIONS,
     EXCLUDED_FILE_NAMES,
     GITHUB_URL_PATTERN,
 )
+
+BINARY_EXTENSIONS = {
+    ".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp", ".pdf",
+    ".zip", ".tar", ".gz", ".rar", ".7z", ".exe", ".dll",
+    ".so", ".dylib", ".class", ".pyc", ".db", ".sqlite",
+    ".woff", ".woff2", ".ttf", ".eot", ".mp3", ".mp4",
+}
 
 
 @dataclass
@@ -149,6 +156,7 @@ class ListService:
         tree = payload.get("tree", [])
         file_count = 0
         total_size = 0
+        max_file_size = 0
         any_file_exceeds_100kb = False
 
         for item in tree:
@@ -160,17 +168,31 @@ class ListService:
                 file_count += 1
                 size = item.get("size", 0)
                 total_size += size
+                max_file_size = max(max_file_size, size)
                 if size > 100 * 1024:
                     any_file_exceeds_100kb = True
 
         total_size_kb = (total_size + 1023) // 1024
+        max_file_size_kb = (max_file_size + 1023) // 1024 if max_file_size > 0 else 0
 
         ## 이슈 #4 수정: warning_message를 먼저 생성하고 is_valid는 단일 소스로 통일
         warning_message = None
-        if file_count > 100:
-            warning_message = "저장소 파일 수가 100개를 초과합니다. 분석 시 가장 핵심이 되는 100개의 파일만 지능적으로 자동 선택되어 분석이 진행됩니다."
+        warning_code = None
+        limit = None
+
+        if file_count > 100 and any_file_exceeds_100kb:
+            warning_message = "저장소 파일 수와 개별 파일 용량 제한을 모두 초과하였습니다. 핵심 파일만 선별하여 분석을 진행해야 합니다."
+            warning_code = "REPO_LIMIT_EXCEEDED"
+            limit = PreValidateLimit(fileCount=100, fileSizeKb=100)
+        elif file_count > 100:
+            warning_message = "저장소 파일 수가 100개를 초과합니다. 핵심 파일만 선별하여 분석을 진행해야 합니다."
+            warning_code = "FILE_COUNT_EXCEEDED"
+            limit = PreValidateLimit(fileCount=100, fileSizeKb=100)
         elif any_file_exceeds_100kb:
             warning_message = "100KB를 초과하는 대용량 파일이 존재합니다. 해당 파일은 분석 대상에서 제외되거나 제한적으로 분석될 수 있습니다."
+            warning_code = "FILE_SIZE_EXCEEDED"
+            limit = PreValidateLimit(fileCount=100, fileSizeKb=100)
+
         is_valid = warning_message is None
 
         return PreValidateResponse(
@@ -182,6 +204,9 @@ class ListService:
                 total_size_kb=total_size_kb,
                 warning_message=warning_message,
                 is_truncated=False,
+                warning_code=warning_code,
+                max_file_size_kb=max_file_size_kb,
+                limit=limit,
             ),
         )
 
@@ -207,13 +232,7 @@ def _should_exclude_path(path: str) -> bool:
     if ext_lower in EXCLUDED_FILE_EXTENSIONS:
         return True
 
-    binary_extensions = {
-        ".png", ".jpg", ".jpeg", ".gif", ".ico", ".webp", ".pdf",
-        ".zip", ".tar", ".gz", ".rar", ".7z", ".exe", ".dll",
-        ".so", ".dylib", ".class", ".pyc", ".db", ".sqlite",
-        ".woff", ".woff2", ".ttf", ".eot", ".mp3", ".mp4",
-    }
-    if ext_lower in binary_extensions:
+    if ext_lower in BINARY_EXTENSIONS:
         return True
 
     return False
