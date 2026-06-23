@@ -106,6 +106,13 @@ class FolderSummary(BaseModel):
     summary: str = Field(description="폴더 역할 요약")
 
 
+class FileSummary(BaseModel):
+    """파일 단위 요약 항목 (RAG-PARSE-B-209/API-006)."""
+
+    path: str = Field(description="파일 경로")
+    summary: str = Field(description="파일 역할 요약")
+
+
 class FileMapItem(BaseModel):
     """코드맵 파일 단위 항목 (RAG-PARSE-B-207/208/API-005)."""
 
@@ -115,6 +122,13 @@ class FileMapItem(BaseModel):
     imports: list[str] = Field(default_factory=list, description="이 파일이 참조하는 파일 경로 목록")
     imported_by: list[str] = Field(default_factory=list, description="이 파일을 참조하는 파일 경로 목록")
     risk_score: int | None = Field(default=None, description="위험도 점수 (0-100)")
+
+
+class HeatmapItem(BaseModel):
+    """복잡도/위험도 히트맵 항목 (RAG-PARSE-API-005)."""
+
+    path: str = Field(description="파일 경로")
+    score: int = Field(default=0, ge=0, le=100, description="복잡도/위험도 점수")
 
 
 class ParseResult(BaseModel):
@@ -150,7 +164,12 @@ class ParseResult(BaseModel):
         default_factory=list,
         description="폴더 단위 요약 목록",
     )
+    file_summaries: list[FileSummary] = Field(
+        default_factory=list,
+        description="파일 단위 요약 목록",
+    )
     file_map: list[FileMapItem] = Field(default_factory=list, description="코드맵 파일 단위 항목")
+    heatmap: list[HeatmapItem] = Field(default_factory=list, description="코드맵 히트맵 항목")
     directory_tree: str | None = Field(default=None, description="폴더 트리 텍스트")
     files: list[ParsedFile] = Field(default_factory=list, description="파싱된 파일/디렉토리 노드")
 

@@ -11,7 +11,9 @@ def build_mock_parse_result():
     from app.parse.schemas import (
         CodeChunk,
         EntryPointItem,
+        FileSummary,
         FileMapItem,
+        HeatmapItem,
         LanguageCompositionItem,
         ParseResult,
         ParsedFile,
@@ -49,8 +51,14 @@ def build_mock_parse_result():
         folder_summaries=[
             {"path": "backend/app", "summary": "FastAPI 애플리케이션 코드"},
         ],
+        file_summaries=[
+            FileSummary(path="backend/app/main.py", summary="FastAPI 앱 진입점"),
+        ],
         file_map=[
             FileMapItem(path="backend/app/main.py", language="Python", chunk_count=1),
+        ],
+        heatmap=[
+            HeatmapItem(path="backend/app/main.py", score=12),
         ],
         directory_tree="CodeMap/\n└── backend/",
         files=[
