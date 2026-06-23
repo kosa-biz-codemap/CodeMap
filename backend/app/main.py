@@ -8,7 +8,12 @@ FastAPI 앱 인스턴스를 생성하고, 도메인별 라우터와 미들웨어
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from contextlib import asynccontextmanager
 from app.core.exceptions import register_exception_handlers
+from app.core.database import engine, Base
+# Import model classes to ensure they register on Base.metadata
+import app.embed.models  # type: ignore[import]
+
 from app.auth.router import router as auth_router
 from app.list.router import router as list_router
 from app.list.websocket import ws_router as list_ws_router
@@ -17,6 +22,15 @@ from app.repo.websocket import ws_router as repo_ws_router
 from app.chat.router import router as chat_router
 from app.parse.router import router as parse_router
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 애플리케이션 시작 시 DB 테이블 정의 검증 및 자동 생성 (code_nodes, code_dependencies 등)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    # 애플리케이션 종료 시 커넥션 풀 닫기
+    await engine.dispose()
+
 # ──────────────────────────────────────────────
 # FastAPI 앱 인스턴스 생성
 # ──────────────────────────────────────────────
@@ -24,6 +38,7 @@ app = FastAPI(
     title="CodeMap API",
     description="GitHub 저장소 코드 분석 및 문서 자동 생성 서비스 API",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 
