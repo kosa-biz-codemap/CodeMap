@@ -111,9 +111,10 @@ async def build_file_map(files: list[ParsedFile]) -> list[FileMapItem]:
     return items
 
 
-async def build_heatmap(files: list[ParsedFile]) -> list[HeatmapItem]:
+async def build_heatmap(files: list[ParsedFile], file_map: list[FileMapItem] | None = None) -> list[HeatmapItem]:
     """fileMap risk score를 heatmap 입력 형태로 변환한다."""
-    file_map = await build_file_map(files)
+    if file_map is None:
+        file_map = await build_file_map(files)
     heatmap = [
         HeatmapItem(path=item.path, score=item.risk_score or 0)
         for item in file_map
