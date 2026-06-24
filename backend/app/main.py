@@ -26,13 +26,35 @@ from app.parse.router import router as parse_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 애플리케이션 시작 시 DB vector extension 보장 및 RAG 관련 테이블만 자동 생성
-    async with engine.begin() as conn:
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        await conn.run_sync(
-            Base.metadata.create_all,
-            tables=[CodeNode.__table__, Dependency.__table__],
+    # 애플리케이션 시작 시 DB vector extension 및 필수 RAG 테이블 존재 여부 검증
+    async with engine.connect() as conn:
+        # 1. pgvector extension 존재 여부 확인
+        extension_check = await conn.execute(
+            text("SELECT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector')")
         )
+        if not extension_check.scalar():
+            raise RuntimeError(
+                "Database extension 'vector' is missing. "
+                "Please execute the database initialization script (database/init.sql) as superuser first."
+            )
+
+        # 2. 필수 RAG 테이블(code_nodes, code_dependencies) 존재 여부 확인
+        # (생성 권한이 없는 서비스 계정에서 DDL 에러가 나는 것을 방지하고, 런타임 구동을 안전하게 차단하기 위함)
+        for table in ["code_nodes", "code_dependencies"]:
+            table_check = await conn.execute(
+                text(
+                    "SELECT EXISTS ("
+                    "    SELECT 1 FROM information_schema.tables "
+                    "    WHERE table_schema = 'public' AND table_name = :table"
+                    ")"
+                ),
+                {"table": table},
+            )
+            if not table_check.scalar():
+                raise RuntimeError(
+                    f"Required database table '{table}' is missing. "
+                    f"Please initialize your database schema first."
+                )
     yield
     # 애플리케이션 종료 시 커넥션 풀 닫기
     await engine.dispose()
