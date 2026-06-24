@@ -1,13 +1,14 @@
 "use client";
 
 import { memo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bot, User, Copy, Check, ChevronRight, BrainCircuit, FileCode2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { Bot, User, Copy, Check, FileCode2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ChatMessage as ChatMessageType } from "@/features/chat/api/chatApi";
 import { useApp } from "@/common/contexts/AppContext";
 import { MermaidViewer } from "./MermaidViewer";
+import { AgentExplorationTimeline } from "./AgentExplorationTimeline";
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -24,7 +25,6 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
 }: ChatMessageProps) {
   const { t } = useApp();
   const [copied, setCopied] = useState(false);
-  const [explorationOpen, setExplorationOpen] = useState(isStreaming || false);
   const isUser = message.role === "user";
 
   const handleCopy = async () => {
@@ -69,57 +69,12 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
           <div className="flex flex-col gap-3">
-            {/* Agent Exploration Steps (Glassmorphism & Framer Motion) */}
+            {/* Agent Exploration Steps */}
             {message.explorationSteps && message.explorationSteps.length > 0 && (
-              <div className="mb-2 rounded-xl border border-zinc-700/50 bg-zinc-900/40 backdrop-blur-md overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setExplorationOpen(!explorationOpen)}
-                  className="flex w-full items-center gap-2 px-3 py-2 cursor-pointer select-none text-xs font-medium transition-colors text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
-                >
-                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-indigo-400">
-                    <BrainCircuit className="w-3 h-3" />
-                  </div>
-                  <span>에이전트 사고 흐름 파악 중... ({message.explorationSteps.length}단계)</span>
-                  <ChevronRight className={`w-3.5 h-3.5 ml-auto transition-transform duration-300 ${explorationOpen ? 'rotate-90' : ''}`} />
-                </button>
-                <AnimatePresence initial={false}>
-                  {explorationOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                    >
-                      <div className="px-3 pb-3 pt-1">
-                        <div className="pl-3 pr-2 py-2 border-l border-indigo-500/30 flex flex-col gap-2.5 text-xs text-zinc-400">
-                          {message.explorationSteps.map((step, idx) => (
-                            <motion.div
-                              key={`${step}-${idx}`}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: idx * 0.05, duration: 0.3 }}
-                              className="flex items-start gap-2.5"
-                            >
-                              <div className="relative mt-0.5 flex h-3 w-3 shrink-0 items-center justify-center">
-                                {(isStreaming && idx === message.explorationSteps!.length - 1) ? (
-                                  <>
-                                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-50"></span>
-                                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
-                                  </>
-                                ) : (
-                                  <Check className="h-3 w-3 text-emerald-500" />
-                                )}
-                              </div>
-                              <span className="leading-snug text-zinc-300">{step}</span>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <AgentExplorationTimeline 
+                steps={message.explorationSteps} 
+                isStreaming={isStreaming || false} 
+              />
             )}
 
             <div className="prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
