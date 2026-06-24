@@ -36,6 +36,8 @@ type FlatNode = {
   depth: number;
 };
 
+const FILE_ITEM_HEIGHT = 28;
+
 function flattenTree(nodes: FileTreeNode[], depth: number, expanded: Set<string>): FlatNode[] {
   let result: FlatNode[] = [];
   for (const node of nodes) {
@@ -228,7 +230,7 @@ export function FileTree({
               <List
                 height={height || 400}
                 itemCount={flatNodes.length}
-                itemSize={28}
+                itemSize={FILE_ITEM_HEIGHT}
                 width={width || 250}
                 itemData={{
                   flatNodes,
