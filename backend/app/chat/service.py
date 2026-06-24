@@ -6,7 +6,7 @@ import asyncio
 import logging
 from pathlib import Path
 from typing import AsyncIterator
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,10 +65,14 @@ class RepositoryChatService:
                 "user_query": user_query,
                 "repo_id": str(repo_id),
                 "clone_path": clone_path,
+                "run_id": "",
                 "rewritten_query": "",
                 "access_plan": [],
                 "security_result": {"approved": [], "rejected": []},
                 "worker_results": [],
+                "events": [],
+                "errors": [],
+                "durations": {},
                 "compact_context": {},
                 "final_answer": None,
             }
@@ -90,6 +94,50 @@ class RepositoryChatService:
                 "[ChatService] agent_graph 실패, 키워드 검색 폴백: %s", exc
             )
             return await self._keyword_search_fallback(user_query, clone_path, mode)
+
+    async def _keyword_search_fallback(self, user_query: str, clone_path: str, mode: str) -> dict:
+        from app.repo.analyzer import search_repository
+
+        raw_results: list[dict] = await asyncio.to_thread(search_repository, clone_path, user_query, 5)
+        worker_results = []
+        grouped_by_file: dict[str, list[dict]] = {}
+        for result in raw_results:
+            snippet = result.get("snippet", "") or result.get("content", "")
+            file_path = result.get("file") or "no_path"
+            worker_result = {
+                "id": f"ev_{uuid4().hex[:8]}",
+                "path": None if file_path == "no_path" else file_path,
+                "lineStart": None,
+                "lineEnd": None,
+                "score": None,
+                "snippet": snippet,
+                "metadata": {
+                    "worker": "search",
+                    "tool": "keyword_search_fallback",
+                    "query": user_query,
+                    "mode": mode,
+                },
+            }
+            worker_results.append(worker_result)
+            grouped_by_file.setdefault(file_path, []).append({
+                "id": worker_result["id"],
+                "lineStart": None,
+                "lineEnd": None,
+                "score": None,
+                "snippet": snippet,
+                "metadata": worker_result["metadata"],
+            })
+
+        total_chars = sum(len(item["snippet"]) for item in worker_results)
+        return {
+            "worker_results": worker_results,
+            "compact_context": {
+                "selectedEvidenceCount": len(worker_results),
+                "tokenBudget": 12_000,
+                "usedTokens": total_chars // 4,
+                "groupedByFile": grouped_by_file,
+            },
+        }
 
     async def run_agent_graph_stream(
         self,
@@ -131,7 +179,13 @@ class RepositoryChatService:
                 if "worker_results" in state_update:
                     worker_results.extend(state_update["worker_results"])
 
-        yield {"type": "internal_state", "compact_context": compact_context, "worker_results": worker_results}\n\n(
+        yield {
+            "type": "internal_state",
+            "compact_context": compact_context,
+            "worker_results": worker_results,
+        }
+
+    def stream_answer(
         self,
         repo_name: str,
         user_query: str,
