@@ -653,7 +653,19 @@ class AnalysisService:
 
             # [Sec09 - work_flow.ainvoke()] LangGraph 워크플로우 실행
             supervisor = AnalysisPipelineSupervisor()
-            await supervisor.run(initial_state)
+            final_state = await supervisor.run(initial_state)
+
+            # 노드 내부에서 예외를 삼키고 FAILED 상태를 반환한 경우
+            # (doc_gen / onboarding 등) _update_db·_publish는 이미 해당 노드에서 완료되므로
+            # 후속 RAG 파싱을 건너뛰고 조기 종료한다.
+            if final_state and final_state.get("status") == JobStatus.FAILED.value:
+                logger.warning(
+                    "파이프라인 FAILED 상태로 종료 — RAG 인덱싱 건너술 (job=%s stage=%s error=%s)",
+                    job_id,
+                    final_state.get("current_stage"),
+                    final_state.get("error"),
+                )
+                return
 
             # 분석(그래프) 완료 후, 같은 백그라운드에서 RAG 정밀 파싱(청킹·코드맵)을
             # report_json에 병합하고 청크를 임베딩해 pgvector에 적재한다.
@@ -705,18 +717,39 @@ class AnalysisService:
         settings = get_settings()
         clone_path = os.path.join(settings.CLONE_BASE_DIR, job_id, "repo")
 
+        async def _write_rag_index_status(status: str, chunks: int = 0) -> None:
+            """early return / 예외 경로에서 rag_index 상태를 DB에 안전하게 기록한다."""
+            try:
+                async with async_session_factory() as session:
+                    _repo = AnalysisJobRepository(session)
+                    _job = await _repo.get_job_by_id(UUID(job_id))
+                    if _job:
+                        _report = dict(_job.report_json or {})
+                        _report["rag_index"] = {"status": status, "chunks": chunks}
+                        await _repo.update_job_status(
+                            job_id=UUID(job_id),
+                            status=_job.status,
+                            report_json=_report,
+                        )
+                        await session.commit()
+            except Exception as _exc:
+                logger.error("[RAG 인덱싱] rag_index 상태 기록 실패 job=%s: %s", job_id, _exc)
+
         try:
             # 1. 분석 메타 조회 — 성공(COMPLETED) 건만 인덱싱한다.
             async with async_session_factory() as session:
                 repo = AnalysisJobRepository(session)
                 job = await repo.get_job_by_id(UUID(job_id))
                 if not job:
+                    # job 자체가 없으면 기록할 대상 없음 — 그냥 반환
                     return
                 if job.status != JobStatus.COMPLETED.value:
                     logger.info(
                         "[RAG 인덱싱] 분석 미완료(status=%s), 건너뜀 (job=%s)",
                         job.status, job_id,
                     )
+                    # 분석 자체가 실패/취소된 경우 → skipped 기록 후 반환
+                    await _write_rag_index_status("skipped")
                     return
                 owner, repo_name, branch = job.owner, job.repo_name, job.branch
                 force_refresh = bool(job.force_refresh)
@@ -725,6 +758,8 @@ class AnalysisService:
 
             if not os.path.isdir(clone_path):
                 logger.warning("[RAG 인덱싱] clone 경로 없음, 건너뜀 (job=%s)", job_id)
+                # clone이 없으면 임베딩 불가 → skipped 기록 후 반환 (무한 폴링 방지)
+                await _write_rag_index_status("skipped")
                 return
 
             # 2. 정밀 파싱 → report_json에 canonical 결과 병합 (additive: 기존 키 보존)
@@ -782,6 +817,8 @@ class AnalysisService:
         except Exception as exc:
             # RAG 인덱싱 실패는 분석 결과에 영향을 주지 않는다(분석은 이미 완료).
             logger.exception("[RAG 인덱싱] 실패 (분석 결과 영향 없음) job=%s: %s", job_id, exc)
+            # 실패 시 report_json에 rag_index.status = "failed" 명시 (무한 대기 방지)
+            await _write_rag_index_status("failed")
 
     # ──────────────────────────────────────────
     # 이벤트 발행 헬퍼

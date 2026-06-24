@@ -279,9 +279,12 @@ async def stream_analysis_events(
         service = AnalysisService(session)
         job_status_response = await service.get_job_status(job_id)
 
-    # 이미 완료/실패한 작업인지 확인
+    # 이미 완료/실패한 작업인지 확인 (DB 기준)
     if job_status_response.data.status in (JobStatus.COMPLETED, JobStatus.FAILED):
-        raise JobAlreadyDoneError()
+        last_event = event_manager.get_last_event(str(job_id))
+        # 만약 이벤트 캐시에 아직 종료 이벤트가 남아있다면, 에러를 던지지 않고 캐시를 내려보냄
+        if not last_event or last_event.status not in (JobStatus.COMPLETED, JobStatus.FAILED):
+            raise JobAlreadyDoneError()
 
     async def event_generator():
         """SSE 이벤트 스트림 제너레이터"""

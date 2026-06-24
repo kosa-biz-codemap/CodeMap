@@ -72,7 +72,7 @@ async def save_local_upload(
         raise FileLimitExceededError(f"로컬 폴더는 최대 {MAX_LOCAL_FILE_COUNT:,}개 파일까지 분석할 수 있습니다.")
 
     destination = destination.resolve()
-    shutil.rmtree(destination.parent, ignore_errors=True)
+    shutil.rmtree(destination, ignore_errors=True)
     destination.mkdir(parents=True, exist_ok=True)
     written_paths: set[Path] = set()
     file_count = 0
