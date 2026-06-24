@@ -68,3 +68,6 @@ class CodeMapState(TypedDict):
 
     # ── 최종 출력 ─────────────────────────────────────
     final_answer: str | None          # Final Answer Agent가 생성한 최종 응답
+
+    # ── 내부 상태 ─────────────────────────────────────
+    _plan_item: AccessPlanItem | None # Send API로 워커에 전달되는 개별 계획 (fan-out용)

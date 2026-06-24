@@ -29,57 +29,8 @@ _HYBRID_TOP_N = 5    # 최종 반환 결과 수
 
 
 # ─────────────────────────────────────────────────────
-# Semantic Search (pgvector) — lazy import
+# _semantic_search 제거됨 (app.embed.service.vector_search로 대체)
 # ─────────────────────────────────────────────────────
-
-async def _semantic_search(
-    db,          # AsyncSession — lazy import 환경에서 타입 어노테이션 생략
-    job_id: UUID,
-    query: str,
-    k: int = _SEMANTIC_K,
-) -> list[dict]:
-    """
-    pgvector 코사인 유사도 기반 시맨틱 검색.
-
-    반환: [{"node_id", "file_path", "content", "summary", "distance", "rank"}]
-    """
-    try:
-        from langchain_openai import OpenAIEmbeddings
-        from app.core.config import get_settings
-        from app.embed.repository import EmbedRepository
-
-        settings = get_settings()
-        if not settings.OPENAI_API_KEY.get_secret_value():
-            logger.info("[HybridSearch] OPENAI_API_KEY 미설정 — 시맨틱 검색 건너뜀")
-            return []
-
-        embedder = OpenAIEmbeddings(
-            model=settings.EMBEDDING_MODEL,
-            dimensions=settings.EMBEDDING_DIMENSIONS,
-            api_key=settings.OPENAI_API_KEY.get_secret_value(),
-        )
-        query_vector = await embedder.aembed_query(query)
-
-        repo = EmbedRepository(db)
-        rows = await repo.similarity_search(job_id, query_vector, k=k)
-
-        results = []
-        for rank, (node, distance) in enumerate(rows, 1):
-            content = node.content or ""
-            results.append({
-                "node_id": str(node.id),
-                "file_path": node.path or "",
-                "content": content,
-                "summary": node.summary or "",
-                "distance": distance,
-                "rank": rank,
-            })
-        logger.info("[HybridSearch] 시맨틱 검색 완료 — %d 결과", len(results))
-        return results
-
-    except Exception as exc:
-        logger.warning("[HybridSearch] 시맨틱 검색 실패: %s", exc)
-        return []
 
 
 # ─────────────────────────────────────────────────────
@@ -102,14 +53,37 @@ async def hybrid_search(
       - 시맨틱 결과 없으면 → 빈 리스트 반환 (caller에서 키워드 검색 폴백)
       - BM25 미설치 → 시맨틱 순위만 사용하여 RRF 계산
     """
-    # 1. 시맨틱 검색
-    semantic_results = await _semantic_search(db, job_id, query, k=_SEMANTIC_K)
+    try:
+        from app.embed.service import vector_search, embed_ready
+        
+        # 0. embed_ready 가드
+        if not await embed_ready(db, job_id):
+            logger.info("[HybridSearch] 레포지토리 임베딩 미준비 — 키워드 검색으로 즉시 폴백")
+            return []
 
-    if not semantic_results:
-        logger.info("[HybridSearch] 시맨틱 결과 없음 — 빈 리스트 반환 (caller 폴백)")
+        # 1. 시맨틱 검색 (단일 진입점 사용)
+        vector_results = await vector_search(db, job_id, query, k=_SEMANTIC_K)
+        if not vector_results:
+            logger.info("[HybridSearch] 시맨틱 결과 없음 — 빈 리스트 반환 (caller 폴백)")
+            return []
+            
+        semantic_results = []
+        for rank, res in enumerate(vector_results, 1):
+            semantic_results.append({
+                "node_id": f"dummy_{rank}", # vector_search에서 node_id를 주지 않으므로 더미값
+                "file_path": res.get("file", ""),
+                "content": res.get("snippet", ""),
+                "summary": "",  # vector_search가 summary를 주지 않으므로 빈 문자열
+                "distance": 1.0 - res.get("score", 0.0),
+                "rank": rank,
+            })
+            
+    except Exception as exc:
+        logger.warning("[HybridSearch] 시맨틱 검색 연동 실패: %s", exc)
         return []
 
     # 2. BM25 재스코어링 (시맨틱 후보 풀을 corpus로 사용)
+    #    summary가 비어있어도 content 만으로 충분히 동작
     corpus = [r["content"] + " " + r["summary"] for r in semantic_results]
     bm25_ranked = _bm25_rank(corpus, query, top_n=len(semantic_results))
 
