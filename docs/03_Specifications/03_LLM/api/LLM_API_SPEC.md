@@ -41,8 +41,7 @@
 | 기능 명세 | 설명 |
 | --- | --- |
 | `../spec/LLM_CHAT_SPEC.md` | Chat Application Layer |
-| `../spec/LLM_OPS_SPEC.md` | 이벤트, 상태, 실패 처리 |
-| `../spec/LLM_GRAPH_SPEC.md` | CodeMapState, LangGraph workflow |
-| `../spec/LLM_SUPERVISOR_ROUTE_SPEC.md` | Supervisor Agent, Route Node |
-| `../spec/LLM_WORKER_EVIDENCE_SPEC.md` | Workers, Evidence Aggregator |
-| `../spec/LLM_MEMORY_EXTENSION_SPEC.md` | Memory, external tools, advanced reasoning |
+| `../spec/LLM_AGENT_SPEC.md` | CodeMapState, LangGraph workflow, route 보안/fan-out, 이벤트·상태, 메모리(통합본) |
+| `../spec/LLM_PLANNER_SPEC.md` | Supervisor Agent 계획 수립 |
+| `../spec/LLM_EVALUATOR_SPEC.md` | 근거 집계 및 충분성 평가 |
+| `../spec/LLM_TOOL_SPEC.md` | Workers, RRF 하이브리드 검색, 도구 실행 |
