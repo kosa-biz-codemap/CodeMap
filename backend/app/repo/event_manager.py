@@ -35,6 +35,8 @@ class EventManager:
         self._subscribers: dict[str, list[asyncio.Queue]] = defaultdict(list)
         # job_id → 마지막 이벤트 (늦게 접속한 구독자에게 현재 상태 제공용)
         self._last_events: dict[str, ProgressEvent] = {}
+        # 동시성 보장을 위한 락
+        self._lock = asyncio.Lock()
 
     async def publish(self, job_id: str, event: ProgressEvent) -> None:
         """
@@ -47,19 +49,20 @@ class EventManager:
         self._last_events[job_id] = event # 마지막 이벤트 저장
 
         # 연결이 끊긴 구독자 제거를 위한 유효 큐 목록
-        active_queues = []
-        for queue in self._subscribers[job_id]:
-            try:
-                await queue.put(event) # 각 구독자의 큐에 이벤트 넣기
-                active_queues.append(queue)
-            except Exception:
-                logger.warning(f"구독자 큐에 이벤트 전송 실패 (job_id={job_id})")
+        async with self._lock:
+            active_queues = []
+            for queue in self._subscribers[job_id]:
+                try:
+                    await queue.put(event) # 각 구독자의 큐에 이벤트 넣기
+                    active_queues.append(queue)
+                except Exception:
+                    logger.warning(f"구독자 큐에 이벤트 전송 실패 (job_id={job_id})")
 
-        self._subscribers[job_id] = active_queues
+            self._subscribers[job_id] = active_queues
 
         # 최종 상태(COMPLETED/FAILED)인 경우 해당 job의 구독 정보를 정리한다
         if event.status in (JobStatus.COMPLETED, JobStatus.FAILED):
-            await self._cleanup_job(job_id)
+            asyncio.create_task(self._cleanup_job(job_id))
 
     async def subscribe(self, job_id: str) -> AsyncGenerator[ProgressEvent, None]:
         """
@@ -75,7 +78,8 @@ class EventManager:
             ProgressEvent: 파이프라인 진행 상태 이벤트
         """
         queue: asyncio.Queue = asyncio.Queue()
-        self._subscribers[job_id].append(queue) # 구독 등록
+        async with self._lock:
+            self._subscribers[job_id].append(queue) # 구독 등록
 
         try:
             # 마지막 이벤트가 있으면 현재 상태를 즉시 전달 (늦게 접속하더라도 현재 상태를 알 수 있음)
@@ -92,8 +96,9 @@ class EventManager:
                     break
         finally:
             # 구독 해제: 큐를 구독자 목록에서 제거
-            if queue in self._subscribers.get(job_id, []):
-                self._subscribers[job_id].remove(queue)
+            async with self._lock:
+                if queue in self._subscribers.get(job_id, []):
+                    self._subscribers[job_id].remove(queue)
 
     def get_last_event(self, job_id: str) -> ProgressEvent | None:
         """특정 job의 마지막 이벤트를 조회한다 (현재 상태 확인용)"""
@@ -103,7 +108,8 @@ class EventManager:
         """완료/실패한 job의 구독 정보 및 캐시를 정리한다"""
         # 1. 큐 구독자 즉시 정리 (이벤트는 이미 전달 완료됨)
         await asyncio.sleep(1)
-        self._subscribers.pop(job_id, None)
+        async with self._lock:
+            self._subscribers.pop(job_id, None)
         
         # 2. 10분 후 마지막 이벤트 캐시 제거 (메모리 누수 방지)
         # 클라이언트가 늦게 상태를 조회할 수 있도록 여유 시간을 둠
