@@ -28,22 +28,6 @@ from app.agent_graph.workers.workers import (
 )
 
 
-def route_to_workers(state: CodeMapState):
-    """route_node 이후 승인된 plan을 Worker들로 분배합니다."""
-    from langgraph.types import Send
-    approved = state.get("security_result", {}).get("approved", [])
-    sends: list[Send] = []
-    for item in approved:
-        tool = item.get("tool", "search")
-        node_name = f"{tool}_worker"
-        sends.append(Send(node_name, {**state, "_plan_item": item}))
-
-    if not sends:
-        sends.append(Send("evidence_aggregator", state))
-
-    return sends
-
-
 def build_graph() -> StateGraph:
     """
     CodeMap 멀티에이전트 LangGraph 워크플로우를 빌드합니다.
@@ -67,11 +51,9 @@ def build_graph() -> StateGraph:
     builder.add_edge("supervisor_agent", "route_node")
 
     # Route Node → Workers (Send API가 동적으로 처리 — conditional edge 사용)
-    builder.add_conditional_edges(
-        "route_node", 
-        route_to_workers, 
-        ["search_worker", "dir_worker", "grep_worker", "read_worker", "evidence_aggregator"]
-    )
+    # route_node가 반환한 dict를 통해 상태 업데이트 후 fanout_to_workers 실행
+    from app.agent_graph.nodes.route_node import fanout_to_workers
+    builder.add_conditional_edges("route_node", fanout_to_workers, ["search_worker", "dir_worker", "grep_worker", "read_worker", "evidence_aggregator"])
 
     # Workers → Evidence Aggregator (fan-in)
     # worker_results는 Annotated[list, operator.add]로 자동 병합됨

@@ -21,7 +21,7 @@ _TOKEN_BUDGET = 12_000   # 대략 글자 수 기준 (1 token ≈ 4 chars)
 
 
 def _deduplicate(results: list[WorkerResult]) -> list[WorkerResult]:
-    """동일 파일 + 동일 snippet의 중복 결과 제거."""
+    """동일 파일 + 동일 content의 중복 결과 제거."""
     seen: set[tuple] = set()
     deduped: list[WorkerResult] = []
     for r in results:
@@ -53,15 +53,15 @@ def evidence_aggregator(state: CodeMapState) -> dict:
             no_path.append(r)
 
     # token budget 내로 compact_context 구성
-    snippets: list[dict] = []
+    grouped_by_file: dict[str, list[dict]] = defaultdict(list)
     total_chars = 0
+    selected_count = 0
     budget_exceeded = False
 
     for file_path, items in sorted(grouped.items()):
         for item in items:
             snippet = item.get("snippet", "")
             if total_chars + len(snippet) > _TOKEN_BUDGET:
-                # 남은 budget만큼 잘라서 포함
                 available = _TOKEN_BUDGET - total_chars
                 if available > 100:
                     snippet = snippet[:available] + "\n... (budget 초과로 잘림)"
@@ -69,20 +69,24 @@ def evidence_aggregator(state: CodeMapState) -> dict:
                 else:
                     budget_exceeded = True
                     break
-            snippets.append({
-                "file": file_path,
-                "worker": item.get("worker"),
-                "query": item.get("query"),
+
+            grouped_by_file[file_path].append({
+                "id": item.get("id"),
+                "lineStart": item.get("lineStart"),
+                "lineEnd": item.get("lineEnd"),
+                "score": item.get("score"),
                 "snippet": snippet,
+                "metadata": item.get("metadata", {}),
             })
             total_chars += len(snippet)
+            selected_count += 1
             if budget_exceeded:
                 break
         if budget_exceeded:
             break
 
-    # 파일 경로 없는 결과 (search 결과 등) 추가
-    if not budget_exceeded:
+    # 파일 경로 없는 결과 추가
+    if no_path and not budget_exceeded:
         for item in no_path:
             snippet = item.get("snippet", "")
             if total_chars + len(snippet) > _TOKEN_BUDGET:
@@ -92,25 +96,31 @@ def evidence_aggregator(state: CodeMapState) -> dict:
                     budget_exceeded = True
                 else:
                     break
-            snippets.append({
-                "file": None,
-                "worker": item.get("worker"),
-                "query": item.get("query"),
+
+            grouped_by_file["no_path"].append({
+                "id": item.get("id"),
+                "lineStart": item.get("lineStart"),
+                "lineEnd": item.get("lineEnd"),
+                "score": item.get("score"),
                 "snippet": snippet,
+                "metadata": item.get("metadata", {}),
             })
             total_chars += len(snippet)
+            selected_count += 1
             if budget_exceeded:
                 break
 
     compact_context = {
-        "total_results": len(raw_results),
-        "deduplicated": len(deduped),
-        "total_chars": total_chars,
-        "snippets": snippets,
+        "selectedEvidenceCount": selected_count,
+        "tokenBudget": _TOKEN_BUDGET,
+        "usedTokens": total_chars // 4,  # 대략적인 토큰 수
+        "groupedByFile": dict(grouped_by_file),
     }
+
+    events = [{"type": "evidence_compacted", "evidenceCount": selected_count, "compactContextReady": True}]
 
     logger.info(
         "[EvidenceAggregator] 완료 — 스니펫=%d chars=%d",
-        len(snippets), total_chars,
+        selected_count, total_chars,
     )
-    return {"compact_context": compact_context}
+    return {"compact_context": compact_context, "events": events}

@@ -136,7 +136,7 @@
 </div>
 
 <div class="arch-wrap">
-<!-- 
+<!--
   레이아웃 변경 설명:
   - 기존 State Box: x=650, width=200  → 오른쪽 끝: 650+200=850
   - 새 State Box: x=750, width=210   → 오른쪽 끝: 750+210=960
@@ -172,18 +172,18 @@
     <rect x="750" y="250" width="210" height="500" rx="12" class="state-card"/>
     <text x="855" y="280" text-anchor="middle" font-size="15" font-weight="700" fill="#15803D">💾 CodeMapState</text>
     <text x="855" y="300" text-anchor="middle" font-size="12" fill="#16A34A">Shared Memory (공유 상태)</text>
-    
+
     <rect x="763" y="320" width="184" height="415" rx="8" fill="#FFF" stroke="#86EFAC"/>
-    
+
     <text x="774" y="350" font-size="12" font-weight="700" fill="#374151">user_query:</text>
     <text x="774" y="370" font-size="11" fill="#6B7280">"로그인 어딧음?"</text>
-    
+
     <text x="774" y="410" font-size="12" font-weight="700" fill="#374151">rewritten_query:</text>
     <text x="774" y="430" font-size="11" fill="#6B7280">"login, authentication"</text>
-    
+
     <text x="774" y="470" font-size="12" font-weight="700" fill="#374151">access_plan:</text>
     <text x="774" y="490" font-size="11" fill="#6B7280">[dir, search, read]</text>
-    
+
     <text x="774" y="540" font-size="13" font-weight="700" fill="#059669">worker_results:</text>
     <text x="774" y="560" font-size="11" fill="#059669">[{ raw_code_1 },</text>
     <text x="774" y="575" font-size="11" fill="#059669"> { raw_code_2 }]</text>
@@ -203,7 +203,7 @@
   <line x1="350" y1="60" x2="350" y2="120" class="flow-line" marker-end="url(#arr-slate)"/>
 <!-- 2. Chat -> Supervisor -->
   <line x1="350" y1="180" x2="350" y2="280" class="flow-line" marker-end="url(#arr-slate)"/>
-  
+
   <!-- 3. Supervisor -> Route Node -->
   <line x1="350" y1="340" x2="350" y2="420" class="flow-line" marker-end="url(#arr-slate)"/>
 
@@ -407,9 +407,9 @@ function showInfo(key) {
 panel.style.borderColor = '#1E293B';
   panel.style.backgroundColor = '#F8FAFC';
   panel.style.transform = 'scale(1.02)';
-  
-  setTimeout(() => { 
-    panel.style.borderColor = '#E2E8F0'; 
+
+  setTimeout(() => {
+    panel.style.borderColor = '#E2E8F0';
     panel.style.backgroundColor = '#FFFFFF';
 
     panel.style.transform = 'scale(1)';
