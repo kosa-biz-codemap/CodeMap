@@ -14,7 +14,7 @@ os.path.exists()로 이미 Clone된 경우를 감지한다.
     Agent 생성 및 ainvoke() 실행 패턴 참고
   [Sec08 - RAG Agent]
     kosa-langchain-practice/langchain/api/sec08_rag/agent_rag.py
-    pgvector Tool을 Agent에 연결하는 패턴 참고 (향후 연동 예정)
+    pgvector Tool을 Agent에 연결하는 패턴 참고 (PR #109의 Hybrid Search 툴 워커로 구현 완료)
 """
 
 from __future__ import annotations
