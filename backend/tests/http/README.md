@@ -28,9 +28,9 @@
 | `RAG-PARSE` | README·트리·스택·AST·요약·위험도·스택 점수 |
 | `RAG-EMBED` | 임베딩 생성 및 상태 |
 | `RAG-GRAPH` | 의존성 그래프 생성 및 조회 |
-| `AGENT-CHAT` | 저장소 Q&A, 대화 이력, 장기 기억 |
-| `AGENT-SEARCH` | vector/grep/file 탐색 도구 |
-| `AGENT-CORE` | 세션 상태와 정리 |
+| `LLM-CHAT` | 저장소 Q&A, 대화 이력, 장기 기억 |
+| `LLM-TOOL` | vector/grep/file 탐색 도구 |
+| `LLM-AGENT` | 세션 상태와 정리 |
 | `DOCS-GEN` | 가이드 조회·생성·재생성·다운로드·저장 |
 | `DOCS-GUARD` | 민감정보 탐지·마스킹 |
 | `DOCS-UTIL` | PDF 내보내기와 외부 공유(보류 기능) |

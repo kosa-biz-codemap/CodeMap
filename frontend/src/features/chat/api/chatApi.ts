@@ -14,15 +14,47 @@ export interface ChatMessage {
   suggestions?: string[];
 }
 
+/**
+ * Run stream SSE 이벤트 타입.
+ * 백엔드 Run stream의 원본 이벤트를 직접 수신합니다.
+ */
 export interface StreamEvent {
-  type: "status" | "content" | "done" | "error" | "exploration" | "references" | "thread" | "suggestions";
-  phase?: StreamPhase;
+  type:
+    | "graph_started"
+    | "planner_plan"
+    | "route_validated"
+    | "worker_started"
+    | "worker_result"
+    | "evidence_compacted"
+    | "answer_delta"
+    | "references"
+    | "completed"
+    | "cancelled"
+    | "failed"
+    | "error";
+  // graph_started
+  runId?: string;
+  stateKeys?: string[];
+  // planner_plan
+  rewrittenQuery?: string;
+  selectedWorkers?: string[];
+  allowedPaths?: string[];
+  // route_validated
+  parallelGroups?: Array<{ worker: string; path: string }>;
+  // worker_result
+  worker?: string;
+  target?: string | null;
+  resultCount?: number;
+  // answer_delta
   content?: string;
-  error?: string;
-  step?: string;
+  // references
   references?: CodeReference[];
-  threadId?: string;
-  suggestions?: string[];
+  // failed / error
+  error?: string;
+  status?: string;
+  cancelledAt?: string | number;
+  // sessionId (from create_chat_run response)
+  sessionId?: string;
 }
 
 interface StreamChatOptions {
@@ -30,39 +62,68 @@ interface StreamChatOptions {
   contextFile?: string | null;
 }
 
+const MODE_MAP: Record<ChatMode, string> = {
+  quick: "lite",
+  deep: "deep",
+};
+
+/**
+ * 2단계 Run API를 사용하여 채팅을 스트리밍합니다.
+ *
+ * 1) POST /api/chat/{repoId}/runs → run 생성, streamUrl 반환
+ * 2) GET  streamUrl → SSE 스트리밍
+ */
 export async function* streamChat(
   repoId: string,
   message: string,
   mode: ChatMode,
   options: StreamChatOptions = {},
 ): AsyncGenerator<StreamEvent> {
-  let response: Response;
+  // Step 1: Run 생성
+  let runData: { runId: string; sessionId: string; streamUrl: string };
   try {
-    response = await fetch(apiPath(`/chat/${repoId}`), {
+    const response = await fetch(apiPath(`/chat/${repoId}/runs`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message,
-        mode,
-        threadId: options.threadId || undefined,
-        contextFile: options.contextFile || undefined,
+        question: message,
+        mode: MODE_MAP[mode] || "lite",
+        sessionId: options.threadId || undefined,
       }),
     });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      yield {
+        type: "error",
+        error: payload?.detail || `채팅 요청에 실패했습니다. (${response.status})`,
+      };
+      return;
+    }
+    const json = await response.json();
+    runData = json.data;
   } catch {
     yield { type: "error", error: "채팅 서버에 연결할 수 없습니다. 백엔드 상태를 확인해주세요." };
     return;
   }
 
-  if (!response.ok || !response.body) {
-    const payload = await response.json().catch(() => null);
-    yield {
-      type: "error",
-      error: payload?.detail || `채팅 요청에 실패했습니다. (${response.status})`,
-    };
+  // sessionId를 graph_started 이벤트에 포함하여 전달
+  yield { type: "graph_started", runId: runData.runId, sessionId: runData.sessionId };
+
+  // Step 2: SSE 스트리밍
+  let streamResponse: Response;
+  try {
+    streamResponse = await fetch(apiPath(runData.streamUrl.replace("/api", "")));
+  } catch {
+    yield { type: "error", error: "스트리밍 연결에 실패했습니다." };
     return;
   }
 
-  const reader = response.body.getReader();
+  if (!streamResponse.ok || !streamResponse.body) {
+    yield { type: "error", error: `스트리밍 연결 실패 (${streamResponse.status})` };
+    return;
+  }
+
+  const reader = streamResponse.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
   while (true) {
@@ -102,16 +163,17 @@ const PREVIEW_ANSWERS: Record<string, string> = {
 };
 
 export async function* previewStream(message: string): AsyncGenerator<StreamEvent> {
-  yield { type: "status", phase: "searching" };
-  yield { type: "exploration", step: "frontend/src/app/analyze/page.tsx 확인" };
+  yield { type: "graph_started", runId: "preview" };
+  yield { type: "route_validated", parallelGroups: [{ worker: "search_worker", path: "frontend/src/app/analyze/page.tsx" }] };
+  yield { type: "worker_started", worker: "search", target: "frontend/src/app/analyze/page.tsx" };
   await new Promise((resolve) => setTimeout(resolve, 220));
-  yield { type: "status", phase: "building_context" };
+  yield { type: "worker_result", worker: "search", resultCount: 1 };
+  yield { type: "evidence_compacted" };
   const answer = /구조|architecture|아키텍처/i.test(message)
     ? PREVIEW_ANSWERS.architecture
     : PREVIEW_ANSWERS.default;
-  yield { type: "status", phase: "generating" };
   for (let index = 0; index < answer.length; index += 18) {
-    yield { type: "content", content: answer.slice(index, index + 18) };
+    yield { type: "answer_delta", content: answer.slice(index, index + 18) };
     await new Promise((resolve) => setTimeout(resolve, 18));
   }
   yield {
@@ -123,5 +185,5 @@ export async function* previewStream(message: string): AsyncGenerator<StreamEven
       snippet: "export default function AnalyzePage()",
     }],
   };
-  yield { type: "done" };
+  yield { type: "completed", runId: "preview", status: "completed" };
 }

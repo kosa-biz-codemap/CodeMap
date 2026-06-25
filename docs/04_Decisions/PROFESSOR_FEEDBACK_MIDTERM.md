@@ -191,7 +191,7 @@ WHERE type = 'DIRECTORY' AND job_id = :job_id AND path = :dir_path;
 - [ ] Issue #93 — FILE 노드에 `lines`/`size` 추가
 - [ ] Issue #101 — 모노레포 import 경로 해결 (`backend/` prefix 탐지)
 - [ ] DIRECTORY 노드 `summary`/`embedding` 채우기 (Tree-RAG 파이프라인)
-- [ ] Supervisor Agent `access_plan`에 `search_strategy` 필드 추가
+- [ ] Planner Node `access_plan`에 `search_strategy` 필드 추가
 - [ ] 로컬 ZIP 업로드 명세 (`PROJECT-REPO-B-206/207`, `PROJECT-REPO-F-205`)
 
 ### 관련 문서 업데이트 체크리스트
@@ -211,7 +211,7 @@ WHERE type = 'DIRECTORY' AND job_id = :job_id AND path = :dir_path;
 | import 의존성 그래프 | `code_dependencies` (구조는 맞음, 해결률 개선 필요) | ⚠️ Issue #101 |
 | AST 기반 청킹 + 심볼 메타데이터 | `file_metadata` JSONB에 symbol/start_line/end_line | ✅ 데이터 있음, 인덱스만 추가하면 됨 |
 | HNSW 인덱스 | `code_nodes.embedding` HNSW 적용 | ✅ 벡터 검색 성능 고려됨 |
-| Agentic RAG | Supervisor Agent 설계 존재 | ✅ 검색 라우팅 자동화 기반 있음 |
+| Agentic RAG | Planner Node 설계 존재 | ✅ 검색 라우팅 자동화 기반 있음 |
 
 **결론**: 핵심 데이터는 이미 `code_nodes`에 잘 쌓여 있습니다. **"새 RDB 테이블 추가"가 아니라 이미 있는 데이터를 인덱싱·분류·라우팅**하는 것이 실제 보완 방향이며, 이것이 교수님 피드백의 본질과도 일치합니다.
 
@@ -227,9 +227,9 @@ WHERE type = 'DIRECTORY' AND job_id = :job_id AND path = :dir_path;
 
 | 적용 포인트 | 방향 | 기능 ID (안) |
 |---|---|---|
-| **분석 프리셋 저장** | "신입 온보딩 모드" / "보안 감사 모드" 등 | `AGENT-CHAT-F-207` |
-| **답변 스타일 커스텀** | Final Answer Agent 프롬프트 파라미터 사용자 설정 | `AGENT-CHAT-B-205` |
-| **질문 템플릿 저장** | 자주 쓰는 질문 즐겨찾기 | `AGENT-CHAT-F-208` |
+| **분석 프리셋 저장** | "신입 온보딩 모드" / "보안 감사 모드" 등 | `LLM-CHAT-F-207` |
+| **답변 스타일 커스텀** | Final Answer Agent 프롬프트 파라미터 사용자 설정 | `LLM-CHAT-B-205` |
+| **질문 템플릿 저장** | 자주 쓰는 질문 즐겨찾기 | `LLM-CHAT-F-208` |
 
 ### 파이프라인 시각화 — 별도 탭 구성
 

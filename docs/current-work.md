@@ -1,0 +1,115 @@
+# Current Work
+
+## 2026-06-25 — Run registry and Phase 1 stream contract alignment
+
+- Current branch: `refactor/split-core-to-infra-common`
+- Current goal: Move the implementation toward the Phase 1 agent/run contract instead of documenting temporary gaps.
+- Current status:
+  - Preserved `AGENT_GRAPH_FLOW.md` as a Phase 1 target diagram and restored `worker_started` in the worker sequence.
+  - Added a shared chat run registry so run create, stream, status, evidence, and cancel operate on the same run record.
+  - Replaced run management 501 stubs with registry-backed status/evidence/cancel responses.
+  - Added `worker_started` events from worker adapters and wired the frontend stream handler to display them.
+  - Updated LLM specs/API docs to treat Run create, Run stream, status, evidence, cancel, references, and worker_started as implemented Phase 1 contracts.
+- Validation:
+  - Pending for this change set.
+
+## 2026-06-25 — Agent spec implementation-contract cleanup
+
+- Current branch: `refactor/split-core-to-infra-common`
+- Current goal: Align current implementation contracts with the latest Planner -> Dispatcher -> Workers -> Evaluator architecture, excluding `AGENT_GRAPH_FLOW.md` because it visualizes the Phase 1 completion target.
+- Current status:
+  - Split current SSE events from planned future events in the common/chat LLM specs.
+  - Documented the current Run stream event contract after removing the legacy chat bridge (`POST /api/chat/{repo_id}`).
+  - Updated Dispatcher and tool security descriptions to match current `_ALLOWED_EXTENSIONS` and `Path.relative_to()` behavior.
+  - Removed the unused `backend/app/agent/workers/workers.py` compatibility export.
+  - Reworded the external tool service as an MCP-style interface while it remains a 501 Phase 2 stub.
+- Validation:
+  - `backend/.venv/bin/python -m pytest backend/tests/unit -v --tb=short` — `160 passed, 5 skipped`
+  - `backend/.venv/bin/python -m compileall -q backend/app/agent backend/app/tool backend/app/chat` passed
+  - `git diff --check` passed
+
+## 2026-06-25 — PR #126 agent architecture realignment
+
+- Current branch: `refactor/split-core-to-infra-common`
+- Current goal: Adopt the Planner -> Dispatcher -> Tool Workers -> Evaluator architecture and align code/docs/specs with that decision.
+- Current status:
+  - Added `backend/app/agent/llm_client.py` as the LLM provider/factory boundary.
+  - Added `backend/app/agent/nodes/` for `planner_node`, `dispatcher_node`, and `evaluator_node`.
+  - Removed legacy worker import wrappers after code/tests/docs migrated to the new node modules.
+  - Split deterministic tool implementations into `backend/app/tool/dir_scan.py`, `grep_scan.py`, and `file_read.py`.
+  - Reworked `search_worker`, `dir_worker`, `grep_worker`, and `read_worker` as worker adapters around search/tool logic.
+  - Updated architecture/spec/API docs to use Planner/Dispatcher/Workers/Evaluator terminology and mark reasoning worker behavior as Phase 2 optional.
+- Files touched or likely relevant:
+  - `backend/app/agent/llm_client.py`
+  - `backend/app/agent/graph.py`
+  - `backend/app/agent/nodes/*`
+  - `backend/app/agent/workers/*`
+  - `backend/app/tool/dir_scan.py`
+  - `backend/app/tool/grep_scan.py`
+  - `backend/app/tool/file_read.py`
+  - `backend/app/chat/final_answer_agent.py`
+  - `backend/tests/unit/test_agent.py`
+  - `backend/tests/unit/test_chat_issue_56.py`
+  - `docs/01_Overview/FUNCTIONAL_SPECIFICATION.md`
+  - `docs/02_Architecture/*`
+  - `docs/03_Specifications/03_LLM/*`
+  - `docs/03_Specifications/PHASE2_API_SPEC.md`
+  - `docs/04_Decisions/MULTI_AGENT_ARCHITECTURE_DECISION.md`
+- Commands run:
+  - `rg -n "supervisor_agent|route_node|evidence_aggregator|..."`
+  - `backend/.venv/bin/python -m pytest backend/tests/unit -v --tb=short`
+  - `git diff --check`
+  - `backend/.venv/bin/python -m compileall -q backend/app/agent backend/app/tool backend/app/chat`
+- Validation:
+  - `160 passed, 5 skipped`
+  - `git diff --check` passed
+  - compileall passed for agent/tool/chat modules
+- Known issues:
+  - `route_validated` SSE event name remains intentionally unchanged for frontend compatibility.
+  - `backend/app/pipeline/graph.py` contains the analysis pipeline (previously at `backend/app/repo/pipeline/`). It references `route_node_fun` as a separate repository-analysis pipeline concept, not the LLM agent dispatcher.
+- Next steps:
+  - Ask for an additional PR #126 review against the latest cleanup commit.
+
+## 2026-06-25 — PR #126 migration follow-up
+
+- Current branch: `refactor/split-core-to-infra-common`
+- Current goal: Apply the post-migration follow-up plan from PR #126 on top of `bc2b29a`.
+- Current status:
+  - Added `fanout_to_workers` runtime allowlist for `search`, `dir`, `grep`, `read`.
+  - Converted `/tools/execute` to a single Pydantic JSON body and explicit `501`/`failed` response.
+  - Removed dummy `success` tool service responses.
+  - Added SSE `event:` headers while preserving `data:` JSON lines for the existing frontend stream parser.
+  - Cleaned worker stubs, common service placeholder, HTTP test naming, and AGENT-to-LLM/core-to-infra documentation drift.
+- Files touched or likely relevant:
+  - `backend/app/agent/nodes/dispatcher_node.py`
+  - `backend/app/tool/router.py`
+  - `backend/app/tool/service.py`
+  - `backend/app/chat/router.py`
+  - `backend/tests/unit/test_agent.py`
+  - `backend/tests/unit/test_tool_router.py`
+  - `backend/tests/http/LLM-*`
+  - `docs/01_Overview/FUNCTIONAL_SPECIFICATION.md`
+  - `docs/02_Architecture/ARCHITECTURE.md`
+  - `docs/03_Specifications/PHASE2_API_SPEC.md`
+  - `docs/03_Specifications/ERROR_CODES.md`
+- Commands run:
+  - `env -u GITHUB_TOKEN gh auth status`
+  - `env -u GITHUB_TOKEN gh pr view 126 ...`
+  - `env -u GITHUB_TOKEN gh api graphql ...`
+  - `git pull --rebase`
+  - `backend/.venv/bin/python -m pytest backend/tests/unit -v --tb=short`
+  - `git diff --check`
+  - `rg -n 'AGENT-CHAT|AGENT-SEARCH|AGENT-CORE' backend/tests/http`
+  - `rg -n 'AGENT_RUN_' docs`
+  - `rg -n 'agent_graph' docs`
+  - `rg -n 'core/config' docs | rg -v 'infra'`
+- Validation:
+  - `157 passed, 5 skipped`
+  - `git diff --check` passed
+  - Targeted residual string checks returned 0 matches
+- Known issues:
+  - `AGENT_STREAM_FAILED`, `AGENT_EVIDENCE_*`, and related internal agent error codes remain intentionally unchanged per PR follow-up guidance.
+  - Frontend still uses a manual fetch stream parser that reads `data:` lines; the added `event:` header is ignored safely by that parser.
+- Next steps:
+  - Review the committed diff on PR #126.
+  - If the team wants native `EventSource.addEventListener()` handling later, add frontend listeners by SSE event name.

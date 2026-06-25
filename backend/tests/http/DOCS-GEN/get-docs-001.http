@@ -31,7 +31,7 @@ Authorization: Bearer {{accessToken}}
 #     "techStack": ["Python 3.12", "FastAPI"],
 #     "coreFlow": "URL 입력 → Clone → Parse → Embed → Agent → Docs",
 #     "readingOrder": [{"rank": 1, "path": "docs/GETTING_STARTED.md", "reason": "프로젝트 목적 파악"}],
-#     "dangerFiles": [{"path": "backend/app/core/config.py", "reason": "환경변수 관리 파일"}],
+#     "dangerFiles": [{"path": "backend/app/infra/config.py", "reason": "환경변수 관리 파일"}],
 #     "generatedAt": "2026-06-18T10:15:00Z",
 #     "version": 1
 #   }

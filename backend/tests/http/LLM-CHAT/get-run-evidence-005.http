@@ -1,0 +1,31 @@
+### ============================================================================
+### LLM-CHAT-API-005 | Agent 근거 조회
+### Markdown source: docs/03_Specifications/03_LLM/api/LLM_API_SPEC.md
+### Endpoint: GET /api/chat/{repo_id}/runs/{run_id}/evidence
+### 관련 기능 ID: LLM-WORKER-B-201 ~ LLM-WORKER-B-204, LLM-EVALUATOR-B-201
+### 상태: 구현 완료
+### ============================================================================
+@baseUrl = http://localhost:8000
+@accessToken = replace-me
+@repoId = 3f7cc46e-d954-83ab-9f12-013b0c9d2a1e
+@runId = replace-me-run-id
+
+### [정상] run이 수집한 evidence 조회
+GET {{baseUrl}}/api/chat/{{repoId}}/runs/{{runId}}/evidence?includeRawSnippet=true&limit=20
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### 200 OK
+### {"code":200,"message":"success","data":{"runId":"...","evidence":[{"id":"ev_001","worker":"search","path":"backend/app/embed/service.py","lineStart":12,"lineEnd":45,"score":0.91,"snippet":"..."}],"compactContext":{"selectedEvidenceCount":1},"stateField":"worker_results"}}
+### includeRawSnippet: Boolean, 선택, 기본 false
+### worker: String, 선택, search | dir | grep | read
+### limit: Integer, 선택, 기본 20
+
+### [오류] run 없음
+GET {{baseUrl}}/api/chat/{{repoId}}/runs/missing-run/evidence
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### 401 UNAUTHORIZED / 404 LLM_RUN_NOT_FOUND / 404 AGENT_EVIDENCE_NOT_FOUND
+### 표준 오류 예시:
+### {"detail":"Run not found"}

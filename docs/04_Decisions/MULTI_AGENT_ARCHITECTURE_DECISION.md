@@ -54,24 +54,24 @@
 
 이 계층은 빠르고 정확하게 소스코드를 탐색하여 원본 데이터를 수집하는 데 집중합니다.
 
-**3. `Supervisor Agent` (계획 수립 LLM)**
+**3. `Planner Node` (계획 수립 LLM)**
 
 - 오타를 교정하고(Query Rewrite) 사용자의 의도를 분석합니다.
 - 어떤 도구로 어느 경로를 탐색할지 상위 계획(`access_plan`)을 세웁니다.
 - 계획 결과를 State에 저장합니다.
 - 로컬 I/O 도구는 갖지 않습니다.
 
-**4. `Route Node` (보안 통제 및 라우팅)**
+**4. `Dispatcher Node` (보안 통제 및 라우팅)**
 
 - LLM이 아닌 100% 일반 코드입니다.
-- Supervisor의 계획을 읽어 Allowlist(허용 경로)를 검증합니다.
+- Planner의 계획을 읽어 Allowlist(허용 경로)를 검증합니다.
 - Path Traversal 공격을 차단합니다.
 - 권한이 확인된 Worker들을 비동기 병렬(Parallel)로 라우팅합니다.
 - Worker 결과를 자연어로 요약하지 않습니다.
 
 **5. `Tool Workers` (단일 목적 실행기)**
 
-- `Search Worker`(LLM), `Dir Worker`(코드 래퍼), `Grep Worker`(코드 래퍼), `Read Worker`(코드 래퍼), 선택형 `Code Reasoning Worker`(LLM)로 나눕니다.
+- `Search Worker`, `Dir Worker`, `Grep Worker`, `Read Worker`로 나눕니다. 각 worker는 LangGraph adapter이며 실제 결정론적 실행 함수는 `tool/` 아래에 둡니다.
 - 각 Worker는 하나의 도구 또는 하나의 책임만 전담합니다.
 - 실행 결과를 상위 제어 노드에 요약해서 돌려주지 않습니다.
 - 실행 결과를 날 것 그대로(Raw Data) State 공유 메모리에 직접 병합(Append)합니다.
@@ -82,7 +82,7 @@
 
 ### 3-1. 비동기 병렬 처리 (Latency 극복)
 
-Supervisor가 "특정 폴더 구조를 탐색(`dir`)하고, 동시에 키워드를 검색(`grep`)하라"고 계획을 내렸을 때, `Route Node` 코드는 두 Worker를 직렬로 기다리지 않습니다.
+Planner가 "특정 폴더 구조를 탐색(`dir`)하고, 동시에 키워드를 검색(`grep`)하라"고 계획을 내렸을 때, `Dispatcher Node` 코드는 두 Worker를 직렬로 기다리지 않습니다.
 
 파이썬의 `asyncio.gather` 또는 LangGraph의 parallel branch를 이용해 여러 Worker를 동시에 비동기로 실행함으로써, 다수의 도구를 사용하더라도 응답 지연을 방어하고 퍼포먼스를 높입니다.
 
@@ -96,15 +96,15 @@ from typing import TypedDict
 
 class CodeMapState(TypedDict):
     user_query: str           # 사용자의 원본 질문
-    rewritten_query: str      # Supervisor가 교정한 검색용 질의
-    access_plan: list         # Supervisor가 수립한 허용 도구 및 경로 목록
-    security_result: dict     # Route Node의 allowlist/path traversal 검증 결과
+    rewritten_query: str      # Planner가 교정한 검색용 질의
+    access_plan: list         # Planner가 수립한 허용 도구 및 경로 목록
+    security_result: dict     # Dispatcher Node의 allowlist/path traversal 검증 결과
     worker_results: list      # Worker들이 수집한 요약되지 않은 원본 소스코드
-    compact_context: dict     # Evidence Aggregator가 정리한 근거 묶음
+    compact_context: dict     # Evaluator가 정리한 근거 묶음
     final_answer: str | None  # Final Answer Agent가 생성한 최종 응답
 ```
 
-이 구조 덕분에 Application Layer의 `Final Answer Agent`는 누군가에 의해 축약되지 않은 코드 스니펫(`worker_results`)과 Evidence Aggregator가 정리한 `compact_context`를 직접 열람하고 근거 기반 답변을 작성할 수 있습니다.
+이 구조 덕분에 Application Layer의 `Final Answer Agent`는 누군가에 의해 축약되지 않은 코드 스니펫(`worker_results`)과 Evaluator가 정리한 `compact_context`를 직접 열람하고 근거 기반 답변을 작성할 수 있습니다.
 
 ---
 
@@ -118,7 +118,7 @@ class CodeMapState(TypedDict):
 
 ```text
 CodeMap/backend/app/
-├── core/
+├── infra/
 │
 ├── chat/                       # 1. Application Layer: 프레젠테이션 및 스트리밍 응답
 │   ├── __init__.py
@@ -126,26 +126,30 @@ CodeMap/backend/app/
 │   ├── service.py              # LangGraph 엔진 비동기 호출 및 SSE 이벤트 제어 로직
 │   └── final_answer_agent.py   # Final Answer Agent: State 원본 기반 최종 응답 생성
 │
-├── agent_graph/                # 2. LangGraph Layer: State, Nodes, Agents, Workers
+├── agent/                # 2. LangGraph Layer: State, Graph, Nodes, Workers
 │   ├── __init__.py
 │   ├── state.py                # CodeMapState 공유 상태 정의
 │   ├── graph.py                # LangGraph Workflow 정의부 (Node, Edge, StateGraph)
-│   ├── agents/                 # LLM agent 객체 정의
-│   │   └── supervisor_agent.py # Supervisor Agent: 계획 수립 및 쿼리 재작성
-│   ├── nodes/                  # 일반 코드 node 정의
-│   │   ├── route_node.py       # Deterministic Router: 경로 보안 검증 및 Worker 병렬 라우팅
-│   │   └── evidence_node.py    # Evidence Aggregator: 중복 제거 및 token budget 압축
-│   ├── tools/                  # 개별 도구 물리 명세
-│   │   ├── dir.py
-│   │   ├── grep.py
-│   │   ├── read.py
-│   │   └── search.py
+│   ├── service.py              # LangGraph 실행 래퍼
+│   ├── llm_client.py           # LLM provider/factory only
+│   ├── nodes/                  # LangGraph node 정의
+│   │   ├── planner_node.py     # LLM: 계획 수립 및 쿼리 재작성
+│   │   ├── dispatcher_node.py  # Deterministic: 경로 보안 검증 및 Worker 병렬 라우팅
+│   │   └── evaluator_node.py   # Phase 1 deterministic, Phase 2 LLM sufficiency judge
 │   └── workers/                # 도구 전담 단일 목적 에이전트/래퍼 선언부
 │       ├── search_worker.py
 │       ├── dir_worker.py
 │       ├── grep_worker.py
-│       ├── read_worker.py
-│       └── reasoning_worker.py # 선택형 Code Reasoning Worker
+│       └── read_worker.py
+│
+├── tool/                       # 3. 결정론적 도구 실행 및 외부 MCP I/O
+│   ├── hybrid_search.py
+│   ├── rrf.py
+│   ├── file_read.py
+│   ├── grep_scan.py
+│   ├── dir_scan.py
+│   ├── router.py
+│   └── service.py
 ```
 
 ---
@@ -157,7 +161,7 @@ CodeMap/backend/app/
    무거운 데이터 수집 그래프 엔진(LangGraph)과 화면에 텍스트를 제공하는 요약 에이전트(Final Answer)를 분리하여 시스템의 유지보수성과 재사용성을 높입니다.
 2. **보안 및 신뢰성 강화**
 
-   실행 통제자(Route Node)에서 LLM을 배제하고 순수 코드로 제어함으로써, 시스템 경로 우회(Path Traversal) 공격 등 보안 위협을 차단합니다.
+   실행 통제자(Dispatcher Node)에서 LLM을 배제하고 순수 코드로 제어함으로써, 시스템 경로 우회(Path Traversal) 공격 등 보안 위협을 차단합니다.
 3. **응답 지연(Latency) 방어 및 도구 오작동 감소**
 
    Worker 비동기 병렬 실행으로 체감 대기 시간을 줄이고, 도구를 하나씩만 쥐여주어 도구 오작동(Hallucination) 확률을 낮춥니다.

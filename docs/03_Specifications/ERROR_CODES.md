@@ -93,26 +93,26 @@
 | 422 | `PARSE_NOT_COMPLETED` | 사전 검증 | 파싱이 완료되지 않은 상태에서 임베딩 요청 |
 | 500 | `EMBEDDING_FAILED` | 임베딩 처리 | OpenAI API 호출 또는 벡터 저장 중 오류 |
 
-## 8. AGENT-CHAT-RUN-API (멀티에이전트 Q&A)
+## 8. LLM-CHAT-RUN-API (멀티에이전트 Q&A)
 `POST /api/chat/{repo_id}/runs` 및 연관 엔드포인트
 
 | HTTP Status | Error Code | 발생 시점 | 설명 |
 | :--- | :--- | :--- | :--- |
 | 400 | `INVALID_CHAT_REQUEST` | 입력 검증 | 요청이 유효하지 않음 (예: 최대 길이 초과) |
 | 409 | `REPO_NOT_ANALYZED` | 사전 검증 | 임베딩 및 분석이 완료되지 않아 에이전트 실행 불가 |
-| 404 | `AGENT_RUN_NOT_FOUND` | 상태 조회/스트림 | 존재하지 않는 run_id |
+| 404 | `LLM_RUN_NOT_FOUND` | 상태 조회/스트림 | 존재하지 않는 run_id |
 | 404 | `AGENT_EVIDENCE_NOT_FOUND` | 근거 조회 | 존재하지 않거나 만료된 증거 데이터 |
-| 409 | `AGENT_RUN_ALREADY_FINISHED` | 취소/스트림 | 이미 종료된 run_id에 대한 요청 |
+| 409 | `LLM_RUN_ALREADY_FINISHED` | 취소/스트림 | 이미 종료된 run_id에 대한 요청 |
 | 409 | `AGENT_EVIDENCE_NOT_READY` | 근거 조회 | 아직 워커 수집이 완료되지 않아 Evidence 접근 불가 |
-| 500 | `AGENT_RUN_CREATE_FAILED` | Run 생성 | LangGraph 초기화 및 Run 생성 실패 |
+| 500 | `LLM_RUN_CREATE_FAILED` | Run 생성 | LangGraph 초기화 및 Run 생성 실패 |
 | 500 | `AGENT_STREAM_FAILED` | 스트리밍 | SSE 연결 또는 결과 스트리밍 중 오류 |
 
-## 9. AGENT-WORKER-INTERNAL-ERRORS (내부 에러)
+## 9. LLM-WORKER-INTERNAL-ERRORS (내부 에러)
 *이 에러들은 REST 응답이 아닌 State 내부에 기록되며 Error Recovery에 사용됩니다.*
 
 | 발생 도구 | Error Code | 설명 |
 | :--- | :--- | :--- |
-| Route Node | `AGENT_TOOL_POLICY_FAILED` | Supervisor의 접근 계획이 Path Traversal 등 보안 정책에 위배됨 |
+| Dispatcher Node | `AGENT_TOOL_POLICY_FAILED` | Planner의 접근 계획이 Path Traversal 등 보안 정책에 위배됨 |
 | Reasoning Worker | `AGENT_REASONING_FAILED` | 코드 추론 중 LLM 응답 파싱 또는 실행 실패 |
 | Search / Grep Worker | `VECTOR_SEARCH_FAILED` / `GREP_FAILED` | 임베딩 검색 또는 grep 도구 실행 실패 |
 
@@ -171,7 +171,7 @@
 | 500 | `RISK_ANALYSIS_FAILED` | 위험 분석 | 위험 신호 분석 실패 |
 | 500 | `STACK_SCORE_FAILED` | 점수 계산 | 기술 스택 점수화 실패 |
 
-## 15. AGENT-ADVANCED / DOCS-UTIL API (Phase 2)
+## 15. LLM-ADVANCED / DOCS-UTIL API (Phase 2)
 
 | HTTP Status | Error Code | 발생 시점 | 설명 |
 | :--- | :--- | :--- | :--- |

@@ -9,8 +9,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.core.exceptions import register_exception_handlers
-from app.core.database import engine, Base
+from app.common.exceptions import register_exception_handlers
+from app.infra.database import engine, Base
 from sqlalchemy import text
 
 # Import model classes to ensure they register on Base.metadata
@@ -22,7 +22,9 @@ from app.list.websocket import ws_router as list_ws_router
 from app.repo.router import router as repo_router
 from app.repo.websocket import ws_router as repo_ws_router
 from app.chat.router import router as chat_router
+from app.agent.router import router as agent_router
 from app.parse.router import router as parse_router
+from app.tool.router import router as tool_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -115,6 +117,11 @@ app.include_router(repo_ws_router)
 # Repository-scoped grounded chat and conversation history
 app.include_router(chat_router)
 
+# Agent Run Management (상태조회/취소/근거 — LLM-CHAT-API-003~005)
+app.include_router(agent_router)
+
 # RAG-PARSE 분석 API (API-001 등)
 app.include_router(parse_router)
 
+# MCP Tools API: Phase 2 실구현 전까지 단일 JSON body를 수신하되 501/failed만 반환한다.
+app.include_router(tool_router)
