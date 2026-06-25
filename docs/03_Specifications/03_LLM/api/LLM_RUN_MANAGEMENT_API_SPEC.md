@@ -1,6 +1,6 @@
 # LLM Run Management API 명세서
 
-> **도메인**: LLM | **범위**: Status / Cancel / Evidence | **최종 업데이트**: 2026-06-23
+> **도메인**: LLM | **범위**: Status / Cancel / Evidence | **최종 업데이트**: 2026-06-25
 
 ## LLM-CHAT-API-003 Agent Run 상태 및 State 요약 조회
 
