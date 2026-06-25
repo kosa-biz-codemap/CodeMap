@@ -1,5 +1,20 @@
 # Current Work
 
+## 2026-06-25 — Agent spec implementation-contract cleanup
+
+- Current branch: `refactor/split-core-to-infra-common`
+- Current goal: Align current implementation contracts with the latest Planner -> Dispatcher -> Workers -> Evaluator architecture, excluding `AGENT_GRAPH_FLOW.md` because it visualizes the Phase 1 completion target.
+- Current status:
+  - Split current SSE events from planned future events in the common/chat LLM specs.
+  - Documented the run stream vs legacy chat bridge event difference (`answer_delta`/`completed` vs `content`/`done`).
+  - Updated Dispatcher and tool security descriptions to match current `_ALLOWED_EXTENSIONS` and `Path.relative_to()` behavior.
+  - Removed the unused `backend/app/agent/workers/workers.py` compatibility export.
+  - Reworded the external tool service as an MCP-style interface while it remains a 501 Phase 2 stub.
+- Validation:
+  - `backend/.venv/bin/python -m pytest backend/tests/unit -v --tb=short` — `160 passed, 5 skipped`
+  - `backend/.venv/bin/python -m compileall -q backend/app/agent backend/app/tool backend/app/chat` passed
+  - `git diff --check` passed
+
 ## 2026-06-25 — PR #126 agent architecture realignment
 
 - Current branch: `refactor/split-core-to-infra-common`

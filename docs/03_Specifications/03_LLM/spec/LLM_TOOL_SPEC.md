@@ -6,7 +6,7 @@
 
 `LLM-TOOL`은 RAG 검색, 디렉토리 조회, Grep 검색, 파일 읽기 등 소스코드 탐색 도구의 **실제 실행**을 담당하는 결정론적 계층입니다. 결과를 요약하지 않고 **Raw Data를 그대로 `worker_results`에 병합(fan-in)**합니다.
 
-> **구현 구조(중요)**: LangGraph 워커는 `backend/app/agent/workers/{search,dir,grep,read}_worker.py`에 분리되어 있고, 실제 결정론적 도구 실행은 `backend/app/tool/`의 `hybrid_search.py`, `rrf.py`, `dir_scan.py`, `grep_scan.py`, `file_read.py`에 둡니다. `backend/app/tool/`의 `CodeMapToolService`는 **MCP I/O 표준 인터페이스**로, 인터페이스/DTO는 설계 확정 상태이나 실제 외부 Job 라우팅은 501 응답 단계입니다.
+> **구현 구조(중요)**: LangGraph 워커는 `backend/app/agent/workers/{search,dir,grep,read}_worker.py`에 분리되어 있고, 실제 결정론적 도구 실행은 `backend/app/tool/`의 `hybrid_search.py`, `rrf.py`, `dir_scan.py`, `grep_scan.py`, `file_read.py`에 둡니다. `backend/app/tool/`의 `CodeMapToolService`는 **MCP-style 외부 도구 Job 인터페이스**로, 인터페이스/DTO는 설계 확정 상태이나 실제 외부 Job 라우팅은 501 응답 단계입니다.
 
 | 구분 | 기준 |
 | --- | --- |
@@ -24,7 +24,7 @@
 | LLM-TOOL-B-201 | 단일 목적 Worker 실행 (search/dir/grep/read) | Backend | Phase 1 |
 | LLM-TOOL-B-202 | RAG RRF 하이브리드 검색 (pgvector + BM25) | Backend | Phase 1 |
 | LLM-TOOL-B-203 | 경로 보안 검증 및 자원 제한 | Backend | Phase 1 |
-| LLM-TOOL-B-204 | MCP I/O 표준 Job 인터페이스 | Backend | Phase 2 (인터페이스 설계 확정 / 라우팅 구현 예정) |
+| LLM-TOOL-B-204 | MCP-style 외부 도구 Job 인터페이스 | Backend | Phase 2 (인터페이스 설계 확정 / 라우팅 구현 예정) |
 
 ---
 
@@ -76,7 +76,7 @@
 파일 시스템에 접근하는 워커(dir/grep/read)는 워크스페이스 경계를 벗어나는 접근을 차단하고, 과대 입력으로부터 자원을 보호한다.
 
 ### 2. 입/출력 규격
-- **경로 경계 검증**: `target = (Path(clone_path) / rel_path).resolve()` 후 `str(target).startswith(str(Path(clone_path).resolve()))`가 아니면 차단(빈 결과 반환) — `..`/심볼릭 링크 경유 탈출 방지
+- **경로 경계 검증**: `target = (Path(clone_path) / rel_path).resolve()` 후 `target.relative_to(Path(clone_path).resolve())`가 실패하면 차단(빈 결과 반환) — `..`/심볼릭 링크 경유 탈출 및 `/repo` vs `/repo-other` 같은 문자열 prefix 착시 방지
 - **자원 제한**: 파일당 `_MAX_FILE_SIZE = 50_000`자 초과 시 절단, grep 결과 `_MAX_GREP_RESULTS = 30`개 상한, dir 트리 200줄 상한
 - (참고) `dispatcher_node`(LLM-AGENT-B-203)는 plan 단계에서 절대경로·`..`·민감 파일 패턴을 1차 차단하며, 본 항목은 워커 실행 단계의 2차 경계 검증이다.
 
@@ -86,10 +86,10 @@
 
 ---
 
-## LLM-TOOL-B-204: MCP I/O 표준 Job 인터페이스 (Phase 2)
+## LLM-TOOL-B-204: MCP-style 외부 도구 Job 인터페이스 (Phase 2)
 
 ### 1. 설명
-에이전트/외부 시스템이 `{tool_name, arguments}` 표준 JSON Job으로 도구를 호출하는 MCP I/O 인터페이스. 구현: `app/tool/service.py::CodeMapToolService.execute_job`.
+에이전트/외부 시스템이 `{tool_name, arguments}` 표준 JSON Job으로 도구를 호출하는 MCP-style I/O 인터페이스. 구현: `app/tool/service.py::CodeMapToolService.execute_job`.
 
 ### 2. 입/출력 규격
 - **요청 계약**: `POST /tools/execute`는 `{tool_name, arguments}`(+`job_id`, `run_id`)를 **단일 JSON body**로 수신한다 — 전용 Pydantic 요청 스키마로 받으며, 개별 필드를 쿼리 파라미터로 분산 수신하지 않는다(외부 MCP가 JSON 객체 하나로 전송 시 `422` 방지).

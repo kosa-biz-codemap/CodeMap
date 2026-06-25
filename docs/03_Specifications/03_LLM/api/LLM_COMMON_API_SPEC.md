@@ -56,17 +56,25 @@
 
 ## SSE 이벤트 타입
 
+### 현재 구현 이벤트
+
 | 이벤트 | 데이터 요약 | 설명 |
 | --- | --- | --- |
 | `graph_started` | `runId`, `stateKeys` | LangGraph 실행 시작 |
 | `planner_plan` | `rewrittenQuery`, `selectedWorkers`, `allowedPaths` | Planner Node 계획 완료 |
 | `route_validated` | `allowed`, `parallelGroups`, `blockedReason` | Dispatcher Node 검증 완료. 이벤트명은 기존 프론트 호환을 위해 유지 |
-| `worker_started` | `worker`, `target` | worker 실행 시작 |
 | `worker_result` | `worker`, `resultCount`, `evidenceIds` | worker 결과 기록 |
 | `evidence_compacted` | `evidenceCount`, `compactContextReady` | evidence 정리 완료 |
 | `answer_delta` | `content` | 최종 답변 토큰 조각 |
-| `completed` | `runId`, `finalAnswer`, `durations` | 정상 종료 |
-| `failed` | `runId`, `error`, `partialEvidenceCount` | 실패 종료 |
+| `completed` | `runId`, `status` | 정상 종료 |
+| `failed` | `runId`, `error` | 실패 종료 |
+
+### 구현 예정 이벤트
+
+| 이벤트 | 데이터 요약 | 설명 |
+| --- | --- | --- |
+| `worker_started` | `worker`, `target` | worker 실행 시작 |
+| `worker_completed` | `worker`, `durationMs` | worker 실행 완료 |
 | `cancelled` | `runId`, `cancelledAt` | 취소 종료 |
 
 ## 공통 Error Code

@@ -94,10 +94,11 @@
   - `path` 없음(search 도구) → 안전 통과
   - 절대 경로(`/` 시작) 또는 `..` 상위 탐색 → **차단**
   - 민감 파일 패턴 정규식(`.env`, `id_rsa`, `id_ed25519`, `.pem`, `.key`, `.p12`, `.pfx`, `secret`, `password`, `credential`, 대소문자 무관) → **차단**
+  - 허용 확장자 집합(`_ALLOWED_EXTENSIONS`) 밖의 확장자 → **차단**
 
 ### 3. 완료 조건
 - 거부 항목은 `logger.warning`으로 기록하고 `rejected`에 분류하며, 사용자에게는 무해하게 제외 처리한다.
-- 허용 확장자 집합(`_ALLOWED_EXTENSIONS`) 기반 필터링은 **구현 예정**(현재 `_is_safe_path`는 절대경로·`..`·민감 파일 패턴 차단까지 적용).
+- `_is_safe_path`는 절대경로·`..`·민감 파일 패턴·허용 확장자를 모두 검증한다.
 
 ---
 
@@ -143,7 +144,7 @@
 
 ### 2. 입/출력 규격 (Phase 2 목표)
 - **장기 기억**: 자주 조회되는 핵심 모듈·설계 가이드를 장기 기억 스토어에 적재해 Planner 입력으로 재사용.
-- **외부 MCP 도구**: `tool/router.py` HTTP 수신 엔드포인트를 통해 외부 Issue/문서 저장소 등을 워커로 바인딩(MCP I/O 표준).
+- **외부 도구 Job**: `tool/router.py` HTTP 수신 엔드포인트를 통해 외부 Issue/문서 저장소 등을 워커로 바인딩(MCP-style I/O 인터페이스).
 
 ### 3. 완료 조건
 - (Phase 2) 신규 도구를 `AccessPlanItem.tool` 값으로 추가하고 워커 노드를 등록하면 그래프 변경 없이 fan-out 대상에 포함되어야 한다.

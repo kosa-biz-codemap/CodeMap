@@ -1,5 +1,5 @@
 """
-MCP I/O 표준을 따르는 도구 실행 서비스.
+MCP-style 외부 도구 Job 실행 서비스.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # ──────────────────────────────────────────────
 class CodeMapToolService:
     '''
-    {tool, directory} 기반의 JSON Job을 실행하는 MCP I/O 인터페이스입니다.
+    {tool_name, arguments} 기반의 JSON Job을 실행하는 MCP-style I/O 인터페이스입니다.
     '''
 
     # ──────────────────────────────────────────────
