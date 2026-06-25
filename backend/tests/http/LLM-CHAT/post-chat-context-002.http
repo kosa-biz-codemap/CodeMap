@@ -1,8 +1,8 @@
 ### ============================================================================
-### AGENT-CHAT-API-002 | 코드 컨텍스트 검색
-### Markdown source: docs/03_API/AGENT_API_SPEC.md
+### LLM-CHAT-API-002 | 코드 컨텍스트 검색
+### Markdown source: docs/03_Specifications/03_LLM/api/LLM_API_SPEC.md
 ### Endpoint: POST /api/chat/{repo_id}/context
-### 관련 기능 ID: AGENT-CHAT-B-201, AGENT-SEARCH-B-201
+### 관련 기능 ID: LLM-CHAT-B-201, LLM-TOOL-B-201
 ### 상태: 시작 전
 ### ============================================================================
 @baseUrl = http://localhost:8000

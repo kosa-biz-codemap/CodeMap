@@ -21,7 +21,9 @@ _RUN_STORE: dict[str, dict] = {}
 
 
 def _event(payload: dict) -> str:
-    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
+    event_type = payload.get("type", "message")
+    data = json.dumps(payload, ensure_ascii=False)
+    return f"event: {event_type}\ndata: {data}\n\n"
 
 
 def _references_from_worker_results(worker_results: list[dict]) -> list[dict]:

@@ -43,7 +43,7 @@
 - 배치 크기: 100개 청크 (환경변수 `EMBEDDING_BATCH_SIZE`로 제어)
 - API 호출 실패 시 지수 백오프 재시도 (최대 3회, `tenacity` 라이브러리 사용)
   - 1회 실패 → 1초 대기, 2회 실패 → 2초 대기, 3회 실패 → 4초 대기
-- 환경변수: `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS`, `EMBEDDING_BATCH_SIZE`, `EMBEDDING_MAX_RETRIES` (`core/config.py` 관리)
+- 환경변수: `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS`, `EMBEDDING_BATCH_SIZE`, `EMBEDDING_MAX_RETRIES` (`infra/config.py` 관리)
 
 
 ### RAG-EMBED-B-301: pgvector 저장

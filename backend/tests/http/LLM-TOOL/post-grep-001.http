@@ -1,8 +1,8 @@
 ### ============================================================================
-### AGENT-SEARCH-API-001 | Grep 기반 코드 키워드 검색
-### Markdown source: docs/03_API/AGENT_API_SPEC.md
+### LLM-TOOL-API-001 | Grep 기반 코드 키워드 검색
+### Markdown source: docs/03_Specifications/03_LLM/api/LLM_API_SPEC.md
 ### Endpoint: POST /api/search/{repo_id}/grep
-### 관련 기능 ID: AGENT-SEARCH-B-205
+### 관련 기능 ID: LLM-TOOL-B-205
 ### 상태: 시작 전
 ### ============================================================================
 @baseUrl = http://localhost:8000

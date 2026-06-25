@@ -22,6 +22,8 @@ from app.agent.state import AccessPlanItem, CodeMapState, SecurityResult
 
 logger = logging.getLogger(__name__)
 
+_ALLOWED_WORKERS = frozenset({"search", "dir", "grep", "read"})
+
 # 민감 파일 패턴 (대소문자 무관)
 _SENSITIVE_PATTERNS = re.compile(
     r"(\.env|id_rsa|id_ed25519|\.pem|\.key|\.p12|\.pfx|secret|password|credential)",
@@ -100,6 +102,9 @@ def fanout_to_workers(state: CodeMapState) -> list[Send]:
     sends: list[Send] = []
     for item in approved:
         tool = item.get("tool", "search")
+        if tool not in _ALLOWED_WORKERS:
+            logger.warning("[RouteNode] 미등록 도구 '%s' 차단", tool)
+            continue
         node_name = f"{tool}_worker"
         sends.append(Send(node_name, {**state, "_plan_item": item}))
 

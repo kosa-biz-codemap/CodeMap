@@ -29,6 +29,21 @@ class TestChatLegacyRequest(unittest.TestCase):
 
 
 class TestLegacyBridgeEvents(unittest.TestCase):
+    def test_event_adds_sse_event_header(self):
+        from app.chat.router import _event
+
+        payload = {"type": "graph_started", "runId": "r1"}
+
+        self.assertEqual(
+            _event(payload),
+            'event: graph_started\ndata: {"type": "graph_started", "runId": "r1"}\n\n',
+        )
+
+    def test_event_defaults_to_message_type(self):
+        from app.chat.router import _event
+
+        self.assertEqual(_event({"content": "ok"}), 'event: message\ndata: {"content": "ok"}\n\n')
+
     def test_answer_delta_maps_to_existing_content_event(self):
         from app.chat.router import _legacy_graph_event_payload
 

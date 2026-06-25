@@ -1,0 +1,45 @@
+# Current Work
+
+## 2026-06-25 — PR #126 migration follow-up
+
+- Current branch: `refactor/split-core-to-infra-common`
+- Current goal: Apply the post-migration follow-up plan from PR #126 on top of `bc2b29a`.
+- Current status:
+  - Added `fanout_to_workers` runtime allowlist for `search`, `dir`, `grep`, `read`.
+  - Converted `/tools/execute` to a single Pydantic JSON body and explicit `501`/`failed` response.
+  - Removed dummy `success` tool service responses.
+  - Added SSE `event:` headers while preserving `data:` JSON lines for the existing frontend stream parser.
+  - Cleaned worker stubs, common service placeholder, HTTP test naming, and AGENT-to-LLM/core-to-infra documentation drift.
+- Files touched or likely relevant:
+  - `backend/app/agent/workers/route_node.py`
+  - `backend/app/tool/router.py`
+  - `backend/app/tool/service.py`
+  - `backend/app/chat/router.py`
+  - `backend/tests/unit/test_agent.py`
+  - `backend/tests/unit/test_tool_router.py`
+  - `backend/tests/http/LLM-*`
+  - `docs/01_Overview/FUNCTIONAL_SPECIFICATION.md`
+  - `docs/02_Architecture/ARCHITECTURE.md`
+  - `docs/03_Specifications/PHASE2_API_SPEC.md`
+  - `docs/03_Specifications/ERROR_CODES.md`
+- Commands run:
+  - `env -u GITHUB_TOKEN gh auth status`
+  - `env -u GITHUB_TOKEN gh pr view 126 ...`
+  - `env -u GITHUB_TOKEN gh api graphql ...`
+  - `git pull --rebase`
+  - `backend/.venv/bin/python -m pytest backend/tests/unit -v --tb=short`
+  - `git diff --check`
+  - `rg -n 'AGENT-CHAT|AGENT-SEARCH|AGENT-CORE' backend/tests/http`
+  - `rg -n 'AGENT_RUN_' docs`
+  - `rg -n 'agent_graph' docs`
+  - `rg -n 'core/config' docs | rg -v 'infra'`
+- Validation:
+  - `157 passed, 5 skipped`
+  - `git diff --check` passed
+  - Targeted residual string checks returned 0 matches
+- Known issues:
+  - `AGENT_STREAM_FAILED`, `AGENT_EVIDENCE_*`, and related internal agent error codes remain intentionally unchanged per PR follow-up guidance.
+  - Frontend still uses a manual fetch stream parser that reads `data:` lines; the added `event:` header is ignored safely by that parser.
+- Next steps:
+  - Review the committed diff on PR #126.
+  - If the team wants native `EventSource.addEventListener()` handling later, add frontend listeners by SSE event name.

@@ -1,8 +1,8 @@
 ### ============================================================================
-### AGENT-SEARCH-API-002 | 파일 내용 및 디렉토리 조회
-### Markdown source: docs/03_API/AGENT_API_SPEC.md
+### LLM-TOOL-API-002 | 파일 내용 및 디렉토리 조회
+### Markdown source: docs/03_Specifications/03_LLM/api/LLM_API_SPEC.md
 ### Endpoint: GET /api/search/{repo_id}/file
-### 관련 기능 ID: AGENT-SEARCH-B-206
+### 관련 기능 ID: LLM-TOOL-B-206
 ### 상태: 시작 전
 ### ============================================================================
 @baseUrl = http://localhost:8000

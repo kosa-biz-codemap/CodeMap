@@ -1,8 +1,8 @@
 ### ============================================================================
-### AGENT-CORE-API-002 | Report JSON 계약 조회
-### Markdown source: docs/03_API/AGENT_API_SPEC.md
+### LLM-AGENT-API-002 | Report JSON 계약 조회
+### Markdown source: docs/03_Specifications/03_LLM/api/LLM_API_SPEC.md
 ### Endpoint: GET /api/chat/{repo_id}/report
-### 관련 기능 ID: AGENT-CORE-F-201
+### 관련 기능 ID: LLM-AGENT-F-201
 ### 상태: 시작 전
 ### ============================================================================
 @baseUrl = http://localhost:8000

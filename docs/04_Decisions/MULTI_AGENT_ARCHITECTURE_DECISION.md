@@ -118,7 +118,7 @@ class CodeMapState(TypedDict):
 
 ```text
 CodeMap/backend/app/
-├── core/
+├── infra/
 │
 ├── chat/                       # 1. Application Layer: 프레젠테이션 및 스트리밍 응답
 │   ├── __init__.py

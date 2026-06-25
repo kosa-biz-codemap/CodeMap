@@ -53,14 +53,10 @@ backend/app/
 │   ├── final_answer_agent.py # 최종 답변 정제 에이전트
 │   └── ...
 ├── embed/                # 🧠 임베딩 처리 도메인
-├── gen/                  # ✨ 문서 생성 도메인
-├── graph/                # 📊 그래프 구조 도메인
-├── guard/                # 🛡️ 가드레일 (안전성) 도메인
 ├── list/                 # 📋 리스트 데이터 처리 도메인
 ├── parse/                # 📄 파싱 도메인
 ├── pipeline/             # 🔀 파이프라인 처리 도메인
-├── repo/                 # 🗄️ 리포지토리/코드 저장소 접근 도메인
-└── search/               # 🔍 검색 도메인
+└── repo/                 # 🗄️ 리포지토리/코드 저장소 접근 도메인
     # 각 도메인(기능) 내부는 다음과 같은 3-Tier 패턴을 따릅니다:
     # ├── router.py       # 📡 API 진입점 (Controller)
     # ├── service.py      # 🧠 비즈니스 로직 (Service)

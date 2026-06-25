@@ -100,11 +100,11 @@
 | :--- | :--- | :--- | :--- |
 | 400 | `INVALID_CHAT_REQUEST` | 입력 검증 | 요청이 유효하지 않음 (예: 최대 길이 초과) |
 | 409 | `REPO_NOT_ANALYZED` | 사전 검증 | 임베딩 및 분석이 완료되지 않아 에이전트 실행 불가 |
-| 404 | `AGENT_RUN_NOT_FOUND` | 상태 조회/스트림 | 존재하지 않는 run_id |
+| 404 | `LLM_RUN_NOT_FOUND` | 상태 조회/스트림 | 존재하지 않는 run_id |
 | 404 | `AGENT_EVIDENCE_NOT_FOUND` | 근거 조회 | 존재하지 않거나 만료된 증거 데이터 |
-| 409 | `AGENT_RUN_ALREADY_FINISHED` | 취소/스트림 | 이미 종료된 run_id에 대한 요청 |
+| 409 | `LLM_RUN_ALREADY_FINISHED` | 취소/스트림 | 이미 종료된 run_id에 대한 요청 |
 | 409 | `AGENT_EVIDENCE_NOT_READY` | 근거 조회 | 아직 워커 수집이 완료되지 않아 Evidence 접근 불가 |
-| 500 | `AGENT_RUN_CREATE_FAILED` | Run 생성 | LangGraph 초기화 및 Run 생성 실패 |
+| 500 | `LLM_RUN_CREATE_FAILED` | Run 생성 | LangGraph 초기화 및 Run 생성 실패 |
 | 500 | `AGENT_STREAM_FAILED` | 스트리밍 | SSE 연결 또는 결과 스트리밍 중 오류 |
 
 ## 9. LLM-WORKER-INTERNAL-ERRORS (내부 에러)

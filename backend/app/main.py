@@ -24,8 +24,7 @@ from app.repo.websocket import ws_router as repo_ws_router
 from app.chat.router import router as chat_router
 from app.agent.router import router as agent_router
 from app.parse.router import router as parse_router
-# MCP Tools: 더미 응답 단계라 미등록 — 실구현 연결 후 등록 (PR #126 리뷰)
-# from app.tool.router import router as tool_router
+from app.tool.router import router as tool_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -124,8 +123,5 @@ app.include_router(agent_router)
 # RAG-PARSE 분석 API (API-001 등)
 app.include_router(parse_router)
 
-# MCP Tools API: /tools/execute는 현재 더미 응답(status:success)이며 요청 계약(단일 JSON body)도
-# 미정합 상태이므로, 호출자가 더미를 실제 근거로 오인하지 않도록 실구현 연결 전까지 라우터를 등록하지 않는다.
-# 구현 완료(LLM_TOOL_SPEC B-204 계약·501/failed 반영) 후 재등록할 것. (PR #126 리뷰)
-# app.include_router(tool_router)
-
+# MCP Tools API: Phase 2 실구현 전까지 단일 JSON body를 수신하되 501/failed만 반환한다.
+app.include_router(tool_router)

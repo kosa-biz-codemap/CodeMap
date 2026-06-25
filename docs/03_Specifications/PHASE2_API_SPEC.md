@@ -7,8 +7,8 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 > - **PROJECT-PIPELINE**: 비동기 깊은 분석 파이프라인
 > - **RAG-GRAPH**: 코드 의존성 그래프 시각화
 > - **RAG-PARSE 고도화**: 위험 신호 태깅, 기술 스택 점수화
-> - **AGENT 멀티에이전트**: LangGraph State 공유형 채팅 실행, SSE 스트리밍, 근거 조회
-> - **AGENT 고도화**: 장기 기억, Code Reasoning Worker 고도화, 허용된 외부 도구 worker
+> - **LLM 멀티에이전트**: LangGraph State 공유형 채팅 실행, SSE 스트리밍, 근거 조회
+> - **LLM 고도화**: 장기 기억, Code Reasoning Worker 고도화, 허용된 외부 도구 worker
 > - **DOCS-UTIL**: HTML-PDF 변환, 이메일/Slack 공유
 > - **PROJECT-REPO**: 중복 저장소 검사
 
@@ -383,15 +383,15 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 
 ---
 
-## AGENT 멀티에이전트 API 명세서
+## LLM 멀티에이전트 API 명세서
 
 > [!IMPORTANT]
-> 아래 AGENT API는 최신 합의된 LangGraph State 공유형 멀티에이전트 구조를 기준으로 합니다. `Route Node`는 LLM agent가 아니라 deterministic code node이며, 보안 검증과 병렬 worker routing을 담당합니다.
+> 아래 LLM API는 최신 합의된 LangGraph State 공유형 멀티에이전트 구조를 기준으로 합니다. `Route Node`는 LLM agent가 아니라 deterministic code node이며, 보안 검증과 병렬 worker routing을 담당합니다.
 > 구현 위치 기준으로 `Final Answer Agent`는 `chat/final_answer_agent.py`에 두고, Supervisor/Route/Workers/Evidence node는 `agent/` 아래에 둡니다.
 
 > 관련 기능 ID: `LLM-CHAT-B-101`, `LLM-CHAT-B-201` ~ `LLM-CHAT-B-204`, `LLM-GRAPH-B-201` ~ `LLM-GRAPH-B-202`, `LLM-SUPERVISOR-B-201`, `LLM-ROUTE-B-201` ~ `LLM-ROUTE-B-203`, `LLM-WORKER-B-201` ~ `LLM-WORKER-B-205`, `LLM-EVIDENCE-B-201`
 
-### AGENT 공통 State 및 역할 계약
+### LLM 공통 State 및 역할 계약
 
 | 구분 | 명세 |
 | :--- | :--- |
@@ -485,7 +485,7 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 | 400 | `INVALID_CHAT_REQUEST` | 요청 검증 | 질문 누락, mode 값 오류, 제한값 초과 |
 | 404 | `REPO_NOT_FOUND` | DB 조회 | 저장소 없음 |
 | 409 | `REPO_NOT_ANALYZED` | 사전 검증 | 분석/인덱싱이 완료되지 않은 저장소 |
-| 500 | `AGENT_RUN_CREATE_FAILED` | run 생성 | agent run 생성 실패 |
+| 500 | `LLM_RUN_CREATE_FAILED` | run 생성 | agent run 생성 실패 |
 
 ---
 
@@ -548,8 +548,8 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 
 | HTTP Status | Error Code | 발생 시점 | 설명 |
 | :--- | :--- | :--- | :--- |
-| 404 | `AGENT_RUN_NOT_FOUND` | run 조회 | run_id가 존재하지 않음 |
-| 409 | `AGENT_RUN_ALREADY_FINISHED` | stream 연결 | 이미 완료된 run에 stream 재연결 |
+| 404 | `LLM_RUN_NOT_FOUND` | run 조회 | run_id가 존재하지 않음 |
+| 409 | `LLM_RUN_ALREADY_FINISHED` | stream 연결 | 이미 완료된 run에 stream 재연결 |
 | 500 | `AGENT_STREAM_FAILED` | SSE 처리 | 스트림 초기화 또는 전송 실패 |
 
 ---
@@ -657,8 +657,8 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 
 | HTTP Status | Error Code | 발생 시점 | 설명 |
 | :--- | :--- | :--- | :--- |
-| 404 | `AGENT_RUN_NOT_FOUND` | run 조회 | run_id가 존재하지 않음 |
-| 409 | `AGENT_RUN_ALREADY_FINISHED` | 상태 검증 | 이미 completed/failed/cancelled 상태 |
+| 404 | `LLM_RUN_NOT_FOUND` | run 조회 | run_id가 존재하지 않음 |
+| 409 | `LLM_RUN_ALREADY_FINISHED` | 상태 검증 | 이미 completed/failed/cancelled 상태 |
 
 ---
 
@@ -706,12 +706,12 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 
 | HTTP Status | Error Code | 발생 시점 | 설명 |
 | :--- | :--- | :--- | :--- |
-| 404 | `AGENT_RUN_NOT_FOUND` | run 조회 | run_id가 존재하지 않음 |
+| 404 | `LLM_RUN_NOT_FOUND` | run 조회 | run_id가 존재하지 않음 |
 | 404 | `AGENT_EVIDENCE_NOT_FOUND` | evidence 조회 | State에 evidence가 없음 |
 
 ---
 
-## AGENT 고도화 확장 API 명세서
+## LLM 고도화 확장 API 명세서
 
 > 관련 기능 ID: `LLM-MEMORY-B-201`, `LLM-WORKER-B-206`, `LLM-WORKER-B-207`
 
@@ -863,7 +863,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 
 | HTTP Status | Error Code | 발생 시점 | 설명 |
 | :--- | :--- | :--- | :--- |
-| 404 | `AGENT_RUN_NOT_FOUND` | run 조회 | run_id가 존재하지 않음 |
+| 404 | `LLM_RUN_NOT_FOUND` | run 조회 | run_id가 존재하지 않음 |
 | 409 | `AGENT_EVIDENCE_NOT_READY` | 사전 검증 | Code Reasoning에 필요한 evidence가 아직 준비되지 않음 |
 | 500 | `AGENT_REASONING_FAILED` | worker 실행 | Code Reasoning Worker 실행 실패 |
 
@@ -1049,9 +1049,9 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | `STACK_SCORE_FAILED` | 500 | 기술 스택 점수화 실패 |
 | `INVALID_CHAT_REQUEST` | 400 | agent 채팅 실행 요청 검증 실패 |
 | `REPO_NOT_ANALYZED` | 409 | agent 실행 전 저장소 분석/인덱싱 미완료 |
-| `AGENT_RUN_CREATE_FAILED` | 500 | agent run 생성 실패 |
-| `AGENT_RUN_NOT_FOUND` | 404 | agent run이 존재하지 않음 |
-| `AGENT_RUN_ALREADY_FINISHED` | 409 | 이미 종료된 agent run에 대한 불가능한 요청 |
+| `LLM_RUN_CREATE_FAILED` | 500 | agent run 생성 실패 |
+| `LLM_RUN_NOT_FOUND` | 404 | agent run이 존재하지 않음 |
+| `LLM_RUN_ALREADY_FINISHED` | 409 | 이미 종료된 agent run에 대한 불가능한 요청 |
 | `AGENT_STREAM_FAILED` | 500 | SSE 스트림 처리 실패 |
 | `AGENT_EVIDENCE_NOT_FOUND` | 404 | agent State evidence가 존재하지 않음 |
 | `AGENT_EVIDENCE_NOT_READY` | 409 | 추가 reasoning에 필요한 evidence가 준비되지 않음 |

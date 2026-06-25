@@ -20,7 +20,7 @@ from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import ArgumentError
 
 # backend/.env 파일의 절대 경로 계산 (실행 디렉토리에 구애받지 않도록 설정)
-current_dir = os.path.dirname(os.path.abspath(__file__))  # app/core
+current_dir = os.path.dirname(os.path.abspath(__file__))  # app/infra
 backend_dir = os.path.dirname(os.path.dirname(current_dir))  # backend
 env_path = os.path.join(backend_dir, ".env")
 

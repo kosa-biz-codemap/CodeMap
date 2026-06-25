@@ -60,24 +60,27 @@ CodeMap/
 │   └── package.json
 ├── backend/                  # FastAPI - Python 3.12 (3-Tier 아키텍처 적용)
 │   ├── app/
-│   │   ├── chat/             # AGENT Application Layer: API/SSE/Final Answer
+│   │   ├── chat/             # LLM Application Layer: API/SSE/Final Answer
 │   │   │   ├── router.py     # 대화 API 및 SSE 엔드포인트
 │   │   │   ├── service.py    # LangGraph 실행 호출 및 세션/스트림 제어
 │   │   │   └── final_answer_agent.py # Final Answer Agent: State 원본 근거 기반 최종 답변 LLM
-│   │   ├── agent/      # AGENT LangGraph Layer: State, Nodes, Agents, Workers
+│   │   ├── agent/      # LLM LangGraph Layer: State, Graph, Workers
 │   │   │   ├── state.py      # CodeMapState 공유 상태 정의
 │   │   │   ├── graph.py      # LangGraph StateGraph 구성 및 edge 정의
-│   │   │   ├── agents/       # LLM agent 객체 정의
-│   │   │   │   └── supervisor_agent.py # 의도 분석, query rewrite, plan JSON
-│   │   │   ├── nodes/        # 일반 코드 node 정의
-│   │   │   │   ├── route_node.py       # deterministic router: allowlist/path 검증, 병렬 라우팅
-│   │   │   │   └── evidence_node.py    # evidence 정리 및 token budget 압축
-│   │   │   ├── tools/        # dir, grep, read, search 등 물리 도구
-│   │   │   └── workers/      # Search/Dir/Grep/Read/Reasoning worker wrappers
-│   │   │       ├── search_worker.py   # LLM query rewrite + embedding/vector search 전략
-│   │   │       ├── dir_worker.py      # repo 구조 탐색
-│   │   │       ├── grep_worker.py     # 키워드/정규식/alias 기반 후보 검색
-│   │   │       ├── read_worker.py     # 허용된 후보 파일 읽기
+│   │   │   └── workers/      # Supervisor/Route/Evidence/4대 Worker 통합
+│   │   │       ├── supervisor_agent.py # 의도 분석, query rewrite, plan JSON
+│   │   │       ├── route_node.py       # deterministic router: allowlist/path 검증, 병렬 라우팅
+│   │   │       ├── evidence_aggregator.py # evidence 정리 및 token budget 압축
+│   │   │       ├── workers.py          # search/dir/grep/read 실제 실행 함수
+│   │   │       ├── search_worker.py    # Phase 2 분리용 스텁
+│   │   │       ├── dir_worker.py       # Phase 2 분리용 스텁
+│   │   │       ├── grep_worker.py      # Phase 2 분리용 스텁
+│   │   │       └── read_worker.py      # Phase 2 분리용 스텁
+│   │   ├── tool/             # 검색 알고리즘 + MCP I/O
+│   │   │   ├── hybrid_search.py
+│   │   │   ├── rrf.py
+│   │   │   ├── router.py     # /tools/execute 501 스텁
+│   │   │   └── service.py    # MCP Job 인터페이스
 │   │   │       └── reasoning_worker.py # 선택형 Code Reasoning Worker
 │   │   ├── {domain}/         # (예: project, parse, gen) 기능별 독립 도메인 모듈
 │   │   │   ├── router.py     # 📡 API 진입점 (Controller)
@@ -201,7 +204,7 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
     **[기능 ID 명명 규칙 (Domain-Driven Naming Convention)]**
     작업 할당과 역할 분담의 명확성을 위해 철저한 도메인 주도 설계(DDD)를 기반으로 기능 ID를 부여합니다. 모든 기능의 최종 코드는 `{대분류ID}-{모듈명}-{F/B}-{3자리_번호}` 형식을 따릅니다.
     
-    - **대분류 ID**: 비즈니스 도메인 카테고리 (예: `PROJECT`, `RAG`, `AGENT`, `DOCS`)
+    - **대분류 ID**: 비즈니스 도메인 카테고리 (예: `PROJECT`, `RAG`, `LLM`, `DOCS`)
     - **모듈명**: 도메인 내 세부 서브모듈/폴더명 (예: `REPO`, `PARSE`, `EMBED`, `CHAT`, `CORE`, `SEARCH`, `GEN` 등)
     - **F/B**: 개발 계층 (F: Frontend, B: Backend)
     - **3자리 번호**: 아키텍처 폴더/계층을 매핑하는 3자리 숫자 대역
@@ -220,7 +223,7 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
             
     - *예시 (백엔드)*: 프로젝트 등록(`PROJECT`)의 저장소 연동(`REPO`) 백엔드(`B`) Router API 👉 `PROJECT-REPO-B-101`
     - *예시 (프론트엔드)*: 프로젝트 등록(`PROJECT`)의 저장소 연동(`REPO`) 프론트엔드(`F`) UI 입력 폼 👉 `PROJECT-REPO-F-201`
-    - *예시 (공통 인프라)*: 챗봇(`AGENT`)의 분석 파이프라인 실패 처리(`CORE`) 백엔드(`B`) Service 👉 `LLM-OPS-B-204`
+    - *예시 (공통 인프라)*: 챗봇(`LLM`)의 분석 파이프라인 실패 처리(`CORE`) 백엔드(`B`) Service 👉 `LLM-OPS-B-204`
 </aside>
 
 ### 🥇 Phase 1: MVP 핵심 기능 (최신 합의 반영)

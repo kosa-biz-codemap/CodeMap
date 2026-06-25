@@ -1,14 +1,14 @@
 # ============================================================
-# API ID  : AGENT-CHAT-API-001
+# API ID  : LLM-CHAT-API-001
 # 기능명  : Repo Chat SSE 스트리밍
 # Method  : POST
 # Endpoint: /api/chat/{repo_id}
 # Auth    : 필요
-# 관련 기능 ID: AGENT-CHAT-B-101, AGENT-CHAT-B-202,
-#   AGENT-CHAT-F-201, AGENT-CHAT-F-202, AGENT-CHAT-F-203,
-#   AGENT-CHAT-F-204, AGENT-CHAT-F-205, AGENT-CHAT-F-206,
-#   AGENT-SEARCH-B-202, AGENT-SEARCH-B-203, AGENT-SEARCH-B-204,
-#   AGENT-SEARCH-B-207 (Advanced Reasoning은 Phase 2 보류)
+# 관련 기능 ID: LLM-CHAT-B-101, LLM-CHAT-B-202,
+#   LLM-CHAT-F-201, LLM-CHAT-F-202, LLM-CHAT-F-203,
+#   LLM-CHAT-F-204, LLM-CHAT-F-205, LLM-CHAT-F-206,
+#   LLM-TOOL-B-202, LLM-TOOL-B-203, LLM-TOOL-B-204,
+#   LLM-TOOL-B-207 (Advanced Reasoning은 Phase 2 보류)
 # 상태    : 시작 전
 #
 # Description:

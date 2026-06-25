@@ -119,6 +119,39 @@ class TestRouteNodeSecurity(unittest.TestCase):
         self.assertNotIn("read_worker", node_names)  # 차단됨
         self.assertEqual(len(sends), 2)
 
+    def test_fanout_blocks_unregistered_tools(self):
+        """미등록 tool은 LangGraph Send 대상에서 제외됩니다."""
+        from app.agent.workers.route_node import _ALLOWED_WORKERS, fanout_to_workers
+
+        self.assertEqual(_ALLOWED_WORKERS, frozenset({"search", "dir", "grep", "read"}))
+
+        state = {
+            "user_query": "test",
+            "repo_id": "r1",
+            "clone_path": "/tmp",
+            "run_id": "r1",
+            "rewritten_query": "test",
+            "access_plan": [],
+            "security_result": {
+                "approved": [
+                    {"tool": "search", "path": None, "query": "test", "scope": "chunk"},
+                    {"tool": "unknown", "path": None, "query": "test", "scope": "chunk"},
+                    {"tool": "read", "path": "app/main.py", "query": "", "scope": "file"},
+                ],
+                "rejected": [],
+            },
+            "worker_results": [],
+            "events": [],
+            "errors": [],
+            "durations": {},
+            "compact_context": {},
+            "final_answer": None,
+        }
+
+        node_names = [send.node for send in fanout_to_workers(state)]
+
+        self.assertEqual(node_names, ["search_worker", "read_worker"])
+
 
 class TestEvidenceAggregator(unittest.TestCase):
     """Evidence Aggregator 중복 제거 및 budget 제한 검증."""
