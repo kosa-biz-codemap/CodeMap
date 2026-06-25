@@ -64,24 +64,28 @@ CodeMap/
 │   │   │   ├── router.py     # 대화 API 및 SSE 엔드포인트
 │   │   │   ├── service.py    # LangGraph 실행 호출 및 세션/스트림 제어
 │   │   │   └── final_answer_agent.py # Final Answer Agent: State 원본 근거 기반 최종 답변 LLM
-│   │   ├── agent/      # LLM LangGraph Layer: State, Graph, Workers
+│   │   ├── agent/            # LLM LangGraph Layer: State, Graph, Nodes, Workers
 │   │   │   ├── state.py      # CodeMapState 공유 상태 정의
 │   │   │   ├── graph.py      # LangGraph StateGraph 구성 및 edge 정의
-│   │   │   └── workers/      # Supervisor/Route/Evidence/4대 Worker 통합
-│   │   │       ├── supervisor_agent.py # 의도 분석, query rewrite, plan JSON
-│   │   │       ├── route_node.py       # deterministic router: allowlist/path 검증, 병렬 라우팅
-│   │   │       ├── evidence_aggregator.py # evidence 정리 및 token budget 압축
-│   │   │       ├── workers.py          # search/dir/grep/read 실제 실행 함수
-│   │   │       ├── search_worker.py    # Phase 2 분리용 스텁
-│   │   │       ├── dir_worker.py       # Phase 2 분리용 스텁
-│   │   │       ├── grep_worker.py      # Phase 2 분리용 스텁
-│   │   │       └── read_worker.py      # Phase 2 분리용 스텁
-│   │   ├── tool/             # 검색 알고리즘 + MCP I/O
+│   │   │   ├── service.py    # LangGraph 실행 래퍼
+│   │   │   ├── llm_client.py # LLM provider/factory only
+│   │   │   ├── nodes/
+│   │   │   │   ├── planner_node.py    # LLM: query rewrite + access_plan
+│   │   │   │   ├── dispatcher_node.py # deterministic: 보안 검증 + worker fan-out
+│   │   │   │   └── evaluator_node.py  # Phase 1 deterministic, Phase 2 LLM sufficiency judge
+│   │   │   └── workers/
+│   │   │       ├── search_worker.py
+│   │   │       ├── dir_worker.py
+│   │   │       ├── grep_worker.py
+│   │   │       └── read_worker.py
+│   │   ├── tool/             # 검색 알고리즘 + 결정론적 도구 실행 + MCP I/O
 │   │   │   ├── hybrid_search.py
 │   │   │   ├── rrf.py
+│   │   │   ├── file_read.py
+│   │   │   ├── grep_scan.py
+│   │   │   ├── dir_scan.py
 │   │   │   ├── router.py     # /tools/execute 501 스텁
 │   │   │   └── service.py    # MCP Job 인터페이스
-│   │   │       └── reasoning_worker.py # 선택형 Code Reasoning Worker
 │   │   ├── {domain}/         # (예: project, parse, gen) 기능별 독립 도메인 모듈
 │   │   │   ├── router.py     # 📡 API 진입점 (Controller)
 │   │   │   ├── service.py    # 🧠 비즈니스 로직 (Service)
@@ -106,7 +110,7 @@ CodeMap/
 * `POST /api/repo/analysis` (예시) : GitHub URL 입력 시 처리 시작 및 클론 작업 큐 추가.
 * `GET /api/repo/analysis/{job_id}` : 레포 메타데이터, 상태, 요약 결과 반환.
 * `POST /api/chat/{repo_id}/runs` : LangGraph 멀티에이전트 실행 run 생성.
-* `GET /api/chat/{repo_id}/runs/{run_id}/stream` : Supervisor/Route/Worker/Final Answer 이벤트 및 답변 SSE 스트리밍.
+* `GET /api/chat/{repo_id}/runs/{run_id}/stream` : Planner/Dispatcher/Worker/Final Answer 이벤트 및 답변 SSE 스트리밍.
 
 
 ## 🛠️ 인프라 및 환경 구성 명세 (Infrastructure & Configuration)
@@ -131,7 +135,7 @@ CodeMap/
 
 ### 3. 자율 탐색형 AI 코드 분석 (Agentic Search)
 * **기능 개요**: LangGraph 기반 State 공유형 멀티에이전트 구조로 사용자 질문을 분석하고, 제한된 도구 worker들이 병렬로 코드 근거를 수집한 뒤 최종 답변을 스트리밍하는 기능.
-* **역할 분리**: `Supervisor Agent`는 의도 분석과 계획 수립만 담당하고, `Route Node`는 LLM이 아닌 일반 코드로 보안 검증과 병렬 라우팅을 담당합니다.
+* **역할 분리**: `Planner Node`는 의도 분석과 계획 수립만 담당하고, `Dispatcher Node`는 LLM이 아닌 일반 코드로 보안 검증과 병렬 라우팅을 담당합니다.
 * **State 공유**: Worker 결과는 중간 LLM 요약 없이 `CodeMapState.worker_results`에 원본 근거로 직접 기록하여 정보 유실을 줄입니다.
 * **명확한 출처 제공**: 답변 시 소스코드 파일명과 줄 번호를 제공하여 신뢰성을 확보합니다.
 
@@ -147,26 +151,25 @@ chat/router · chat/service
   - SSE 스트리밍
 ↓
 LangGraph
-  1. Supervisor Agent LLM
+  1. Planner Node (LLM)
      - 의도 분석
      - 오타/모호성 정리
      - 필요한 worker 선택
      - 접근 범위 plan JSON 생성
 
-  2. Route Node
+  2. Dispatcher Node
      - LLM 아님
      - plan JSON 검증
      - allowlist/path traversal 검증
      - worker 병렬 실행 라우팅
 
   3. Worker Agents
-     - Search Worker Agent: query rewrite + embedding/vector search 전략
+     - Search Worker: hybrid search + keyword fallback
      - Dir Worker: repo 구조 탐색
      - Grep Worker: 키워드/정규식 검색
      - Read Worker: 후보 파일 읽기
-     - Code Reasoning Worker: 필요 시 코드 조각 해석
 
-  4. Evidence Aggregator Node
+  4. Evaluator Node
      - MVP는 코드 노드 권장
      - 중복 제거
      - 파일 경로/라인/근거 정리
@@ -268,28 +271,27 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
 | `LLM-CHAT-B-203` | LLM | CHAT | Backend | SSE 스트리밍 이벤트 제어 | graph_started, worker_result, answer_delta, completed, failed 등 이벤트 스트림 규격화 |
 | `LLM-CHAT-B-204` | LLM | CHAT | Backend | run 상태 및 취소 제어 | 실행 중인 agent run의 상태 조회, timeout/cancel/failure 상태 전환 처리 |
 | `LLM-CHAT-F-201` | LLM | CHAT | Frontend | AI 응답 UI | 답변 및 참조 파일명 표시 |
-| `LLM-CHAT-F-202` | LLM | CHAT | Frontend | agent run 상태 표시 | Supervisor 계획, worker 실행, evidence 정리, final answer 단계 상태를 UI에 표시 |
+| `LLM-CHAT-F-202` | LLM | CHAT | Frontend | agent run 상태 표시 | Planner 계획, worker 실행, evidence 정리, final answer 단계 상태를 UI에 표시 |
 | `LLM-CHAT-F-203` | LLM | CHAT | Frontend | 관련 근거 파일 표시 | State worker_results 기반 파일 경로, line range, score, tool source 표시 |
 | `LLM-CHAT-F-204` | LLM | CHAT | Frontend | SSE 스트리밍 응답 처리 | FastAPI SSE(Server-Sent Events) 기반 graph event와 answer_delta 수신 처리 |
 | `LLM-CHAT-F-205` | LLM | CHAT | Frontend | 답변 스트리밍 UI | LLM 답변을 실시간 스트리밍으로 받아 타이핑 효과로 표시 |
 | `LLM-CHAT-F-206` | LLM | CHAT | Frontend | 질문 입력 및 run 생성 | 사용자 질문, 모드, includeEvidence 옵션을 API 요청으로 전달 |
 | `LLM-GRAPH-B-201` | LLM | GRAPH | Backend | CodeMapState 스키마 정의 | user_query, rewritten_query, access_plan, security_result, worker_results, compact_context, final_answer 공유 상태 정의 |
-| `LLM-GRAPH-B-202` | LLM | GRAPH | Backend | LangGraph workflow 정의 | Supervisor, Route Node, Workers, Evidence Aggregator node와 chat/service 반환 edge 구성 |
-| `LLM-SUPERVISOR-B-201` | LLM | SUPERVISOR | Backend | Supervisor Agent 계획 수립 | 사용자 의도 분석, query rewrite, selected_workers, allowed_paths, risk_level plan JSON 생성 |
-| `LLM-ROUTE-B-201` | LLM | ROUTE | Backend | Route Node plan 검증 | LLM이 아닌 코드 노드로 plan JSON schema, worker 목록, path allowlist 검증 |
-| `LLM-ROUTE-B-202` | LLM | ROUTE | Backend | 경로 보안 및 traversal 차단 | `..`, 절대경로, `.env`, key/token 등 금지 패턴과 허용 루트 경계 검사 |
-| `LLM-ROUTE-B-203` | LLM | ROUTE | Backend | Worker 비동기 병렬 라우팅 | 검증된 작업을 `asyncio.gather` 또는 LangGraph parallel branch로 fan-out |
+| `LLM-GRAPH-B-202` | LLM | GRAPH | Backend | LangGraph workflow 정의 | Planner, Dispatcher, Workers, Evaluator node와 chat/service 반환 edge 구성 |
+| `LLM-PLANNER-B-201` | LLM | PLANNER | Backend | Planner Node 계획 수립 | 사용자 의도 분석, query rewrite, selected_workers, allowed_paths, risk_level plan JSON 생성 |
+| `LLM-DISPATCHER-B-201` | LLM | DISPATCHER | Backend | Dispatcher Node plan 검증 | LLM이 아닌 코드 노드로 plan JSON schema, worker 목록, path allowlist 검증 |
+| `LLM-DISPATCHER-B-202` | LLM | DISPATCHER | Backend | 경로 보안 및 traversal 차단 | `..`, 절대경로, `.env`, key/token 등 금지 패턴과 허용 루트 경계 검사 |
+| `LLM-DISPATCHER-B-203` | LLM | DISPATCHER | Backend | Worker 비동기 병렬 라우팅 | 검증된 작업을 LangGraph parallel branch로 fan-out |
 | `LLM-OPS-B-201` | LLM | OPS | Backend | agent 시작/완료 이벤트 발행 | graph_started, supervisor_plan, route_validated, worker_started, worker_result, completed, failed 이벤트 publish |
 | `LLM-OPS-B-202` | LLM | OPS | Backend | completed/failed 후 cleanup | final event 이후 queue 정리 |
 | `LLM-OPS-B-203` | LLM | OPS | Backend | agent 실행 시간 측정 | 각 node/worker start/end timestamp와 latency 기록 |
 | `LLM-OPS-B-204` | LLM | OPS | Backend | agent 실패 처리 | 실패 node/worker, error code, fallback answer context 저장 및 failed event 발행 |
 | `LLM-OPS-F-201` | LLM | OPS | Frontend | ReportJsonResponse 필드 확정 | summary, stack, file_map, recommendations, heatmap, durations, guide 포함, frontend와 report 계약 고정 |
-| `LLM-WORKER-B-201` | LLM | WORKER | Backend | Search Worker Agent | 한국어 자연어/오타 질문을 코드 검색용 query로 확장하고 embedding/vector search 전략 실행 |
+| `LLM-WORKER-B-201` | LLM | WORKER | Backend | Search Worker | hybrid search와 키워드 폴백으로 코드 근거 검색 |
 | `LLM-WORKER-B-202` | LLM | WORKER | Backend | Dir Worker | 허용된 repo 경로 안에서 디렉토리 구조 탐색 |
 | `LLM-WORKER-B-203` | LLM | WORKER | Backend | Grep Worker | 키워드, 정규식, alias 기반 코드 후보 검색 |
-| `LLM-WORKER-B-204` | LLM | WORKER | Backend | Read Worker | Route Node가 허용한 후보 파일만 읽어 raw snippet과 line range 반환 |
-| `LLM-WORKER-B-205` | LLM | WORKER | Backend | Code Reasoning Worker | 필요 시 읽은 코드 조각을 해석하는 선택형 LLM worker |
-| `LLM-EVIDENCE-B-201` | LLM | EVIDENCE | Backend | Evidence Aggregator Node | worker_results 중복 제거, 파일 경로/라인/근거 정리, token budget 압축 |
+| `LLM-WORKER-B-204` | LLM | WORKER | Backend | Read Worker | Dispatcher Node가 허용한 후보 파일만 읽어 raw snippet과 line range 반환 |
+| `LLM-EVALUATOR-B-201` | LLM | EVALUATOR | Backend | Evaluator Node | worker_results 중복 제거, 파일 경로/라인/근거 정리, token budget 압축 |
 | `DOCS-GEN-B-101` | DOCS | GEN | Backend | 가이드북 조회 API | `GET /api/gen/docs/{repo_id}` 생성된 온보딩 가이드북 Markdown 반환 |
 | `DOCS-GEN-B-201` | DOCS | GEN | Backend | 문서 요약 agent 구현 | README, config, package, route 파일 기반 프로젝트 설명 생성 |
 | `DOCS-GEN-B-202` | DOCS | GEN | Backend | 온보딩 guide agent 구현 | 읽을 순서, 수정 시작점, 위험 파일, 추천 task 생성 |
@@ -330,7 +332,7 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
 | `RAG-PARSE-F-202` | RAG |  | Frontend | UI Component | heatmap용 risk score 생성 |
 | `LLM-MEMORY-B-201` | LLM | MEMORY | Backend | Service | 장기 기억 (Long-term Memory) |
 | `LLM-WORKER-B-206` | LLM | WORKER | Backend | Service | 허용된 외부 도구 worker 확장 |
-| `LLM-WORKER-B-207` | LLM | WORKER | Backend | Service | Code Reasoning Worker 고도화 |
+| `LLM-WORKER-B-207` | LLM | WORKER | Backend | Service | 선택형 reasoning worker 고도화 |
 | `DOCS-GEN-B-208` | DOCS |  | Backend | Service | 추천 작업 생성 |
 | `DOCS-UTIL-B-201` | DOCS | UTIL | Backend | HTML-PDF 파일 렌더링 및 변환 서비스 | 마크다운 가이드를 HTML 렌더러 기반의 인쇄용 PDF 스타일시트와 조합하여 서버 사이드에서 PDF 문서로 렌더링하는 서비스 |
 | `DOCS-UTIL-B-202` | DOCS | UTIL | Backend | 이메일 및 Slack 외부 공유 연동 서비스 | 지정된 팀원 이메일로 가이드북을 전송하거나 슬랙 웹훅 채널로 분석 완료 알림 및 요약본을 포워딩하는 서비스 |
@@ -347,9 +349,9 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
 
 ## 🧠 AI 모델 적용 전략 (Model Selection Strategy)
 ### 1. 역할별 LLM 에이전트 모델: `gpt-4o`
-* **역할**: Supervisor Agent의 계획 수립, Search Worker의 query rewrite/semantic search 전략, Final Answer Agent의 근거 기반 답변 생성을 담당합니다.
+* **역할**: Planner Node의 계획 수립, Search Worker의 query rewrite/semantic search 전략, Final Answer Agent의 근거 기반 답변 생성을 담당합니다.
 * **채택 근거**: 같은 고성능 LLM 엔진을 공유하더라도 LangGraph 상에서는 prompt, tool, schema, state 책임을 분리해 논리적 멀티에이전트를 구성할 수 있습니다.
-* **비적용 영역**: Route Node, allowlist 검증, path traversal 차단, timeout/retry/fallback은 LLM이 아닌 일반 코드가 담당합니다.
+* **비적용 영역**: Dispatcher Node, allowlist 검증, path traversal 차단, timeout/retry/fallback은 LLM이 아닌 일반 코드가 담당합니다.
 ### 2. 코드 임베딩 모델: `text-embedding-3-large`
 * **역할**: 코드와 문서를 수학적 벡터 공간으로 변환 및 RAG 구축.
 * **채택 근거**: 다국어 정보 검색 평가(MIRACL)에서 압도적 점수를 기록하여 한글 주석과 영문 소스코드가 혼재된 환경에 최적. 차원을 축소해도 성능이 유지되는 마트료시카 표현 학습 지원.

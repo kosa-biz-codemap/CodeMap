@@ -17,9 +17,9 @@
 
 | 구분 | 기준 |
 | --- | --- |
-| 구현 위치 | `backend/app/agent/` (`state.py`, `graph.py`, `service.py`, `llm_client.py` + `agents/`, `nodes/`, `workers/`) |
-| 성격 | LangGraph 오케스트레이션 (LLM Planner/Evaluator + 결정론적 Route/Worker 혼합) |
-| 책임 | `CodeMapState` 정의, `StateGraph` 구성, `route_node` 보안 검증·Send 병렬 fan-out, 실행 제어, Thought Trace 이벤트 발행 |
+| 구현 위치 | `backend/app/agent/` (`state.py`, `graph.py`, `service.py`, `llm_client.py`, `nodes/`, `workers/`) |
+| 성격 | LangGraph 오케스트레이션 (LLM Planner + 결정론적 Dispatcher/Worker/Evaluator 혼합) |
+| 책임 | `CodeMapState` 정의, `StateGraph` 구성, `dispatcher_node` 보안 검증·Send 병렬 fan-out, 실행 제어, Thought Trace 이벤트 발행 |
 | 비책임 | 계획 수립 상세(→ PLANNER), 충분성 평가 상세(→ EVALUATOR), 도구 실행 상세(→ TOOL), 최종 답변 스트리밍/마크다운 렌더링(→ Chat 도메인) |
 
 ---
@@ -30,7 +30,7 @@
 | --- | --- | --- | --- |
 | LLM-AGENT-B-201 | `CodeMapState` 공유 상태 및 Reducer 정의 | Backend | Phase 1 |
 | LLM-AGENT-B-202 | LangGraph `StateGraph` 구성 및 실행 흐름 | Backend | Phase 1 |
-| LLM-AGENT-B-203 | `route_node` 보안 검증 및 Send 병렬 fan-out | Backend | Phase 1 |
+| LLM-AGENT-B-203 | `dispatcher_node` 보안 검증 및 Send 병렬 fan-out | Backend | Phase 1 |
 | LLM-AGENT-B-204 | Thought Trace 이벤트 발행 (실시간 타임라인) | Backend | Phase 1 |
 | LLM-AGENT-B-301 | LangGraph 체크포인터 기반 멀티턴 상태 영속 | Backend | **Phase 2 (미구현)** |
 | LLM-AGENT-B-302 | 장기 기억(Long-term Memory) 및 외부 MCP 도구 확장 | Backend | **Phase 2 (미구현)** |
@@ -45,8 +45,8 @@
 ### 2. 입/출력 규격
 - **`CodeMapState` (TypedDict)**
   - 입력: `user_query`, `repo_id`, `clone_path`, `run_id`
-  - Supervisor 출력: `rewritten_query`, `access_plan: list[AccessPlanItem]`
-  - Route 출력: `security_result: SecurityResult` (`{approved, rejected}`)
+  - Planner 출력: `rewritten_query`, `access_plan: list[AccessPlanItem]`
+  - Dispatcher 출력: `security_result: SecurityResult` (`{approved, rejected}`)
   - Worker 출력(fan-in): `worker_results: Annotated[list[WorkerResult], operator.add]`, `events: Annotated[list[dict], operator.add]`, `errors: list[str]`, `durations: dict`
   - Evaluator 출력: `compact_context: dict`
   - 최종: `final_answer: str | None`
@@ -68,24 +68,24 @@
 ### 2. 입/출력 규격
 - **실행 흐름**
   ```text
-  START → supervisor_agent → route_node ──(conditional: fanout_to_workers)──► search_worker
-                                                                            ► dir_worker     ┐
-                                                                            ► grep_worker    ├─► evidence_aggregator → END
-                                                                            ► read_worker    ┘
+  START → planner_node → dispatcher_node ──(conditional: fanout_to_workers)──► search_worker
+                                                                               ► dir_worker     ┐
+                                                                               ► grep_worker    ├─► evaluator_node → END
+                                                                               ► read_worker    ┘
   ```
-- **엣지 구성**: `set_entry_point("supervisor_agent")` → `add_edge("supervisor_agent","route_node")` → `add_conditional_edges("route_node", fanout_to_workers, [4개 워커 + "evidence_aggregator"])` → 각 워커 `add_edge(worker,"evidence_aggregator")` → `add_edge("evidence_aggregator", END)`.
+- **엣지 구성**: `set_entry_point("planner_node")` → `add_edge("planner_node","dispatcher_node")` → `add_conditional_edges("dispatcher_node", fanout_to_workers, [4개 워커 + "evaluator_node"])` → 각 워커 `add_edge(worker,"evaluator_node")` → `add_edge("evaluator_node", END)`.
 - **반환**: 그래프 실행 후 State의 `compact_context`·`worker_results`를 Chat 도메인(`chat/service.py`)이 읽어 Final Answer Agent에 전달.
 
 ### 3. 완료 조건
-- `route_node`는 상태(`security_result`)만 갱신하고, 실제 라우팅은 conditional edge 함수 `fanout_to_workers`가 `Send` 리스트를 반환해 수행한다(노드가 상태 갱신과 Send를 동시 반환하면 `InvalidUpdateError` 발생 — 분리 필수).
-- 승인 plan이 0건이면 `fanout_to_workers`는 `evidence_aggregator`로 직행하는 단일 `Send`를 반환한다.
+- `dispatcher_node`는 상태(`security_result`)만 갱신하고, 실제 라우팅은 conditional edge 함수 `fanout_to_workers`가 `Send` 리스트를 반환해 수행한다(노드가 상태 갱신과 Send를 동시 반환하면 `InvalidUpdateError` 발생 — 분리 필수).
+- 승인 plan이 0건이면 `fanout_to_workers`는 `evaluator_node`로 직행하는 단일 `Send`를 반환한다.
 
 ---
 
-## LLM-AGENT-B-203: `route_node` 보안 검증 및 Send 병렬 fan-out
+## LLM-AGENT-B-203: `dispatcher_node` 보안 검증 및 Send 병렬 fan-out
 
 ### 1. 설명
-`backend/app/agent/workers/route_node.py` — **100% 결정론적**(LLM 아님). Supervisor의 `access_plan` 각 항목 경로를 보안 검증해 `security_result`로 분류하고, `fanout_to_workers`가 승인 항목을 `Send(f"{tool}_worker", {**state, "_plan_item": item})`로 병렬 fan-out 한다.
+`backend/app/agent/nodes/dispatcher_node.py` — **100% 결정론적**(LLM 아님). Planner의 `access_plan` 각 항목 경로를 보안 검증해 `security_result`로 분류하고, `fanout_to_workers`가 승인 항목을 `Send(f"{tool}_worker", {**state, "_plan_item": item})`로 병렬 fan-out 한다.
 
 ### 2. 입/출력 규격
 - **Input**: `access_plan: list[AccessPlanItem]`
@@ -109,8 +109,8 @@
 ### 2. 입/출력 규격
 - **현재 코드에서 실제 발행되는 Agent 그래프 이벤트**:
   - `graph_started` — 그래프 실행 시작
-  - `supervisor_plan` — Planner가 `access_plan` 수립 완료
-  - `route_validated` — `route_node` 보안 검증 결과(`allowed`, `parallelGroups`)
+  - `supervisor_plan` — Planner가 `access_plan` 수립 완료. 이벤트명은 기존 프론트 호환을 위해 유지
+  - `route_validated` — `dispatcher_node` 보안 검증 결과(`allowed`, `parallelGroups`). 이벤트명은 기존 프론트 호환을 위해 유지
   - `worker_result` — 개별 워커 근거 수집
   - `evidence_compacted` — Evaluator 압축/충분성 평가 완료
   - 터미널: `completed` / `failed` / `error`
@@ -153,4 +153,4 @@
 ## 부록: 에러/복구 정책
 
 - **일부 워커 실패**: 수집된 부분 근거가 존재하면 진행을 계속한다(`PARTIAL_EVIDENCE_CONTINUE`). 워커 예외는 `errors`에 누적하고 `failed`/`error` 이벤트로 표면화한다.
-- **보안 차단**: `route_node`가 위반 경로를 `rejected`로 분류·로깅하고 조용히 제외한다(우회 시도에 대한 사용자 노출 에러코드는 현재 미정의 — 표준 에러코드 신설은 `ERROR_CODES.md` 후속 과제).
+- **보안 차단**: `dispatcher_node`가 위반 경로를 `rejected`로 분류·로깅하고 조용히 제외한다(우회 시도에 대한 사용자 노출 에러코드는 현재 미정의 — 표준 에러코드 신설은 `ERROR_CODES.md` 후속 과제).

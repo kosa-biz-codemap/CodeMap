@@ -8,7 +8,7 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 > - **RAG-GRAPH**: 코드 의존성 그래프 시각화
 > - **RAG-PARSE 고도화**: 위험 신호 태깅, 기술 스택 점수화
 > - **LLM 멀티에이전트**: LangGraph State 공유형 채팅 실행, SSE 스트리밍, 근거 조회
-> - **LLM 고도화**: 장기 기억, Code Reasoning Worker 고도화, 허용된 외부 도구 worker
+> - **LLM 고도화**: 장기 기억, 선택형 reasoning worker 고도화, 허용된 외부 도구 worker
 > - **DOCS-UTIL**: HTML-PDF 변환, 이메일/Slack 공유
 > - **PROJECT-REPO**: 중복 저장소 검사
 
@@ -386,10 +386,10 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 ## LLM 멀티에이전트 API 명세서
 
 > [!IMPORTANT]
-> 아래 LLM API는 최신 합의된 LangGraph State 공유형 멀티에이전트 구조를 기준으로 합니다. `Route Node`는 LLM agent가 아니라 deterministic code node이며, 보안 검증과 병렬 worker routing을 담당합니다.
-> 구현 위치 기준으로 `Final Answer Agent`는 `chat/final_answer_agent.py`에 두고, Supervisor/Route/Workers/Evidence node는 `agent/` 아래에 둡니다.
+> 아래 LLM API는 최신 합의된 LangGraph State 공유형 멀티에이전트 구조를 기준으로 합니다. `Dispatcher Node`는 LLM agent가 아니라 deterministic code node이며, 보안 검증과 병렬 worker routing을 담당합니다.
+> 구현 위치 기준으로 `Final Answer Agent`는 `chat/final_answer_agent.py`에 두고, Planner/Dispatcher/Workers/Evaluator node는 `agent/` 아래에 둡니다.
 
-> 관련 기능 ID: `LLM-CHAT-B-101`, `LLM-CHAT-B-201` ~ `LLM-CHAT-B-204`, `LLM-GRAPH-B-201` ~ `LLM-GRAPH-B-202`, `LLM-SUPERVISOR-B-201`, `LLM-ROUTE-B-201` ~ `LLM-ROUTE-B-203`, `LLM-WORKER-B-201` ~ `LLM-WORKER-B-205`, `LLM-EVIDENCE-B-201`
+> 관련 기능 ID: `LLM-CHAT-B-101`, `LLM-CHAT-B-201` ~ `LLM-CHAT-B-204`, `LLM-GRAPH-B-201` ~ `LLM-GRAPH-B-202`, `LLM-PLANNER-B-201`, `LLM-DISPATCHER-B-201` ~ `LLM-DISPATCHER-B-203`, `LLM-WORKER-B-201` ~ `LLM-WORKER-B-205`, `LLM-EVALUATOR-B-201`
 
 ### LLM 공통 State 및 역할 계약
 
@@ -397,9 +397,9 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 | :--- | :--- |
 | 구현 기준 구조 | `backend/app/chat/` + `backend/app/agent/` |
 | `Final Answer Agent` 위치 | `chat/final_answer_agent.py` |
-| LangGraph 데이터 수집 계층 | `agent/state.py`, `graph.py`, `agents/`, `nodes/`, `tools/`, `workers/` |
-| LLM agent | `Supervisor Agent`, `Search Worker Agent`, `Code Reasoning Worker`(선택), `Final Answer Agent` |
-| 일반 코드 node/wrapper | `Route Node`, `Evidence Aggregator Node`, `Dir Worker`, `Grep Worker`, `Read Worker` |
+| LangGraph 데이터 수집 계층 | `agent/state.py`, `graph.py`, `service.py`, `llm_client.py`, `nodes/`, `workers/` |
+| LLM agent | `Planner Node`, `Final Answer Agent` |
+| 일반 코드 node/wrapper | `Dispatcher Node`, `Evaluator Node`, `Search Worker`, `Dir Worker`, `Grep Worker`, `Read Worker` |
 | `CodeMapState` 핵심 필드 | `user_query`, `rewritten_query`, `access_plan`, `security_result`, `worker_results`, `compact_context`, `final_answer` |
 | 원본 근거 보존 기준 | Worker 결과는 중간 LLM 요약 없이 `CodeMapState.worker_results`에 append-only 방식으로 기록 |
 
@@ -413,7 +413,7 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 | :--- | :--- |
 | Endpoint | `POST /api/chat/{repo_id}/runs` |
 | Method | POST |
-| 관련 기능 ID | `LLM-CHAT-B-101`, `LLM-CHAT-B-201`, `LLM-GRAPH-B-201`, `LLM-SUPERVISOR-B-201` |
+| 관련 기능 ID | `LLM-CHAT-B-101`, `LLM-CHAT-B-201`, `LLM-GRAPH-B-201`, `LLM-PLANNER-B-201` |
 | 목적 | 사용자 질문을 받아 LangGraph 멀티에이전트 실행 run을 생성하고 SSE stream URL을 반환 |
 | 상태 | 설계 확정 / 구현 예정 |
 
@@ -513,11 +513,11 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 | Event | data payload | 설명 |
 | :--- | :--- | :--- |
 | `graph_started` | `{ "runId": "...", "stateKeys": ["user_query"] }` | LangGraph 실행 시작 |
-| `supervisor_plan` | `{ "rewrittenQuery": "...", "selectedWorkers": [...], "allowedPaths": [...] }` | Supervisor LLM 계획 생성 완료 |
-| `route_validated` | `{ "allowed": true, "parallelGroups": [...] }` | deterministic Route Node 검증 완료 |
+| `supervisor_plan` | `{ "rewrittenQuery": "...", "selectedWorkers": [...], "allowedPaths": [...] }` | Planner LLM 계획 생성 완료 |
+| `route_validated` | `{ "allowed": true, "parallelGroups": [...] }` | deterministic Dispatcher Node 검증 완료 |
 | `worker_started` | `{ "worker": "grep", "target": "backend/app" }` | worker 실행 시작 |
 | `worker_result` | `{ "worker": "grep", "resultCount": 3, "evidenceIds": [...] }` | worker 원본 근거 State 기록 완료 |
-| `evidence_compacted` | `{ "evidenceCount": 8, "tokenBudget": 12000 }` | Evidence Aggregator 정리 완료 |
+| `evidence_compacted` | `{ "evidenceCount": 8, "tokenBudget": 12000 }` | Evaluator 정리 완료 |
 | `answer_delta` | `{ "content": "로그인 로직은..." }` | Final Answer 토큰 조각 |
 | `completed` | `{ "runId": "...", "answerId": "...", "elapsedSeconds": 12.4 }` | run 정상 완료 |
 | `failed` | `{ "runId": "...", "errorCode": "AGENT_TIMEOUT", "message": "..." }` | run 실패 |
@@ -579,9 +579,9 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | data.status | String | `queued`, `running`, `streaming`, `completed`, `failed`, `cancelled` |
 | data.currentNode | String | 현재 실행 중인 node/worker |
 | data.state.userQuery | String | 사용자 원본 질문 |
-| data.state.rewrittenQuery | String | Supervisor가 교정한 검색 질의 |
+| data.state.rewrittenQuery | String | Planner가 교정한 검색 질의 |
 | data.state.accessPlan | Object | selectedWorkers, allowedPaths, riskLevel |
-| data.state.securityResult | Object | Route Node의 allowlist/path traversal 검증 결과 |
+| data.state.securityResult | Object | Dispatcher Node의 allowlist/path traversal 검증 결과 |
 | data.state.workerResultCount | Integer | State에 기록된 raw evidence 개수 |
 | data.state.compactContextReady | Boolean | Final Answer용 compact context 준비 여부 |
 | data.state.stateKeys | Array<String> | 현재 `CodeMapState`에 기록된 key 목록 |
@@ -618,7 +618,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
     },
     "durations": {
       "supervisor": 1.4,
-      "route_node": 0.03,
+      "dispatcher_node": 0.03,
       "search_worker": 0.8,
       "grep_worker": 0.2
     },
@@ -670,7 +670,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | :--- | :--- |
 | Endpoint | `GET /api/chat/{repo_id}/runs/{run_id}/evidence` |
 | Method | GET |
-| 관련 기능 ID | `LLM-WORKER-B-201` ~ `LLM-WORKER-B-205`, `LLM-EVIDENCE-B-201` |
+| 관련 기능 ID | `LLM-WORKER-B-201` ~ `LLM-WORKER-B-204`, `LLM-EVALUATOR-B-201` |
 | 목적 | Worker가 `CodeMapState.worker_results`에 직접 기록한 raw evidence와 compact context 조회 |
 | 상태 | 설계 확정 / 구현 예정 |
 
@@ -825,7 +825,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 
 ---
 
-### LLM-ADVANCED-API-003 Code Reasoning Worker 고도화 실행 요청
+### LLM-ADVANCED-API-003 선택형 Reasoning Worker 고도화 실행 요청
 
 #### 기본 정보
 
@@ -834,7 +834,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | Endpoint | `POST /api/chat/{repo_id}/runs/{run_id}/reasoning` |
 | Method | POST |
 | 관련 기능 ID | `LLM-WORKER-B-205`, `LLM-WORKER-B-207` |
-| 목적 | 기존 run의 State evidence를 기반으로 선택형 Code Reasoning Worker 또는 고도화 reasoning worker를 실행 |
+| 목적 | 기존 run의 State evidence를 기반으로 Phase 2 선택형 reasoning worker를 실행 |
 | 상태 | 시작 전 (Phase 2) |
 
 #### 요청(Request)
@@ -844,7 +844,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | 필드명 | 타입 | 필수 | 기본값 | 설명 |
 | :--- | :--- | :--- | :--- | :--- |
 | focus | String | N | - | 추가 추론 초점 (`security`, `architecture`, `data_flow`, `bug_risk` 등) |
-| maxEvidence | Integer | N | 12 | Code Reasoning Worker가 읽을 최대 evidence 수 |
+| maxEvidence | Integer | N | 12 | reasoning worker가 읽을 최대 evidence 수 |
 | includeNewSearch | Boolean | N | false | 추가 worker 검색 허용 여부 |
 
 #### 응답(Response)
@@ -856,7 +856,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | code | Integer | HTTP 상태 코드 (202) |
 | message | String | "accepted" |
 | data.runId | UUID | 대상 run ID |
-| data.reasoningRunId | UUID | 추가 Code Reasoning Worker 실행 ID |
+| data.reasoningRunId | UUID | 추가 reasoning worker 실행 ID |
 | data.status | String | `reasoning_queued` |
 
 ##### 에러 응답
@@ -864,8 +864,8 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | HTTP Status | Error Code | 발생 시점 | 설명 |
 | :--- | :--- | :--- | :--- |
 | 404 | `LLM_RUN_NOT_FOUND` | run 조회 | run_id가 존재하지 않음 |
-| 409 | `AGENT_EVIDENCE_NOT_READY` | 사전 검증 | Code Reasoning에 필요한 evidence가 아직 준비되지 않음 |
-| 500 | `AGENT_REASONING_FAILED` | worker 실행 | Code Reasoning Worker 실행 실패 |
+| 409 | `AGENT_EVIDENCE_NOT_READY` | 사전 검증 | reasoning에 필요한 evidence가 아직 준비되지 않음 |
+| 500 | `AGENT_REASONING_FAILED` | worker 실행 | 선택형 reasoning worker 실행 실패 |
 
 ---
 
@@ -1056,7 +1056,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | `AGENT_EVIDENCE_NOT_FOUND` | 404 | agent State evidence가 존재하지 않음 |
 | `AGENT_EVIDENCE_NOT_READY` | 409 | 추가 reasoning에 필요한 evidence가 준비되지 않음 |
 | `AGENT_TOOL_POLICY_FAILED` | 500 | 외부 도구 worker 정책 조회 실패 |
-| `AGENT_REASONING_FAILED` | 500 | Code Reasoning Worker 실행 실패 |
+| `AGENT_REASONING_FAILED` | 500 | 선택형 reasoning worker 실행 실패 |
 | `MEMORY_RETRIEVAL_FAILED` | 500 | 에이전트 장기 기억 조회 실패 |
 | `PDF_RENDER_FAILED` | 500 | HTML→PDF 렌더링 실패 |
 | `SHARE_FAILED` | 500 | 이메일 또는 Slack 발송 실패 |

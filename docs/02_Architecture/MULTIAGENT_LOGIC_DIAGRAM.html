@@ -640,7 +640,7 @@
     <strong>핵심 합의</strong>
     <span>
       같은 고성능 LLM 엔진을 공유하더라도 LangGraph 안에서는 역할별 node/agent를 분리합니다.
-      다만 Route Node는 LLM agent가 아니라 deterministic routing/control node로 둡니다.
+      다만 Dispatcher Node는 LLM agent가 아니라 deterministic routing/control node로 둡니다.
       카드를 클릭하면 각 역할과 회의 합의 포인트를 확인할 수 있습니다.
     </span>
   </div>
@@ -660,7 +660,7 @@
     <ul class="decision-list">
       <li>단일 만능 agent에 모든 도구를 몰아주지 않는다.</li>
       <li>Worker별 multi-agent 분리는 유지한다.</li>
-      <li>Route Node는 LLM agent로 만들지 않는다.</li>
+      <li>Dispatcher Node는 LLM agent로 만들지 않는다.</li>
       <li>State 공유로 LLM 간 요약 릴레이를 줄인다.</li>
       <li>직렬 LLM 릴레이 대신 병렬 Worker 실행을 우선한다.</li>
     </ul>
@@ -678,7 +678,7 @@
         </p>
       </div>
       <div class="latency-note">
-        목표: Supervisor LLM 1회, Worker 병렬 실행, Final Answer LLM 1회 중심으로 직렬 지연을 줄인다.
+        목표: Planner LLM 1회, Worker 병렬 실행, Final Answer LLM 1회 중심으로 직렬 지연을 줄인다.
       </div>
     </header>
 
@@ -732,7 +732,7 @@
             <article class="card llm" onclick="showInfo('supervisor')">
               <span class="number">4</span>
               <span class="badge">LLM AGENT</span>
-              <h4>Supervisor Agent</h4>
+              <h4>Planner Node</h4>
               <p>
                 의도 분석, 오타/모호성 정리, 필요한 worker 선택, 접근 범위 plan JSON 생성.
                 최종 답변은 작성하지 않고 구조화된 계획만 만든다.
@@ -746,7 +746,7 @@
             <article class="card code" onclick="showInfo('orchestrator')">
               <span class="number">5</span>
               <span class="badge">CODE NODE</span>
-              <h4>Route Node</h4>
+              <h4>Dispatcher Node</h4>
               <p>
                 LLM 아님. plan JSON 검증, allowlist 검사, path traversal 차단, worker 병렬 라우팅,
                 timeout/retry/fallback 제어를 코드로 수행.
@@ -796,7 +796,7 @@
             <article class="card code" onclick="showInfo('aggregator')">
               <span class="number">7</span>
               <span class="badge">CODE FIRST</span>
-              <h4>Evidence Aggregator Node</h4>
+              <h4>Evaluator Node</h4>
               <p>
                 MVP는 코드 추천. 중복 제거, 파일 경로/라인/근거 정리, token budget 압축.
                 고도화 시에만 LLM 압축을 선택.
@@ -808,7 +808,7 @@
               <h4>Final Answer Agent</h4>
               <p>
                 State의 원본 근거와 compact_context를 기반으로 최종 답변 생성.
-                Route Node 요약본에 의존하지 않으며 chat/final_answer_agent.py에 둔다.
+                Dispatcher Node 요약본에 의존하지 않으며 chat/final_answer_agent.py에 둔다.
               </p>
             </article>
           </div>
@@ -853,7 +853,7 @@
           </div>
 
           <div class="data-note">
-            데이터 흐름: Supervisor write → Route Node read/validate → Workers write raw evidence → Aggregator compact → Final Answer read.
+            데이터 흐름: Planner write → Dispatcher Node read/validate → Workers write raw evidence → Aggregator compact → Final Answer read.
           </div>
         </aside>
       </div>
@@ -890,7 +890,7 @@
           <h4>팀에 설명할 한 문장</h4>
           <p>
             같은 LLM 모델을 공유하더라도 역할별 node/agent로 분리하되,
-            Route Node는 LLM이 아니라 deterministic control node로 둔다.
+            Dispatcher Node는 LLM이 아니라 deterministic control node로 둔다.
           </p>
         </article>
       </div>
@@ -904,11 +904,11 @@
       <div class="responsibility">
         <div class="mini">
           <h4>LLM 사용</h4>
-          <p>Supervisor, Search Worker, Final Answer. 필요 시 Code Reasoning Worker와 Evidence 압축.</p>
+          <p>Planner, Final Answer. Search Worker는 검색 질의 확장이 필요할 때 LLM을 조건부로 사용.</p>
         </div>
         <div class="mini">
           <h4>LLM 비추천</h4>
-          <p>chat/service 직접 agent화, Route Node LLM화, 보안 검증 자연어 판단.</p>
+          <p>chat/service 직접 agent화, Dispatcher Node LLM화, 보안 검증 자연어 판단.</p>
         </div>
         <div class="mini">
           <h4>코드가 더 잘하는 영역</h4>
@@ -938,16 +938,16 @@ const INFO = {
     body: "chat/service가 초기 State를 만들고 backend/app/agent/ 아래의 LangGraph를 실행합니다. LangGraph 안에서는 LLM node와 일반 코드 node를 섞어 구성합니다."
   },
   supervisor: {
-    title: "Supervisor Agent",
+    title: "Planner Node",
     body: "LLM 기반 계획 수립자입니다. 사용자 의도 분석, 오타/모호성 정리, 필요한 worker 선택, 접근 범위 plan JSON 생성을 담당합니다. 최종 답변을 미리 쓰거나 worker 결과를 장황하게 요약하지 않습니다."
   },
   orchestrator: {
-    title: "Route Node",
+    title: "Dispatcher Node",
     body: "LLM이 아니라 deterministic code node입니다. plan JSON 검증, 허용 경로 allowlist 검사, path traversal 차단, worker 병렬 실행, timeout/retry/fallback을 코드로 제어합니다. 이 영역은 LLM보다 코드가 안전합니다."
   },
   workerSearch: {
-    title: "Search Worker Agent",
-    body: "LLM 활용 가치가 큰 worker입니다. 사용자의 자연어 질문을 login, signin, auth, authentication처럼 검색 가능한 질의로 확장하고, embedding/vector search 또는 hybrid search 전략을 수행합니다."
+    title: "Search Worker",
+    body: "검색 전담 worker입니다. 사용자의 자연어 질문을 login, signin, auth, authentication처럼 검색 가능한 질의로 확장할 수 있고, embedding/vector search 또는 hybrid search 전략을 수행합니다."
   },
   workerDir: {
     title: "Dir Worker",
@@ -959,19 +959,19 @@ const INFO = {
   },
   workerRead: {
     title: "Read Worker",
-    body: "Route Node가 허용한 경로 안의 후보 파일만 읽습니다. 파일 접근은 보안 경계가 중요하므로, LLM 판단이 아니라 코드 기반 검증 뒤 실행합니다."
+    body: "Dispatcher Node가 허용한 경로 안의 후보 파일만 읽습니다. 파일 접근은 보안 경계가 중요하므로, LLM 판단이 아니라 코드 기반 검증 뒤 실행합니다."
   },
   workerReason: {
-    title: "Code Reasoning Worker",
-    body: "선택형 LLM worker입니다. 읽은 코드 조각이 복잡하거나 cross-file reasoning이 필요할 때만 사용합니다. MVP에서는 비용과 latency를 줄이기 위해 생략할 수 있습니다."
+    title: "Optional Reasoning Worker",
+    body: "Phase 2 확장 후보입니다. 읽은 코드 조각이 복잡하거나 cross-file reasoning이 필요할 때만 별도 reasoning worker로 추가합니다. MVP 현재 구조에는 포함하지 않습니다."
   },
   aggregator: {
-    title: "Evidence Aggregator Node",
+    title: "Evaluator Node",
     body: "MVP에서는 코드 node를 추천합니다. worker_results의 중복 제거, 파일 경로/라인/근거 정리, token budget 압축을 담당합니다. 고도화 단계에서는 LLM 압축을 조건부로 붙일 수 있습니다."
   },
   final: {
     title: "Final Answer Agent",
-    body: "chat/final_answer_agent.py에 위치합니다. State에 저장된 원본 근거와 compact_context를 읽고 사용자에게 보낼 최종 답변을 생성합니다. 핵심은 Route Node가 자연어로 요약한 내용이 아니라 State의 근거를 직접 읽는다는 점입니다."
+    body: "chat/final_answer_agent.py에 위치합니다. State에 저장된 원본 근거와 compact_context를 읽고 사용자에게 보낼 최종 답변을 생성합니다. 핵심은 Dispatcher Node가 자연어로 요약한 내용이 아니라 State의 근거를 직접 읽는다는 점입니다."
   },
   state: {
     title: "CodeMapState Shared Memory",
@@ -991,7 +991,7 @@ const INFO = {
   },
   summary: {
     title: "팀 설명용 문장",
-    body: "우리 프로젝트의 목표는 LangChain 멀티에이전트 활용이므로 단일 agent에 모든 도구를 몰아주지 않는다. 같은 LLM 모델을 공유하더라도 역할별 prompt/tool/schema/state로 분리하고, Route Node는 LLM agent가 아니라 deterministic routing/control node로 둔다."
+    body: "우리 프로젝트의 목표는 LangChain 멀티에이전트 활용이므로 단일 agent에 모든 도구를 몰아주지 않는다. 같은 LLM 모델을 공유하더라도 역할별 prompt/tool/schema/state로 분리하고, Dispatcher Node는 LLM agent가 아니라 deterministic routing/control node로 둔다."
   }
 };
 

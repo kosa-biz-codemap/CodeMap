@@ -46,7 +46,9 @@ backend/app/
 ├── common/               # 📋 도메인 간 공통 계약 (Exceptions, Schemas)
 ├── util/                 # 🛠️ 순수 유틸리티 함수
 ├── agent/                # 🤖 LLM 멀티에이전트 도메인 (LangGraph)
-│   └── workers/          #    역할별 에이전트 코드 (Supervisor, Route, Evidence, Worker)
+│   ├── llm_client.py     #    LLM provider/factory only
+│   ├── nodes/            #    Planner, Dispatcher, Evaluator LangGraph nodes
+│   └── workers/          #    search/dir/grep/read 단일 목적 worker adapters
 ├── tool/                 # 🔧 도구 도메인 (검색 알고리즘 + MCP I/O)
 ├── auth/                 # 🔐 인증 도메인
 ├── chat/                 # 💬 채팅 대화 도메인 (Final Answer 생성 및 스트리밍)
@@ -72,8 +74,10 @@ backend/app/
 * **`app/infra` (애플리케이션 인프라)**: 앱 구동에 필요한 인프라 컴포넌트입니다. (Config, Database, Auth 등)
 * **`app/common` (공통 계약)**: 도메인 간 공유되는 예외 처리, 스키마 등 공통 계약입니다. (Exceptions, Schemas, Global Handlers 등)
 * **`app/agent` (LLM 에이전트 도메인)**: AI 멀티에이전트의 핵심 로직이 위치하는 도메인입니다. 하위 모듈은 역할(Role)에 기반하여 명명합니다.
-    * `workers/`: 역할별 에이전트 코드 (Supervisor, Route Node, Evidence Aggregator, 4대 Worker)
-* **`app/tool` (도구 도메인)**: RAG 검색 알고리즘(Hybrid Search, RRF)과 MCP I/O 외부 인터페이스를 제공합니다.
+  * `nodes/`: LangGraph 제어 노드입니다. `planner_node.py`는 LLM 계획 수립, `dispatcher_node.py`는 결정론적 검증/fan-out, `evaluator_node.py`는 Phase 1 근거 압축과 Phase 2 충분성 판단을 담당합니다.
+  * `workers/`: `search_worker.py`, `dir_worker.py`, `grep_worker.py`, `read_worker.py`처럼 단일 목적 worker adapter만 둡니다.
+  * `llm_client.py`: 모델 생성 factory만 담당하고, node 책임을 흡수하지 않습니다.
+* **`app/tool` (도구 도메인)**: RAG 검색 알고리즘(Hybrid Search, RRF), 파일 읽기, grep, 디렉토리 스캔과 MCP I/O 외부 인터페이스를 제공합니다.
 
 ---
 

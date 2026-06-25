@@ -17,7 +17,7 @@ from app.infra.database import get_db
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/agent", tags=["Agent Run Management"])
+router = APIRouter(prefix="/api/chat", tags=["Agent Run Management"])
 
 
 # ──────────────────────────────────────────────

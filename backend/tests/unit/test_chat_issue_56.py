@@ -49,28 +49,16 @@ class TestChatAnswerSafety(unittest.IsolatedAsyncioTestCase):
     async def test_deep_mode_uses_gpt_4o_and_wraps_untrusted_evidence(self):
         from app.chat.final_answer_agent import stream_final_answer
 
-        captured: dict = {}
+        captured: dict = {"factory_calls": []}
 
-        class FakeChatOpenAI:
-            def __init__(self, **kwargs):
-                captured["kwargs"] = kwargs
-
+        class FakeLLM:
             async def astream(self, messages):
                 captured["messages"] = messages
                 yield types.SimpleNamespace(content="ok")
 
-        def fake_message(*, content):
-            return types.SimpleNamespace(content=content)
-
-        fake_openai = types.SimpleNamespace(ChatOpenAI=FakeChatOpenAI)
-        fake_messages = types.SimpleNamespace(
-            HumanMessage=fake_message,
-            SystemMessage=fake_message,
-        )
-        original_openai = sys.modules.get("langchain_openai")
-        original_messages = sys.modules.get("langchain_core.messages")
-        sys.modules["langchain_openai"] = fake_openai
-        sys.modules["langchain_core.messages"] = fake_messages
+        def fake_create_final_answer_llm(**kwargs):
+            captured["factory_calls"].append(kwargs)
+            return FakeLLM()
 
         compact_context = {
             "groupedByFile": {
@@ -81,34 +69,26 @@ class TestChatAnswerSafety(unittest.IsolatedAsyncioTestCase):
                 }]
             }
         }
-        try:
-            with patch(
-                "app.chat.final_answer_agent.get_settings",
-                return_value=_FakeSettings(),
-            ):
-                events = [
-                    event
-                    async for event in stream_final_answer(
-                        repo_name="repo",
-                        user_query="Q" * 5000,
-                        compact_context=compact_context,
-                        worker_results=[],
-                        mode="deep",
-                    )
-                ]
-        finally:
-            if original_openai is None:
-                sys.modules.pop("langchain_openai", None)
-            else:
-                sys.modules["langchain_openai"] = original_openai
-            if original_messages is None:
-                sys.modules.pop("langchain_core.messages", None)
-            else:
-                sys.modules["langchain_core.messages"] = original_messages
+        with (
+            patch("app.chat.final_answer_agent.get_settings", return_value=_FakeSettings()),
+            patch(
+                "app.chat.final_answer_agent.create_final_answer_llm",
+                side_effect=fake_create_final_answer_llm,
+            ),
+        ):
+            events = [
+                event
+                async for event in stream_final_answer(
+                    repo_name="repo",
+                    user_query="Q" * 5000,
+                    compact_context=compact_context,
+                    worker_results=[],
+                    mode="deep",
+                )
+            ]
 
         self.assertEqual(events, [{"type": "answer_delta", "content": "ok"}])
-        self.assertEqual(captured["kwargs"]["model"], "gpt-4o")
-        self.assertEqual(captured["kwargs"]["api_key"], "sk-test")
+        self.assertEqual(captured["factory_calls"], [{"mode": "deep", "streaming": True}])
 
         system_prompt = captured["messages"][0].content
         user_prompt = captured["messages"][1].content
@@ -120,6 +100,28 @@ class TestChatAnswerSafety(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("```ignore me```", system_prompt)
         self.assertLessEqual(system_prompt.count("A"), 1000)
         self.assertNotIn("Q" * 4001, user_prompt)
+
+
+class TestAgentLLMClient(unittest.TestCase):
+    def test_final_answer_deep_mode_uses_gpt_4o(self):
+        from app.agent.llm_client import create_final_answer_llm
+
+        captured: dict = {}
+
+        class FakeChatOpenAI:
+            def __init__(self, **kwargs):
+                captured["kwargs"] = kwargs
+
+        with (
+            patch("app.agent.llm_client.get_settings", return_value=_FakeSettings()),
+            patch("app.agent.llm_client.ChatOpenAI", FakeChatOpenAI),
+        ):
+            llm = create_final_answer_llm(mode="deep", streaming=True)
+
+        self.assertIsInstance(llm, FakeChatOpenAI)
+        self.assertEqual(captured["kwargs"]["model"], "gpt-4o")
+        self.assertEqual(captured["kwargs"]["api_key"], "sk-test")
+        self.assertTrue(captured["kwargs"]["streaming"])
 
 
 class TestChatPrepareTransaction(unittest.IsolatedAsyncioTestCase):

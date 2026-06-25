@@ -1,5 +1,42 @@
-"""
-Read Worker: 파일 내용 읽기 전담 워커 (기본 틀).
-"""
+"""Read Worker: repository file read adapter."""
 
-# TODO: workers.py에서 read_worker 로직 분리 예정 (Phase 2)
+from __future__ import annotations
+
+import logging
+import uuid
+
+from app.agent.state import CodeMapState, WorkerResult
+from app.tool.file_read import read_repository_file
+
+logger = logging.getLogger(__name__)
+
+
+async def read_worker(state: CodeMapState) -> dict:
+    """Read a bounded repository file for the current plan item."""
+    item = state.get("_plan_item", {})
+    rel_path = item.get("path", "")
+    clone_path = state.get("clone_path", "")
+
+    logger.info("[ReadWorker] 시작 — path=%s", rel_path)
+    content = read_repository_file(clone_path, rel_path)
+    if not content:
+        return {"worker_results": [], "events": []}
+
+    result = WorkerResult(
+        id=f"ev_{uuid.uuid4().hex[:8]}",
+        path=rel_path or None,
+        lineStart=None,
+        lineEnd=None,
+        score=None,
+        snippet=content,
+        metadata={"worker": "read", "tool": "file_read", "query": rel_path},
+    )
+    return {
+        "worker_results": [result],
+        "events": [{
+            "type": "worker_result",
+            "worker": "read",
+            "resultCount": 1,
+            "evidenceIds": [result["id"]],
+        }],
+    }

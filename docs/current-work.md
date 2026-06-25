@@ -1,5 +1,49 @@
 # Current Work
 
+## 2026-06-25 — PR #126 agent architecture realignment
+
+- Current branch: `refactor/split-core-to-infra-common`
+- Current goal: Adopt the Planner -> Dispatcher -> Tool Workers -> Evaluator architecture and align code/docs/specs with that decision.
+- Current status:
+  - Added `backend/app/agent/llm_client.py` as the LLM provider/factory boundary.
+  - Added `backend/app/agent/nodes/` for `planner_node`, `dispatcher_node`, and `evaluator_node`.
+  - Kept legacy worker import paths as thin compatibility wrappers while the graph now uses the new node modules directly.
+  - Split deterministic tool implementations into `backend/app/tool/dir_scan.py`, `grep_scan.py`, and `file_read.py`.
+  - Reworked `search_worker`, `dir_worker`, `grep_worker`, and `read_worker` as worker adapters around search/tool logic.
+  - Updated architecture/spec/API docs to use Planner/Dispatcher/Workers/Evaluator terminology and mark reasoning worker behavior as Phase 2 optional.
+- Files touched or likely relevant:
+  - `backend/app/agent/llm_client.py`
+  - `backend/app/agent/graph.py`
+  - `backend/app/agent/nodes/*`
+  - `backend/app/agent/workers/*`
+  - `backend/app/tool/dir_scan.py`
+  - `backend/app/tool/grep_scan.py`
+  - `backend/app/tool/file_read.py`
+  - `backend/app/chat/final_answer_agent.py`
+  - `backend/tests/unit/test_agent.py`
+  - `backend/tests/unit/test_chat_issue_56.py`
+  - `docs/01_Overview/FUNCTIONAL_SPECIFICATION.md`
+  - `docs/02_Architecture/*`
+  - `docs/03_Specifications/03_LLM/*`
+  - `docs/03_Specifications/PHASE2_API_SPEC.md`
+  - `docs/04_Decisions/MULTI_AGENT_ARCHITECTURE_DECISION.md`
+- Commands run:
+  - `rg -n "supervisor_agent|route_node|evidence_aggregator|..."`
+  - `backend/.venv/bin/python -m pytest backend/tests/unit -v --tb=short`
+  - `git diff --check`
+  - `backend/.venv/bin/python -m compileall -q backend/app/agent backend/app/tool backend/app/chat`
+- Validation:
+  - `160 passed, 5 skipped`
+  - `git diff --check` passed
+  - compileall passed for agent/tool/chat modules
+- Known issues:
+  - `supervisor_plan` and `route_validated` SSE event names remain intentionally unchanged for frontend compatibility.
+  - `backend/app/agent/workers/route_node.py`, `supervisor_agent.py`, and `evidence_aggregator.py` remain as compatibility import wrappers only.
+  - `backend/app/repo/pipeline/graph.py` still references `route_node_fun` as a separate repository-analysis pipeline concept, not the LLM agent dispatcher.
+- Next steps:
+  - Review PR #126 after the pushed commit.
+  - Remove compatibility wrappers later only after confirming no downstream imports remain.
+
 ## 2026-06-25 — PR #126 migration follow-up
 
 - Current branch: `refactor/split-core-to-infra-common`
@@ -11,7 +55,7 @@
   - Added SSE `event:` headers while preserving `data:` JSON lines for the existing frontend stream parser.
   - Cleaned worker stubs, common service placeholder, HTTP test naming, and AGENT-to-LLM/core-to-infra documentation drift.
 - Files touched or likely relevant:
-  - `backend/app/agent/workers/route_node.py`
+  - `backend/app/agent/nodes/dispatcher_node.py`
   - `backend/app/tool/router.py`
   - `backend/app/tool/service.py`
   - `backend/app/chat/router.py`

@@ -95,8 +95,8 @@ async def create_chat_run(repo_id: UUID, request: ChatRunRequest, db: AsyncSessi
             "sessionId": str(thread.id),
             "status": "queued",
             "streamUrl": f"/api/chat/{repo_id}/runs/{run_id}/stream",
-            "statusUrl": f"/api/agent/{repo_id}/runs/{run_id}",
-            "evidenceUrl": f"/api/agent/{repo_id}/runs/{run_id}/evidence"
+            "statusUrl": f"/api/chat/{repo_id}/runs/{run_id}",
+            "evidenceUrl": f"/api/chat/{repo_id}/runs/{run_id}/evidence"
         }
     }
 

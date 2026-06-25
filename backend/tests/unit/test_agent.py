@@ -1,5 +1,5 @@
 """
-Unit tests for agent — Route Node 보안 로직 및 State 스키마 검증.
+Unit tests for agent — Dispatcher Node 보안 로직 및 State 스키마 검증.
 
 LLM 호출 없이 실행 가능한 결정론적 로직만 테스트합니다.
 """
@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import sys
 import os
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -50,11 +51,11 @@ class TestCodeMapState(unittest.TestCase):
         self.assertEqual(r["path"], "app/auth/service.py")
 
 
-class TestRouteNodeSecurity(unittest.TestCase):
-    """Route Node 보안 로직 단위 테스트."""
+class TestDispatcherNodeSecurity(unittest.TestCase):
+    """Dispatcher Node 보안 로직 단위 테스트."""
 
     def _is_safe(self, path):
-        from app.agent.workers.route_node import _is_safe_path
+        from app.agent.nodes.dispatcher_node import _is_safe_path
         return _is_safe_path(path)
 
     def test_safe_paths(self):
@@ -81,9 +82,9 @@ class TestRouteNodeSecurity(unittest.TestCase):
         self.assertFalse(self._is_safe(".ENV"))
         self.assertFalse(self._is_safe("Id_Rsa"))
 
-    def test_route_node_returns_security_result(self):
-        """route_node가 보안 검증된 dict를 반환하는지 검증."""
-        from app.agent.workers.route_node import route_node, fanout_to_workers
+    def test_dispatcher_node_returns_security_result(self):
+        """dispatcher_node가 보안 검증된 dict를 반환하는지 검증."""
+        from app.agent.nodes.dispatcher_node import dispatcher_node, fanout_to_workers
 
         state = {
             "user_query": "test",
@@ -105,7 +106,7 @@ class TestRouteNodeSecurity(unittest.TestCase):
             "final_answer": None,
         }
 
-        res = route_node(state)
+        res = dispatcher_node(state)
         self.assertIn("security_result", res)
         self.assertEqual(len(res["security_result"]["approved"]), 2)
         self.assertEqual(len(res["security_result"]["rejected"]), 1)
@@ -121,7 +122,7 @@ class TestRouteNodeSecurity(unittest.TestCase):
 
     def test_fanout_blocks_unregistered_tools(self):
         """미등록 tool은 LangGraph Send 대상에서 제외됩니다."""
-        from app.agent.workers.route_node import _ALLOWED_WORKERS, fanout_to_workers
+        from app.agent.nodes.dispatcher_node import _ALLOWED_WORKERS, fanout_to_workers
 
         self.assertEqual(_ALLOWED_WORKERS, frozenset({"search", "dir", "grep", "read"}))
 
@@ -154,10 +155,10 @@ class TestRouteNodeSecurity(unittest.TestCase):
 
 
 class TestEvidenceAggregator(unittest.TestCase):
-    """Evidence Aggregator 중복 제거 및 budget 제한 검증."""
+    """Evaluator 중복 제거 및 budget 제한 검증."""
 
     def test_deduplication(self):
-        from app.agent.workers.evidence_aggregator import _deduplicate
+        from app.agent.nodes.evaluator_node import _deduplicate
         from app.agent.state import WorkerResult
 
         r1 = WorkerResult(id="1", path="a.py", lineStart=1, lineEnd=2, score=None, snippet="same content", metadata={"worker":"search"})
@@ -168,7 +169,7 @@ class TestEvidenceAggregator(unittest.TestCase):
         self.assertEqual(len(result), 2)  # r2는 중복 제거
 
     def test_aggregator_builds_compact_context(self):
-        from app.agent.workers.evidence_aggregator import evidence_aggregator
+        from app.agent.nodes.evaluator_node import evaluator_node
         from app.agent.state import WorkerResult
 
         state = {
@@ -189,11 +190,43 @@ class TestEvidenceAggregator(unittest.TestCase):
             "compact_context": {},
             "final_answer": None,
         }
-        result = evidence_aggregator(state)
+        result = evaluator_node(state)
         ctx = result["compact_context"]
         self.assertIn("groupedByFile", ctx)
         self.assertEqual(ctx["selectedEvidenceCount"], 2)
         self.assertGreater(ctx["usedTokens"], 0)
+
+
+class TestRepositoryToolBoundaries(unittest.TestCase):
+    """Repository-bounded tool helpers must not trust string-prefix path checks."""
+
+    def test_file_read_blocks_prefix_sibling_path(self):
+        from app.tool.file_read import read_repository_file
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            sibling = Path(tmp) / "repo-other"
+            root.mkdir()
+            sibling.mkdir()
+            secret = sibling / "safe.py"
+            secret.write_text("outside", encoding="utf-8")
+
+            result = read_repository_file(str(root), "../repo-other/safe.py")
+
+        self.assertEqual(result, "")
+
+    def test_grep_scans_single_file_path(self):
+        from app.tool.grep_scan import grep_repository_path
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            root.mkdir()
+            file_path = root / "app.py"
+            file_path.write_text("def login():\n    pass\n", encoding="utf-8")
+
+            result = grep_repository_path(str(root), "app.py", "login")
+
+        self.assertIn("app.py:1: def login():", result)
 
 
 if __name__ == "__main__":

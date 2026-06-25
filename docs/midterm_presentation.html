@@ -638,7 +638,7 @@
             <!-- Row 1 -->
             <div style="display:flex; align-items:center; gap:10px;">
               <div class="flow-box llm" style="flex:1;">
-                <div class="fb-title">🧠 Supervisor Agent <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#fff7ed;color:#ea580c;border:1px solid rgba(234,88,12,.2);margin-left:4px;">LLM</span></div>
+                <div class="fb-title">🧠 Planner Node <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#fff7ed;color:#ea580c;border:1px solid rgba(234,88,12,.2);margin-left:4px;">LLM</span></div>
                 <div class="fb-sub">사용자 의도 분석 · 오타 교정(Query Rewrite) · 접근 계획 수립(access_plan JSON)</div>
               </div>
             </div>
@@ -647,7 +647,7 @@
             <!-- Row 2 -->
             <div style="display:flex; align-items:center; gap:10px;">
               <div class="flow-box code" style="flex:1;">
-                <div class="fb-title">⚙️ Route Node <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#e0f2fe;color:#0369a1;border:1px solid rgba(2,132,199,.2);margin-left:4px;">결정론적 코드</span></div>
+                <div class="fb-title">⚙️ Dispatcher Node <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#e0f2fe;color:#0369a1;border:1px solid rgba(2,132,199,.2);margin-left:4px;">결정론적 코드</span></div>
                 <div class="fb-sub">계획 JSON 스키마 검증 · Path Traversal 차단 · .env/key 패턴 금지 · Worker 비동기 병렬 라우팅</div>
               </div>
             </div>
@@ -673,14 +673,14 @@
               </div>
               <div class="flow-box llm" style="flex:1.4; font-size:12px;">
                 <div class="fb-title" style="font-size:13px;">🧠 Reasoning</div>
-                <div class="fb-sub">선택형 코드 해석 LLM Worker</div>
+                <div class="fb-sub">Phase 2 선택형 reasoning worker</div>
               </div>
             </div>
             <div style="display:flex;justify-content:center; color:var(--text-muted); font-size:18px;">↓</div>
 
             <!-- Row 4 -->
             <div class="flow-box code" style="flex:1;">
-              <div class="fb-title">⚙️ Evidence Aggregator Node <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#e0f2fe;color:#0369a1;border:1px solid rgba(2,132,199,.2);margin-left:4px;">결정론적 코드</span></div>
+              <div class="fb-title">⚙️ Evaluator Node <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;background:#e0f2fe;color:#0369a1;border:1px solid rgba(2,132,199,.2);margin-left:4px;">결정론적 코드</span></div>
               <div class="fb-sub">worker_results 중복 제거 · 파일 경로/라인/근거 정리 · token budget 압축 → compact_context 생성</div>
             </div>
             <div style="display:flex;justify-content:center; color:var(--text-muted); font-size:18px;">↓</div>
@@ -716,7 +716,7 @@
                 </div>
                 <div style="padding:8px 12px; border-radius:8px; background:rgba(52,211,153,.07); border:1px solid rgba(52,211,153,.2);">
                   <span style="color:#047857;">compact_context:</span><br>
-                  <span style="color:#065f46; font-size:10px;">Evidence Aggregator output</span>
+                  <span style="color:#065f46; font-size:10px;">Evaluator output</span>
                 </div>
               </div>
               <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border); font-size:11px; color:var(--text-muted); line-height:1.5;">
@@ -786,7 +786,7 @@
             <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--orange);margin-bottom:8px;">🧠 Agent LLM</div>
             <div class="model-name">GPT-4o</div>
             <div style="width:32px;height:3px;background:linear-gradient(135deg,#ea580c,#db2777);border-radius:2px;margin:8px 0 14px;"></div>
-            <div class="model-desc">Supervisor Agent의 계획 수립, Search Worker의 Query Rewrite/Semantic Search, Final Answer Agent의 근거 기반 답변 생성을 담당합니다.</div>
+            <div class="model-desc">Planner Node의 계획 수립, Search Worker의 Query Rewrite/Semantic Search, Final Answer Agent의 근거 기반 답변 생성을 담당합니다.</div>
             <div style="margin-top:16px; padding:10px 14px; border-radius:10px; background:rgba(251,146,60,.07); border:1px solid rgba(251,146,60,.2); font-size:12px; color:var(--text-muted);">
               ✅ 동일 LLM 엔진이라도 LangGraph 내에서 prompt, tool, schema, state 책임을 분리해 <em>논리적 멀티에이전트</em>로 운영
             </div>
@@ -840,13 +840,13 @@
                 <span style="color:var(--green);">✔</span> 멀티에이전트 구조 설계 확정
               </div>
               <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text-secondary);">
-                <span style="color:var(--cyan);">⚙</span> Supervisor · Route Node 구현
+                <span style="color:var(--cyan);">⚙</span> Planner · Dispatcher Node 구현
               </div>
               <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text-secondary);">
                 <span style="color:var(--cyan);">⚙</span> Dir / Grep / Read / Search Worker
               </div>
               <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text-secondary);">
-                <span style="color:var(--cyan);">⚙</span> Evidence Aggregator + Final Answer
+                <span style="color:var(--cyan);">⚙</span> Evaluator + Final Answer
               </div>
               <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text-secondary);">
                 <span style="color:var(--cyan);">⚙</span> SSE 스트리밍 + React 채팅 UI
@@ -872,7 +872,7 @@
                 <span style="color:var(--blue);">○</span> 장기 기억 (Long-term Memory) 시스템
               </div>
               <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text-muted);">
-                <span style="color:var(--blue);">○</span> Code Reasoning Worker 고도화
+                <span style="color:var(--blue);">○</span> 선택형 Reasoning Worker 고도화
               </div>
               <div style="display:flex; align-items:center; gap:10px; font-size:13px; color:var(--text-muted);">
                 <span style="color:var(--blue);">○</span> 의존성 그래프 UI 렌더링 (시각화)

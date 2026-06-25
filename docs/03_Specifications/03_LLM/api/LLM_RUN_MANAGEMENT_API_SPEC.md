@@ -27,9 +27,9 @@
 | `data.status` | String | `queued`, `running`, `streaming`, `completed`, `failed`, `cancelled` |
 | `data.currentNode` | String | 현재 실행 중인 node/worker |
 | `data.state.userQuery` | String | 사용자 원본 질문 |
-| `data.state.rewrittenQuery` | String | Supervisor가 교정한 검색 질의 |
+| `data.state.rewrittenQuery` | String | Planner가 교정한 검색 질의 |
 | `data.state.accessPlan` | Object | selectedWorkers, allowedPaths, riskLevel |
-| `data.state.securityResult` | Object | Route Node 검증 결과 |
+| `data.state.securityResult` | Object | Dispatcher Node 검증 결과 |
 | `data.state.workerResultCount` | Integer | raw evidence 개수 |
 | `data.state.compactContextReady` | Boolean | compact context 준비 여부 |
 | `data.state.stateKeys` | Array<String> | 현재 기록된 State key 목록 |
@@ -66,7 +66,7 @@
     },
     "durations": {
       "supervisor": 1.4,
-      "route_node": 0.03,
+      "dispatcher_node": 0.03,
       "search_worker": 0.8,
       "grep_worker": 0.2
     },
@@ -118,7 +118,7 @@
 | --- | --- |
 | Endpoint | `GET /api/chat/{repo_id}/runs/{run_id}/evidence` |
 | Method | GET |
-| 관련 기능 ID | `LLM-WORKER-B-201` ~ `LLM-WORKER-B-205`, `LLM-EVIDENCE-B-201` |
+| 관련 기능 ID | `LLM-WORKER-B-201` ~ `LLM-WORKER-B-204`, `LLM-EVALUATOR-B-201` |
 | 목적 | Worker가 `CodeMapState.worker_results`에 기록한 raw evidence와 compact context 조회 |
 | 상태 | 설계 확정 / 구현 예정 |
 

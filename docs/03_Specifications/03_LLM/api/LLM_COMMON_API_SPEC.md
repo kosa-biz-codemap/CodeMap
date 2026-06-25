@@ -59,8 +59,8 @@
 | 이벤트 | 데이터 요약 | 설명 |
 | --- | --- | --- |
 | `graph_started` | `runId`, `stateKeys` | LangGraph 실행 시작 |
-| `supervisor_plan` | `rewrittenQuery`, `selectedWorkers`, `allowedPaths` | Supervisor 계획 완료 |
-| `route_validated` | `allowed`, `parallelGroups`, `blockedReason` | Route Node 검증 완료 |
+| `supervisor_plan` | `rewrittenQuery`, `selectedWorkers`, `allowedPaths` | Planner 계획 완료. 이벤트명은 기존 프론트 호환을 위해 유지 |
+| `route_validated` | `allowed`, `parallelGroups`, `blockedReason` | Dispatcher Node 검증 완료. 이벤트명은 기존 프론트 호환을 위해 유지 |
 | `worker_started` | `worker`, `target` | worker 실행 시작 |
 | `worker_result` | `worker`, `resultCount`, `evidenceIds` | worker 결과 기록 |
 | `evidence_compacted` | `evidenceCount`, `compactContextReady` | evidence 정리 완료 |
@@ -81,9 +81,9 @@
 | `LLM_RUN_NOT_FOUND` | 404 | agent run 없음 |
 | `LLM_RUN_ALREADY_FINISHED` | 409 | 이미 종료된 run에 대한 불가능한 요청 |
 | `AGENT_STREAM_FAILED` | 500 | SSE stream 처리 실패 |
-| `AGENT_ROUTE_BLOCKED` | 403 | Route Node 보안 정책 차단 |
+| `AGENT_ROUTE_BLOCKED` | 403 | Dispatcher Node 보안 정책 차단 |
 | `LLM_WORKER_FAILED` | 500 | worker 실행 실패 |
 | `AGENT_EVIDENCE_NOT_FOUND` | 404 | evidence 없음 |
 | `AGENT_EVIDENCE_NOT_READY` | 409 | reasoning에 필요한 evidence 미준비 |
 | `AGENT_TOOL_POLICY_FAILED` | 500 | 외부 도구 정책 조회 실패 |
-| `AGENT_REASONING_FAILED` | 500 | Code Reasoning Worker 실패 |
+| `AGENT_REASONING_FAILED` | 500 | 선택형 reasoning worker 실패 |

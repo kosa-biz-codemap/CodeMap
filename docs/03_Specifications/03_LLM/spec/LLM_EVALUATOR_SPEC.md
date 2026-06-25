@@ -10,7 +10,7 @@
 
 | 구분 | 기준 |
 | --- | --- |
-| 구현 위치 | `backend/app/agent/workers/evidence_aggregator.py` (`evidence_aggregator`) |
+| 구현 위치 | `backend/app/agent/nodes/evaluator_node.py` (`evaluator_node`) |
 | 성격 | 결정론적 코드 노드 (Phase 1) → LLM 평가 에이전트 (Phase 2) |
 | 책임 | `worker_results` 중복 제거, 파일 경로 그룹핑, token budget 내 `compact_context` 생성 |
 | 비책임 | 최초 계획 수립(→ PLANNER), 직접적인 도구 실행(→ TOOL), 최종 사용자 답변 렌더링(→ Chat) |
@@ -70,7 +70,7 @@ Final Answer Agent의 컨텍스트 한도를 넘지 않도록 근거를 token bu
 - **Output**: 제어 결정 JSON
   - 충분: `{ "decision": "commit", "reason": "..." }`
   - 부족: `{ "decision": "re-plan", "feedback": "..." }` → LLM-PLANNER-B-301로 전달
-- **현황**: 현재 노드는 결정론적 압축까지만 수행하며 commit/re-plan 판단은 미구현.
+- **현황**: 현재 `evaluator_node`는 결정론적 압축까지만 수행하며 commit/re-plan 판단은 미구현.
 
 ### 3. 완료 조건
 - (Phase 2) `re-plan` 루프가 최대 반복 한도 내에서 수렴하고, `commit` 시 `compact_context`가 Final Answer로 전달되어야 한다.

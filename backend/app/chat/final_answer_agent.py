@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 from typing import AsyncIterator
 
+from app.agent.llm_client import create_final_answer_llm
 from app.infra.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -93,16 +94,9 @@ async def stream_final_answer(
     ## 2. LLM 스트리밍 응답
     if settings.OPENAI_API_KEY.get_secret_value():
         try:
-            from langchain_openai import ChatOpenAI
             from langchain_core.messages import HumanMessage, SystemMessage
 
-            model_name = "gpt-4o" if mode == "deep" else settings.OPENAI_MODEL
-            llm = ChatOpenAI(
-                model=model_name,
-                api_key=settings.OPENAI_API_KEY.get_secret_value(),
-                temperature=0.1,
-                streaming=True,
-            )
+            llm = create_final_answer_llm(mode=mode, streaming=True)
 
             accumulated = ""
             safe_user_query = user_query[:_MAX_USER_QUERY_CHARS]

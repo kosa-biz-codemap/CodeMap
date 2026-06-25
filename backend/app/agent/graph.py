@@ -2,10 +2,10 @@
 CodeMap LangGraph 워크플로우 정의.
 
 그래프 구조:
-  supervisor_agent
-      → route_node (Send API 병렬 fan-out)
+  planner_node
+      → dispatcher_node (Send API 병렬 fan-out)
           → search_worker | dir_worker | grep_worker | read_worker
-      → evidence_aggregator (fan-in: worker_results 자동 병합)
+      → evaluator_node (fan-in: worker_results 자동 병합)
 
 Application Layer (chat/service.py)는 이 그래프를 실행하고
 반환된 State에서 compact_context와 worker_results를 읽어
@@ -17,15 +17,13 @@ from __future__ import annotations
 from langgraph.graph import StateGraph, END
 
 from app.agent.state import CodeMapState
-from app.agent.workers.supervisor_agent import supervisor_node
-from app.agent.workers.route_node import route_node
-from app.agent.workers.evidence_aggregator import evidence_aggregator
-from app.agent.workers.workers import (
-    search_worker,
-    dir_worker,
-    grep_worker,
-    read_worker,
-)
+from app.agent.nodes.planner_node import planner_node
+from app.agent.nodes.dispatcher_node import dispatcher_node, fanout_to_workers
+from app.agent.nodes.evaluator_node import evaluator_node
+from app.agent.workers.search_worker import search_worker
+from app.agent.workers.dir_worker import dir_worker
+from app.agent.workers.grep_worker import grep_worker
+from app.agent.workers.read_worker import read_worker
 
 
 def build_graph() -> StateGraph:
@@ -37,33 +35,36 @@ def build_graph() -> StateGraph:
     builder = StateGraph(CodeMapState)
 
     # ── 노드 등록 ──────────────────────────────────────
-    builder.add_node("supervisor_agent", supervisor_node)
-    builder.add_node("route_node", route_node)
+    builder.add_node("planner_node", planner_node)
+    builder.add_node("dispatcher_node", dispatcher_node)
     builder.add_node("search_worker", search_worker)
     builder.add_node("dir_worker", dir_worker)
     builder.add_node("grep_worker", grep_worker)
     builder.add_node("read_worker", read_worker)
-    builder.add_node("evidence_aggregator", evidence_aggregator)
+    builder.add_node("evaluator_node", evaluator_node)
 
     # ── 엣지 연결 ──────────────────────────────────────
-    # 시작: Supervisor → Route Node
-    builder.set_entry_point("supervisor_agent")
-    builder.add_edge("supervisor_agent", "route_node")
+    # 시작: Planner → Dispatcher
+    builder.set_entry_point("planner_node")
+    builder.add_edge("planner_node", "dispatcher_node")
 
-    # Route Node → Workers (Send API가 동적으로 처리 — conditional edge 사용)
-    # route_node가 반환한 dict를 통해 상태 업데이트 후 fanout_to_workers 실행
-    from app.agent.workers.route_node import fanout_to_workers
-    builder.add_conditional_edges("route_node", fanout_to_workers, ["search_worker", "dir_worker", "grep_worker", "read_worker", "evidence_aggregator"])
+    # Dispatcher → Workers (Send API가 동적으로 처리 — conditional edge 사용)
+    # dispatcher_node가 반환한 dict를 통해 상태 업데이트 후 fanout_to_workers 실행
+    builder.add_conditional_edges(
+        "dispatcher_node",
+        fanout_to_workers,
+        ["search_worker", "dir_worker", "grep_worker", "read_worker", "evaluator_node"],
+    )
 
-    # Workers → Evidence Aggregator (fan-in)
+    # Workers → Evaluator (fan-in)
     # worker_results는 Annotated[list, operator.add]로 자동 병합됨
-    builder.add_edge("search_worker", "evidence_aggregator")
-    builder.add_edge("dir_worker", "evidence_aggregator")
-    builder.add_edge("grep_worker", "evidence_aggregator")
-    builder.add_edge("read_worker", "evidence_aggregator")
+    builder.add_edge("search_worker", "evaluator_node")
+    builder.add_edge("dir_worker", "evaluator_node")
+    builder.add_edge("grep_worker", "evaluator_node")
+    builder.add_edge("read_worker", "evaluator_node")
 
-    # Evidence Aggregator → END
-    builder.add_edge("evidence_aggregator", END)
+    # Evaluator → END
+    builder.add_edge("evaluator_node", END)
 
     return builder
 

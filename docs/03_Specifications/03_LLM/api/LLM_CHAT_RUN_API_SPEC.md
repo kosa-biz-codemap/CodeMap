@@ -10,7 +10,7 @@
 | --- | --- |
 | Endpoint | `POST /api/chat/{repo_id}/runs` |
 | Method | POST |
-| 관련 기능 ID | `LLM-CHAT-B-101`, `LLM-CHAT-B-201`, `LLM-GRAPH-B-201`, `LLM-SUPERVISOR-B-201` |
+| 관련 기능 ID | `LLM-CHAT-B-101`, `LLM-CHAT-B-201`, `LLM-GRAPH-B-201`, `LLM-PLANNER-B-201` |
 | 목적 | 사용자 질문을 받아 LangGraph 멀티에이전트 run을 생성하고 SSE stream URL을 반환 |
 | 상태 | 설계 확정 / 구현 예정 |
 

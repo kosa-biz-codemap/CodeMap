@@ -32,7 +32,7 @@ class AccessPlanItem(TypedDict):
 
 
 class SecurityResult(TypedDict):
-    """Route Node의 보안 검증 결과."""
+    """Dispatcher Node의 보안 검증 결과."""
     approved: list[AccessPlanItem]   # 승인된 계획
     rejected: list[AccessPlanItem]   # 거부된 계획 (path traversal 등)
 
@@ -54,7 +54,7 @@ class CodeMapState(TypedDict):
     rewritten_query: str              # 오타 교정 및 의도 분석된 검색 쿼리
     access_plan: list[AccessPlanItem] # Supervisor가 수립한 도구 사용 계획
 
-    # ── Route Node 출력 ───────────────────────────────
+    # ── Dispatcher Node 출력 ─────────────────────────
     security_result: SecurityResult   # 보안 검증 결과 (allowlist 통과 여부)
 
     # ── Worker 출력 (fan-in: 병렬 병합) ───────────────
@@ -63,7 +63,7 @@ class CodeMapState(TypedDict):
     errors: list[str]                 # 발생한 에러 메시지 목록
     durations: dict                   # 각 단계별 소요 시간
 
-    # ── Evidence Aggregator 출력 ──────────────────────
+    # ── Evaluator 출력 ───────────────────────────────
     compact_context: dict             # token budget 내로 압축된 근거 묶음
 
     # ── 최종 출력 ─────────────────────────────────────

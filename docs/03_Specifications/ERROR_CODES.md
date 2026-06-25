@@ -112,7 +112,7 @@
 
 | 발생 도구 | Error Code | 설명 |
 | :--- | :--- | :--- |
-| Route Node | `AGENT_TOOL_POLICY_FAILED` | Supervisor의 접근 계획이 Path Traversal 등 보안 정책에 위배됨 |
+| Dispatcher Node | `AGENT_TOOL_POLICY_FAILED` | Planner의 접근 계획이 Path Traversal 등 보안 정책에 위배됨 |
 | Reasoning Worker | `AGENT_REASONING_FAILED` | 코드 추론 중 LLM 응답 파싱 또는 실행 실패 |
 | Search / Grep Worker | `VECTOR_SEARCH_FAILED` / `GREP_FAILED` | 임베딩 검색 또는 grep 도구 실행 실패 |
 

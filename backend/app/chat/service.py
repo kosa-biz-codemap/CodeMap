@@ -64,7 +64,7 @@ class RepositoryChatService:
 
         반환값:
           - worker_results: 각 Worker가 수집한 원본 결과 목록
-          - compact_context: Evidence Aggregator가 생성한 token budget 내 근거 묶음
+          - compact_context: Evaluator가 생성한 token budget 내 근거 묶음
         """
         try:
             from app.agent.service import CodeMapAgentService

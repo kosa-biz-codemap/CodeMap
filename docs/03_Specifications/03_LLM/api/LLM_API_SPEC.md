@@ -10,7 +10,7 @@
 | --- | --- | --- |
 | `LLM_COMMON_API_SPEC.md` | 공통 응답, 공통 에러, SSE 이벤트 형식 | LLM-OPS |
 | `LLM_CHAT_RUN_API_SPEC.md` | run 생성, SSE 스트림 | LLM-CHAT-B-101, LLM-CHAT-B-203 |
-| `LLM_RUN_MANAGEMENT_API_SPEC.md` | run 상태 조회, 취소, evidence 조회 | LLM-CHAT-B-204, LLM-EVIDENCE-B-201 |
+| `LLM_RUN_MANAGEMENT_API_SPEC.md` | run 상태 조회, 취소, evidence 조회 | LLM-CHAT-B-204, LLM-EVALUATOR-B-201 |
 | `LLM_ADVANCED_API_SPEC.md` | 장기 기억, 허용 외부 도구, reasoning 확장 | LLM-MEMORY-B-201, LLM-WORKER-B-206, LLM-WORKER-B-207 |
 
 ## 아키텍처 기준
@@ -41,7 +41,7 @@
 | 기능 명세 | 설명 |
 | --- | --- |
 | `../spec/LLM_CHAT_SPEC.md` | Chat Application Layer |
-| `../spec/LLM_AGENT_SPEC.md` | CodeMapState, LangGraph workflow, route 보안/fan-out, 이벤트·상태, 메모리(통합본) |
-| `../spec/LLM_PLANNER_SPEC.md` | Supervisor Agent 계획 수립 |
+| `../spec/LLM_AGENT_SPEC.md` | CodeMapState, LangGraph workflow, dispatcher 보안/fan-out, 이벤트·상태, 메모리(통합본) |
+| `../spec/LLM_PLANNER_SPEC.md` | Planner Node 계획 수립 |
 | `../spec/LLM_EVALUATOR_SPEC.md` | 근거 집계 및 충분성 평가 |
-| `../spec/LLM_TOOL_SPEC.md` | Workers, RRF 하이브리드 검색, 도구 실행 |
+| `../spec/LLM_TOOL_SPEC.md` | Workers, RRF 하이브리드 검색, 결정론적 도구 실행 |
