@@ -93,11 +93,13 @@
 
 ### 2. 입/출력 규격
 - **요청 계약**: `POST /tools/execute`는 `{tool_name, arguments}`(+`job_id`, `run_id`)를 **단일 JSON body**로 수신한다 — 전용 Pydantic 요청 스키마로 받으며, 개별 필드를 쿼리 파라미터로 분산 수신하지 않는다(외부 MCP가 JSON 객체 하나로 전송 시 `422` 방지).
+- **인증 정책**: 내부 MCP/agent 전용 API로 간주하며, `Authorization: Bearer {SERVICE_TOKEN}`이 설정값과 일치할 때만 실행한다. 토큰 누락 또는 불일치 시 `401`을 반환한다.
 - **`execute_job(job_id, run_id, tool_name, arguments)`** — `tool_name` 분기: `vector_search` | `file_read` | `dir_scan` | `grep_scan` (미지원 시 `ValueError`)
 - **반환 DTO**: `{code, message, status, data:{jobId, runId, toolName, results:[WorkerResult...]}}`
 - **현황**: `/tools/execute`는 `CodeMapToolService.execute_job`을 호출해 B-201/B-202의 내부 결정론적 도구를 동일 `WorkerResult` 규격으로 반환합니다.
 
 ### 3. 완료 조건
 - 요청은 단일 JSON body(Pydantic 스키마)로만 수신한다.
+- 실제 도구 실행은 서비스 토큰 검증 후에만 수행한다.
 - `execute_job`이 B-201 워커/B-202 하이브리드 검색 실구현을 호출해 동일 `WorkerResult` 규격으로 반환하고, 실구현 결과에 대해서만 `success`를 반환한다.
 - 미지원 `tool_name`은 `400`으로 거부하고, 잘못된 UUID는 `422`로 거부한다.

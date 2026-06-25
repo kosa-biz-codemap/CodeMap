@@ -15,6 +15,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "backend"))
 
 
 class TestToolRouter(unittest.TestCase):
+    _auth_headers = {"Authorization": "Bearer service-token"}
+
     def _client(self, clone_base_dir: str | None = None) -> TestClient:
         from app.infra.database import get_db
         from app.tool.router import router
@@ -46,6 +48,7 @@ class TestToolRouter(unittest.TestCase):
         with patch("app.tool.service.hybrid_search", AsyncMock(return_value=[hit])):
             response = self._client().post(
                 "/tools/execute",
+                headers=self._auth_headers,
                 json={
                     "tool_name": "vector_search",
                     "arguments": {"query": "login"},
@@ -61,7 +64,11 @@ class TestToolRouter(unittest.TestCase):
         self.assertEqual(body["data"]["results"][0]["path"], "backend/app/auth/service.py")
 
     def test_execute_tool_requires_tool_name_and_arguments(self):
-        response = self._client().post("/tools/execute", json={"tool_name": "vector_search"})
+        response = self._client().post(
+            "/tools/execute",
+            headers=self._auth_headers,
+            json={"tool_name": "vector_search"},
+        )
 
         self.assertEqual(response.status_code, 422)
 
@@ -74,6 +81,7 @@ class TestToolRouter(unittest.TestCase):
 
             response = self._client(tmp).post(
                 "/tools/execute",
+                headers=self._auth_headers,
                 json={
                     "tool_name": "file_read",
                     "arguments": {"path": "app.py"},
@@ -89,6 +97,7 @@ class TestToolRouter(unittest.TestCase):
     def test_execute_tool_rejects_unsupported_tool_name(self):
         response = self._client().post(
             "/tools/execute",
+            headers=self._auth_headers,
             json={
                 "tool_name": "shell",
                 "arguments": {"cmd": "pwd"},
@@ -97,6 +106,31 @@ class TestToolRouter(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_execute_tool_requires_service_token(self):
+        response = self._client().post(
+            "/tools/execute",
+            json={
+                "tool_name": "file_read",
+                "arguments": {"path": "app.py"},
+                "job_id": "00000000-0000-0000-0000-000000000505",
+            },
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_execute_tool_rejects_invalid_service_token(self):
+        response = self._client().post(
+            "/tools/execute",
+            headers={"Authorization": "Bearer wrong-token"},
+            json={
+                "tool_name": "file_read",
+                "arguments": {"path": "app.py"},
+                "job_id": "00000000-0000-0000-0000-000000000606",
+            },
+        )
+
+        self.assertEqual(response.status_code, 401)
 
 
 if __name__ == "__main__":

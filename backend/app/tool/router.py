@@ -6,11 +6,15 @@ from __future__ import annotations
 
 import logging
 import uuid
+from secrets import compare_digest
+from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.common.exceptions import build_error_response
+from app.infra.config import get_settings
 from app.infra.database import get_db
 from app.tool.service import CodeMapToolService
 
@@ -26,12 +30,38 @@ class ToolExecuteRequest(BaseModel):
     run_id: str | None = None
 
 
+def verify_tool_service_authorization(authorization: Annotated[str | None, Header()] = None) -> None:
+    """Require the internal service token before exposing repository tool execution."""
+    if authorization is None or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail=build_error_response(
+                status_code=401,
+                message="내부 도구 실행 토큰이 누락되었거나 올바르지 않습니다.",
+                error_code="UNAUTHORIZED",
+            ),
+        )
+
+    token = authorization[7:].strip()
+    expected_token = get_settings().SERVICE_TOKEN.strip()
+    if not token or not expected_token or not compare_digest(token, expected_token):
+        raise HTTPException(
+            status_code=401,
+            detail=build_error_response(
+                status_code=401,
+                message="내부 도구 실행 토큰이 누락되었거나 올바르지 않습니다.",
+                error_code="UNAUTHORIZED",
+            ),
+        )
+
+
 # ──────────────────────────────────────────────
 # MCP 도구 Job 실행 엔드포인트
 # ──────────────────────────────────────────────
 @router.post("/execute")
 async def execute_tool_job(
     request: ToolExecuteRequest,
+    _: Annotated[None, Depends(verify_tool_service_authorization)],
     db: AsyncSession = Depends(get_db),
 ):
     '''
