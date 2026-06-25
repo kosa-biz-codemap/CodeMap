@@ -1,5 +1,38 @@
 # Current Work
 
+## 2026-06-25 — Phase 2 evaluator decision and re-plan timeline
+
+- Current branch: `feat/phase2-evaluator-replan-loop`
+- Current goal: Finish oosuhada Phase 2 tasks from PR #126 follow-up: Evaluator judge prompt/schema and frontend timeline events.
+- Current status:
+  - Added `EvaluatorDecision` state shape with `sufficient`, `missingInfo`, `nextPlanHint`, `reason`, and `confidence`.
+  - Added Evaluator judge schema/prompt builder and `create_evaluator_llm()` factory.
+  - Updated `evaluator_node` to emit `evaluator_decision`; it emits `replan_started` when fallback judgment says evidence is insufficient.
+  - Updated chat stream types and `ChatInterface` to show `evaluator_decision` and `replan_started` in the exploration timeline.
+  - Updated LLM Evaluator, Agent, Chat, and Common API specs to include the Phase 2 event contract.
+- Validation:
+  - `backend/.venv/bin/python -m pytest backend/tests/unit -v --tb=short` — `160 passed, 5 skipped`
+  - `backend/.venv/bin/python -m compileall -q backend/app/agent backend/app/chat backend/app/tool` passed
+  - `PATH=".../node/bin:.../bin:$PATH" ./node_modules/.bin/eslint` passed
+  - `PATH=".../node/bin:.../bin:$PATH" ./node_modules/.bin/next build` passed
+  - `git diff --check` passed
+  - Spec/code comparison for `evaluator_decision`, `replan_started`, `sufficient`, `missingInfo`, and `nextPlanHint` passed
+  - Real repo dogfood emitted `evaluator_decision` and recorded `compact_context.evaluatorDecision`
+- Files touched or likely relevant:
+  - `backend/app/agent/state.py`
+  - `backend/app/agent/llm_client.py`
+  - `backend/app/agent/nodes/evaluator_node.py`
+  - `backend/app/agent/service.py`
+  - `backend/tests/unit/test_agent.py`
+  - `backend/tests/unit/test_chat_issue_56.py`
+  - `frontend/src/features/chat/api/chatApi.ts`
+  - `frontend/src/features/chat/components/ChatInterface.tsx`
+  - `docs/03_Specifications/03_LLM/**`
+- Known issues:
+  - This branch intentionally does not wire the full LangGraph re-plan loop edge. That is the separate Phase 2 task assigned to `smmini`.
+- Next steps:
+  - Push branch and open a Draft PR after final reviewer-risk pass.
+
 ## 2026-06-25 — Run registry and Phase 1 stream contract alignment
 
 - Current branch: `refactor/split-core-to-infra-common`

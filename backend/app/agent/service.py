@@ -56,6 +56,7 @@ class CodeMapAgentService:
                 "errors": [],
                 "durations": {},
                 "compact_context": {},
+                "evaluator_decision": None,
                 "final_answer": None,
             }
 
@@ -102,6 +103,7 @@ class CodeMapAgentService:
             "errors": [],
             "durations": {},
             "compact_context": {},
+            "evaluator_decision": None,
             "final_answer": None,
         }
 
