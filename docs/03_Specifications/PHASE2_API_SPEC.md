@@ -415,7 +415,7 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 | Method | POST |
 | 관련 기능 ID | `LLM-CHAT-B-101`, `LLM-CHAT-B-201`, `LLM-GRAPH-B-201`, `LLM-PLANNER-B-201` |
 | 목적 | 사용자 질문을 받아 LangGraph 멀티에이전트 실행 run을 생성하고 SSE stream URL을 반환 |
-| 상태 | 설계 확정 / 구현 예정 |
+| 상태 | 구현 완료 |
 
 #### 요청(Request)
 
@@ -431,7 +431,7 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 | :--- | :--- | :--- | :--- | :--- |
 | question | String | Y | - | 사용자 원본 질문 |
 | sessionId | UUID | N | 자동 생성 | 이어지는 대화 세션 ID |
-| mode | String | N | `balanced` | 실행 모드 (`lite`, `balanced`, `thinking`) |
+| mode | String | N | `standard` | 실행 모드 (`lite`, `standard`, `deep`) |
 | includeEvidence | Boolean | N | true | 최종 응답에 파일 경로/라인 근거 포함 여부 |
 | maxToolCalls | Integer | N | 8 | 전체 worker tool call 최대 횟수 |
 | timeoutSeconds | Integer | N | 30 | run 전체 제한 시간 |
@@ -441,7 +441,7 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 ```json
 {
   "question": "로그인 어딧음?",
-  "mode": "balanced",
+  "mode": "standard",
   "includeEvidence": true,
   "maxToolCalls": 8,
   "timeoutSeconds": 30
@@ -461,6 +461,7 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 | data.status | String | `queued` |
 | data.streamUrl | String | SSE 수신 URL |
 | data.statusUrl | String | run 상태 조회 URL |
+| data.evidenceUrl | String | evidence 조회 URL |
 
 ##### 응답 예시
 
@@ -473,7 +474,8 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
     "sessionId": "a0de8d29-92a4-4fd6-a657-2d22f4c0cc75",
     "status": "queued",
     "streamUrl": "/api/chat/8cfd0f7b-3ec3-42e3-97c4-8f4b4cc9390f/runs/2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10/stream",
-    "statusUrl": "/api/chat/8cfd0f7b-3ec3-42e3-97c4-8f4b4cc9390f/runs/2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10"
+    "statusUrl": "/api/chat/8cfd0f7b-3ec3-42e3-97c4-8f4b4cc9390f/runs/2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10",
+    "evidenceUrl": "/api/chat/8cfd0f7b-3ec3-42e3-97c4-8f4b4cc9390f/runs/2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10/evidence"
   }
 }
 ```
@@ -499,7 +501,7 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 | Method | GET |
 | 관련 기능 ID | `LLM-CHAT-B-203`, `LLM-OPS-B-201`, `LLM-OPS-B-202`, `LLM-OPS-B-204` |
 | 목적 | LangGraph 실행 과정과 Final Answer 토큰을 SSE로 실시간 전달 |
-| 상태 | 설계 확정 / 구현 예정 |
+| 상태 | 구현 완료 |
 
 #### Path Parameters
 
@@ -519,8 +521,10 @@ MVP 이후 점진적으로 도입되는 23개 기능을 포함하며, 각 도메
 | `worker_result` | `{ "worker": "grep", "resultCount": 3, "evidenceIds": [...] }` | worker 원본 근거 State 기록 완료 |
 | `evidence_compacted` | `{ "evidenceCount": 8, "tokenBudget": 12000 }` | Evaluator 정리 완료 |
 | `answer_delta` | `{ "content": "로그인 로직은..." }` | Final Answer 토큰 조각 |
-| `completed` | `{ "runId": "...", "answerId": "...", "elapsedSeconds": 12.4 }` | run 정상 완료 |
-| `failed` | `{ "runId": "...", "errorCode": "AGENT_TIMEOUT", "message": "..." }` | run 실패 |
+| `references` | `{ "references": [...] }` | 참조 파일 목록 |
+| `completed` | `{ "runId": "...", "status": "completed" }` | run 정상 완료 |
+| `cancelled` | `{ "runId": "...", "cancelledAt": "..." }` | run 취소 |
+| `failed` | `{ "runId": "...", "error": "AGENT_TIMEOUT" }` | run 실패 |
 
 #### 스트림 예시
 
@@ -534,6 +538,12 @@ data: {"rewrittenQuery":"login signin auth authentication","selectedWorkers":["s
 event: route_validated
 data: {"allowed":true,"parallelGroups":[["search","grep"],["read"]]}
 
+event: worker_started
+data: {"worker":"grep","target":"backend/app"}
+
+event: worker_result
+data: {"worker":"grep","resultCount":3,"evidenceIds":["ev_001","ev_002","ev_003"]}
+
 event: answer_delta
 data: {"content":"로그인 로직은 "}
 
@@ -541,7 +551,7 @@ event: answer_delta
 data: {"content":"backend/app/auth/router.py에서 시작됩니다."}
 
 event: completed
-data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elapsedSeconds":12.4}
+data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","status":"completed"}
 ```
 
 ##### 에러 응답
@@ -564,7 +574,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | Method | GET |
 | 관련 기능 ID | `LLM-CHAT-B-204`, `LLM-GRAPH-B-201`, `LLM-OPS-B-203` |
 | 목적 | 실행 상태, node별 소요 시간, State 요약, 최종 답변 상태 조회 |
-| 상태 | 설계 확정 / 구현 예정 |
+| 상태 | 구현 완료 |
 
 #### 응답(Response)
 
@@ -639,7 +649,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | Method | POST |
 | 관련 기능 ID | `LLM-CHAT-B-204`, `LLM-OPS-B-202`, `LLM-OPS-B-204` |
 | 목적 | 실행 중인 LangGraph/worker run을 취소하고 SSE에 cancelled 이벤트 발행 |
-| 상태 | 설계 확정 / 구현 예정 |
+| 상태 | 구현 완료 |
 
 #### 응답(Response)
 
@@ -672,7 +682,7 @@ data: {"runId":"2f86a7b7-4d9b-45f1-bc5b-1c2b938c1d10","answerId":"ans_01","elaps
 | Method | GET |
 | 관련 기능 ID | `LLM-WORKER-B-201` ~ `LLM-WORKER-B-204`, `LLM-EVALUATOR-B-201` |
 | 목적 | Worker가 `CodeMapState.worker_results`에 직접 기록한 raw evidence와 compact context 조회 |
-| 상태 | 설계 확정 / 구현 예정 |
+| 상태 | 구현 완료 |
 
 #### Query Parameters
 

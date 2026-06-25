@@ -155,6 +155,14 @@ const generateId = () => {
             ? { ...message, explorationSteps: [...(message.explorationSteps || []), step] }
             : message));
         }
+        // Worker 실행 시작
+        if (event.type === "worker_started") {
+          const target = event.target ? ` (${event.target})` : "";
+          const step = `${event.worker || "worker"} worker가 실행을 시작했습니다${target}.`;
+          setMessages((current) => current.map((message) => message.id === assistantId
+            ? { ...message, explorationSteps: [...(message.explorationSteps || []), step] }
+            : message));
+        }
         // Worker 결과 수집
         if (event.type === "worker_result") {
           const step = `${event.worker || "worker"} worker가 근거 ${event.resultCount || 0}개를 수집했습니다.`;
@@ -185,6 +193,9 @@ const generateId = () => {
             ? { ...message, content: `⚠️ ${event.error || "응답을 생성하지 못했습니다."}` }
             : message));
         }
+        if (event.type === "cancelled") {
+          setStreamPhase("complete");
+        }
         // 완료
         if (event.type === "completed") setStreamPhase("complete");
       }
@@ -192,7 +203,7 @@ const generateId = () => {
       setIsStreaming(false);
       window.setTimeout(() => setStreamPhase(null), 900);
     }
-  }, [activeThreadId, contextFile, input, isStreaming, mode, onThreadChange, preview, repoId]);
+  }, [activeThreadId, contextFile, input, isStreaming, mode, onThreadChange, preview, repoId, streamPhase]);
 
   const clearMessages = () => {
     if (isStreaming) return;

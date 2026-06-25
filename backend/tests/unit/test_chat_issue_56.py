@@ -180,5 +180,39 @@ class TestChatPrepareTransaction(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(service.db.commits, 1)
 
 
+class TestRunRegistry(unittest.TestCase):
+    def test_run_record_preserves_status_and_evidence(self):
+        from app.chat.run_registry import RunRegistry
+
+        repo_id = uuid4()
+        registry = RunRegistry()
+        record = registry.create(
+            run_id="run-1",
+            repo_id=repo_id,
+            session_id=str(uuid4()),
+            request=types.SimpleNamespace(question="where is login?"),
+        )
+        record.status = "completed"
+        record.worker_results = [{
+            "id": "ev_1",
+            "path": "app.py",
+            "lineStart": 1,
+            "lineEnd": 2,
+            "score": 0.7,
+            "snippet": "def login(): pass",
+            "metadata": {"worker": "read"},
+        }]
+        record.compact_context = {"selectedEvidenceCount": 1}
+        record.accumulated_answer = "app.py에 있습니다."
+
+        status = record.to_status_response()
+        evidence = record.to_evidence_response(include_raw_snippet=True)
+
+        self.assertEqual(registry.get("run-1"), record)
+        self.assertEqual(status["data"]["status"], "completed")
+        self.assertEqual(status["data"]["state"]["workerResultCount"], 1)
+        self.assertEqual(evidence["data"]["evidence"][0]["snippet"], "def login(): pass")
+
+
 if __name__ == "__main__":
     unittest.main()

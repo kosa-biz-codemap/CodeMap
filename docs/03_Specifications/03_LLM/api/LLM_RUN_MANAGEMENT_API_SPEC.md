@@ -12,7 +12,7 @@
 | Method | GET |
 | 관련 기능 ID | `LLM-CHAT-B-204`, `LLM-GRAPH-B-201`, `LLM-OPS-B-203` |
 | 목적 | 실행 상태, node별 소요 시간, State 요약, 최종 답변 상태 조회 |
-| 상태 | 설계 확정 / 구현 예정 |
+| 상태 | 구현 완료 |
 
 ### 응답
 
@@ -87,7 +87,7 @@
 | Method | POST |
 | 관련 기능 ID | `LLM-CHAT-B-204`, `LLM-OPS-B-202`, `LLM-OPS-B-204` |
 | 목적 | 실행 중인 LangGraph/worker run을 취소하고 SSE에 `cancelled` 이벤트 발행 |
-| 상태 | 설계 확정 / 구현 예정 |
+| 상태 | 구현 완료 |
 
 ### 응답
 
@@ -120,7 +120,7 @@
 | Method | GET |
 | 관련 기능 ID | `LLM-WORKER-B-201` ~ `LLM-WORKER-B-204`, `LLM-EVALUATOR-B-201` |
 | 목적 | Worker가 `CodeMapState.worker_results`에 기록한 raw evidence와 compact context 조회 |
-| 상태 | 설계 확정 / 구현 예정 |
+| 상태 | 구현 완료 |
 
 ### Query Parameters
 

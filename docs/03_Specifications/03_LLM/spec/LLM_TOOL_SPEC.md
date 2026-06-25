@@ -1,6 +1,6 @@
 # LLM TOOL 기능 명세서
 
-> **도메인**: Tool | **모듈**: LLM-TOOL | **최종 업데이트**: 2026-06-24
+> **도메인**: Tool | **모듈**: LLM-TOOL | **최종 업데이트**: 2026-06-25
 
 ## 범위
 
@@ -31,11 +31,11 @@
 ## LLM-TOOL-B-201: 단일 목적 Worker 실행
 
 ### 1. 설명
-`dispatcher_node`가 `Send`로 전달한 `_plan_item`을 읽어 4개 워커 중 하나가 단일 도구를 실행한다. 각 워커는 결과를 `WorkerResult`로 만들어 `worker_results`(operator.add)에 병합하고 `worker_result` 이벤트를 발행한다.
+`dispatcher_node`가 `Send`로 전달한 `_plan_item`을 읽어 4개 워커 중 하나가 단일 도구를 실행한다. 각 워커는 실행 시작 시 `worker_started` 이벤트를 발행하고, 결과를 `WorkerResult`로 만들어 `worker_results`(operator.add)에 병합한 뒤 `worker_result` 이벤트를 발행한다.
 
 ### 2. 입/출력 규격
 - **공통 Input**: `state["_plan_item"]`(`{tool, path, query, scope}`), `clone_path`, (search는 `repo_id`)
-- **공통 Output**: `{ "worker_results": [WorkerResult...], "events": [{"type":"worker_result","worker","resultCount","evidenceIds"}] }`
+- **공통 Output**: `{ "worker_results": [WorkerResult...], "events": [{"type":"worker_started","worker","target"}, {"type":"worker_result","worker","resultCount","evidenceIds"}] }`
 - **워커별 동작**:
   - `search_worker`: 하이브리드 검색(B-202) → 실패/미준비 시 키워드 검색(`search_repository`) 폴백 → 그것도 실패 시 실패 사유 스니펫
   - `dir_worker`: `tool/dir_scan.py`의 `scan_directory_tree` 호출
@@ -45,7 +45,7 @@
 
 ### 3. 완료 조건
 - 각 워커는 결과를 요약하지 않고 raw `snippet` 그대로 반환한다.
-- 보안 경계 위반(B-203) 시 빈 결과(`{"worker_results": [], "events": []}`)를 반환한다.
+- 도구 실행 결과가 비어도 `worker_started`와 `worker_result(resultCount=0)` 이벤트를 발행해 프론트 타임라인 계약을 유지한다.
 
 ---
 

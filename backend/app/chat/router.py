@@ -1,6 +1,7 @@
 import json
 import logging
 import uuid
+import time
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,6 +9,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chat.repository import ChatRepository
+from app.chat.run_registry import run_registry
 from app.chat.schemas import ChatRunRequest
 from app.chat.service import RepositoryChatService
 from app.infra.database import get_db
@@ -15,9 +17,6 @@ from app.infra.database import get_db
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["Repository Chat"])
-
-# 임시 메모리 저장소 (DB 모델 대신 API 명세 맞춤용)
-_RUN_STORE: dict[str, dict] = {}
 
 
 def _event(payload: dict) -> str:
@@ -58,14 +57,16 @@ async def create_chat_run(repo_id: UUID, request: ChatRunRequest, db: AsyncSessi
         raise HTTPException(status_code=409 if "준비" in str(exc) else 404, detail=str(exc)) from exc
 
     run_id = str(uuid.uuid4())
-    _RUN_STORE[run_id] = {
-        "repo_id": repo_id,
-        "request": request,
-        "thread": thread,
-        "job": job,
-        "clone_path": clone_path,
-        "mode": mode
-    }
+    run_registry.create(
+        run_id=run_id,
+        repo_id=repo_id,
+        session_id=str(thread.id),
+        request=request,
+        thread=thread,
+        job=job,
+        clone_path=clone_path,
+        mode=mode,
+    )
 
     return {
         "code": 202,
@@ -86,58 +87,95 @@ async def stream_chat_run(repo_id: UUID, run_id: str, db: AsyncSession = Depends
     """
     LangGraph 멀티에이전트 SSE 스트리밍.
     """
-    run_data = _RUN_STORE.pop(run_id, None)
-    if not run_data:
-        raise HTTPException(status_code=404, detail="Run not found or already consumed")
+    record = run_registry.get(run_id)
+    if not record or record.repo_id != repo_id:
+        raise HTTPException(status_code=404, detail="Run not found")
+    if record.status != "queued":
+        raise HTTPException(status_code=409, detail=f"Run is already {record.status}")
 
-    request: ChatRunRequest = run_data["request"]
-    clone_path = run_data["clone_path"]
-    job = run_data["job"]
-    thread = run_data["thread"]
-    mode = run_data["mode"]
+    request: ChatRunRequest = record.request
+    clone_path = record.clone_path
+    job = record.job
+    thread = record.thread
+    mode = record.mode
     service = RepositoryChatService(db)
 
     async def stream():
-        accumulated_answer = ""
-        worker_results = []
         try:
-            yield _event({"type": "graph_started", "runId": run_id, "stateKeys": ["user_query"]})
+            record.status = "running"
+            record.current_node = "graph_started"
+            record.started_at = time.time()
+            graph_started_event = {"type": "graph_started", "runId": run_id, "stateKeys": ["user_query"]}
+            record.events.append(graph_started_event)
+            yield _event(graph_started_event)
 
-            compact_context = {}
             # Graph Stream
             async for event in service.run_agent_stream(repo_id, request.question, clone_path, run_id):
+                if record.cancel_event.is_set():
+                    record.status = "cancelled"
+                    record.completed_at = time.time()
+                    cancelled_event = {"type": "cancelled", "runId": run_id, "cancelledAt": record.completed_at_iso}
+                    record.events.append(cancelled_event)
+                    yield _event(cancelled_event)
+                    return
+
                 if event.get("type") == "internal_state":
-                    compact_context = event["compact_context"]
-                    worker_results = event["worker_results"]
+                    record.compact_context = event["compact_context"]
+                    record.worker_results = event["worker_results"]
                     continue
+                record.events.append(event)
+                record.current_node = event.get("type")
                 yield _event(event)
 
+            record.status = "streaming"
+            record.current_node = "answer_delta"
             # Final Answer Agent Stream
             async for event in service.stream_answer(
                 repo_name=job.repo_name,
                 user_query=request.question,
-                compact_context=compact_context,
-                worker_results=worker_results,
+                compact_context=record.compact_context,
+                worker_results=record.worker_results,
                 mode=mode,
             ):
+                if record.cancel_event.is_set():
+                    record.status = "cancelled"
+                    record.completed_at = time.time()
+                    cancelled_event = {"type": "cancelled", "runId": run_id, "cancelledAt": record.completed_at_iso}
+                    record.events.append(cancelled_event)
+                    yield _event(cancelled_event)
+                    return
+
                 if event.get("type") == "answer_delta":
-                    accumulated_answer += event.get("content", "")
+                    record.accumulated_answer += event.get("content", "")
+                record.events.append(event)
                 yield _event(event)
 
             # DB 저장
-            await service.persist_answer(thread, accumulated_answer, mode, worker_results)
+            await service.persist_answer(thread, record.accumulated_answer, mode, record.worker_results)
 
             # References
-            references = _references_from_worker_results(worker_results)
-            if references:
-                yield _event({"type": "references", "references": references})
+            record.references = _references_from_worker_results(record.worker_results)
+            if record.references:
+                references_event = {"type": "references", "references": record.references}
+                record.events.append(references_event)
+                yield _event(references_event)
 
-            yield _event({"type": "completed", "runId": run_id, "status": "completed"})
+            record.status = "completed"
+            record.current_node = None
+            record.completed_at = time.time()
+            completed_event = {"type": "completed", "runId": run_id, "status": "completed"}
+            record.events.append(completed_event)
+            yield _event(completed_event)
 
         except Exception as exc:
             logger.exception("[ChatRouter] SSE stream 오류 run=%s", run_id)
-            yield _event({"type": "failed", "runId": run_id, "error": str(exc)})
-            if not accumulated_answer:
+            record.status = "failed"
+            record.error = str(exc)
+            record.completed_at = time.time()
+            failed_event = {"type": "failed", "runId": run_id, "error": str(exc)}
+            record.events.append(failed_event)
+            yield _event(failed_event)
+            if not record.accumulated_answer:
                 await db.rollback()
 
     return StreamingResponse(

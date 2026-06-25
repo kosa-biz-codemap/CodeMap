@@ -54,7 +54,7 @@ async def search_worker(state: CodeMapState) -> dict:
                     )
                 )
             logger.info("[SearchWorker] Hybrid Search 완료 — %d 결과", len(hits))
-            return _worker_event(worker_results)
+            return _worker_event(worker_results, target=query)
 
     except Exception as exc:
         logger.info("[SearchWorker] Hybrid Search 실패/미준비, 키워드 폴백: %s", exc)
@@ -91,16 +91,19 @@ async def search_worker(state: CodeMapState) -> dict:
             )
         )
 
-    return _worker_event(worker_results)
+    return _worker_event(worker_results, target=query)
 
 
-def _worker_event(worker_results: list[WorkerResult]) -> dict:
+def _worker_event(worker_results: list[WorkerResult], target: str | None = None) -> dict:
     return {
         "worker_results": worker_results,
-        "events": [{
-            "type": "worker_result",
-            "worker": "search",
-            "resultCount": len(worker_results),
-            "evidenceIds": [result["id"] for result in worker_results],
-        }],
+        "events": [
+            {"type": "worker_started", "worker": "search", "target": target},
+            {
+                "type": "worker_result",
+                "worker": "search",
+                "resultCount": len(worker_results),
+                "evidenceIds": [result["id"] for result in worker_results],
+            },
+        ],
     }

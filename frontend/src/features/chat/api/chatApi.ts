@@ -29,6 +29,7 @@ export interface StreamEvent {
     | "answer_delta"
     | "references"
     | "completed"
+    | "cancelled"
     | "failed"
     | "error";
   // graph_started
@@ -42,6 +43,7 @@ export interface StreamEvent {
   parallelGroups?: Array<{ worker: string; path: string }>;
   // worker_result
   worker?: string;
+  target?: string | null;
   resultCount?: number;
   // answer_delta
   content?: string;
@@ -50,6 +52,7 @@ export interface StreamEvent {
   // failed / error
   error?: string;
   status?: string;
+  cancelledAt?: string | number;
   // sessionId (from create_chat_run response)
   sessionId?: string;
 }
@@ -162,7 +165,9 @@ const PREVIEW_ANSWERS: Record<string, string> = {
 export async function* previewStream(message: string): AsyncGenerator<StreamEvent> {
   yield { type: "graph_started", runId: "preview" };
   yield { type: "route_validated", parallelGroups: [{ worker: "search_worker", path: "frontend/src/app/analyze/page.tsx" }] };
+  yield { type: "worker_started", worker: "search", target: "frontend/src/app/analyze/page.tsx" };
   await new Promise((resolve) => setTimeout(resolve, 220));
+  yield { type: "worker_result", worker: "search", resultCount: 1 };
   yield { type: "evidence_compacted" };
   const answer = /구조|architecture|아키텍처/i.test(message)
     ? PREVIEW_ANSWERS.architecture

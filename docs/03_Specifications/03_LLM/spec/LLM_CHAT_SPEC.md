@@ -60,7 +60,7 @@ User
 | --- | --- | --- |
 | `chat/router.py` | HTTP 요청/응답, path/body 검증, SSE endpoint 노출 | run 생성 응답, stream 응답 |
 | `chat/service.py` | run/session 상태 저장, CodeMapAgentService 위임 호출, 이벤트 큐 관리 | run state, stream URL |
-| `agent/service.py` | 에이전트 실행 루프 제어, 14개 Thought Trace 이벤트 스트리밍 | 실행 상태 및 이벤트 스트림 |
+| `agent/service.py` | 에이전트 실행 루프 제어, Thought Trace 이벤트 스트리밍 | 실행 상태 및 이벤트 스트림 |
 | `agent/graph.py` | Planner/Evaluator/Worker 실행 | `CodeMapState` |
 | `chat/final_answer_agent.py` | 원본 근거 기반 최종 답변 생성 | answer delta, final answer |
 | frontend chat UI | run 생성, 단계 상태 표시, evidence 패널, 답변 렌더링 | 사용자 화면 |
@@ -89,7 +89,7 @@ User
 - `chat/service.py`가 LangGraph 실행을 비동기로 예약합니다.
 - 동일 세션 내 연속 질문을 지원하기 위해 `sessionId`를 선택 입력으로 받을 수 있습니다.
 
-**세션 연속성 구현 가이드 (Phase 1)** _(수업 실습: sec06 `agent_history_postgresql.py`)_
+**세션 연속성 구현 가이드 (Phase 2 구현 예정)** _(수업 실습: sec06 `agent_history_postgresql.py`)_
 
 동일 세션 내에서 이전 질문/답변 맥락을 이어가는 연속 대화는 LangGraph의 `AsyncPostgresSaver` checkpointer를 활용합니다:
 
@@ -161,11 +161,11 @@ LangGraph 실행과 사용자-facing stream 사이의 조정자입니다. `chat/
 
 | 필드 | 설명 |
 | --- | --- |
+| `repo_name` | 저장소 이름 |
 | `user_query` | 사용자 원본 질문 |
-| `rewritten_query` | Planner가 보정한 검색 질의 |
-| `worker_results` | Worker가 수집한 원본 근거 |
 | `compact_context` | Evaluator가 압축한 근거 묶음 |
-| `security_result` | Dispatcher Node 검증 결과 |
+| `worker_results` | Worker가 수집한 원본 근거 |
+| `mode` | 실행 모드 (lite/standard/deep) |
 
 **출력**
 
@@ -231,10 +231,13 @@ LangGraph 실행 단계와 Final Answer 토큰을 SSE로 전달합니다. 이벤
 | `graph_started` | LangGraph 실행 시작 |
 | `planner_plan` | Planner 계획 생성 완료 |
 | `route_validated` | Dispatcher Node 보안 검증 완료 |
+| `worker_started` | Worker 실행 시작 |
 | `worker_result` | Worker 결과가 State에 기록됨 |
 | `evidence_compacted` | Evaluator 처리 완료 |
 | `answer_delta` | 최종 답변 토큰 조각 |
+| `references` | 참조 파일 목록 |
 | `completed` | run 정상 완료 |
+| `cancelled` | run 취소 |
 | `failed` | run 실패 |
 
 **Frontend 연동 기준**
@@ -245,9 +248,7 @@ LangGraph 실행 단계와 Final Answer 토큰을 SSE로 전달합니다. 이벤
 
 | 이벤트 | 설명 |
 | --- | --- |
-| `worker_started` | Worker 실행 시작 |
 | `worker_completed` | Worker 실행 완료 |
-| `cancelled` | 사용자 또는 timeout에 의해 취소 |
 
 ### LLM-CHAT-B-204: run 상태 및 취소 제어
 

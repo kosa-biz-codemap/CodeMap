@@ -76,7 +76,7 @@ graph TD
 - **역할**: 그래프 밖에서 최종 답변을 정제·스트리밍
 - **구현**: `backend/app/chat/final_answer_agent.py`
 - **처리**: Evaluator가 만든 `compact_context`와 원본 근거를 기반으로 사용자에게 마크다운 형태의 답변을 SSE 스트리밍
-- **SSE 이벤트**: `answer_delta`, `content`, `references`, `completed`
+- **SSE 이벤트**: `answer_delta`, `references`, `completed`
 
 ---
 

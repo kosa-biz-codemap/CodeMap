@@ -197,6 +197,36 @@ class TestEvidenceAggregator(unittest.TestCase):
         self.assertGreater(ctx["usedTokens"], 0)
 
 
+class TestWorkerEvents(unittest.IsolatedAsyncioTestCase):
+    async def test_read_worker_emits_started_before_result(self):
+        from app.agent.workers.read_worker import read_worker
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            root.mkdir()
+            (root / "app.py").write_text("print('hello')\n", encoding="utf-8")
+
+            result = await read_worker({
+                "user_query": "read app",
+                "repo_id": "r1",
+                "clone_path": str(root),
+                "run_id": "run1",
+                "rewritten_query": "read app",
+                "access_plan": [],
+                "security_result": {"approved": [], "rejected": []},
+                "worker_results": [],
+                "events": [],
+                "errors": [],
+                "durations": {},
+                "compact_context": {},
+                "final_answer": None,
+                "_plan_item": {"tool": "read", "path": "app.py", "query": "", "scope": "file"},
+            })
+
+        self.assertEqual([event["type"] for event in result["events"]], ["worker_started", "worker_result"])
+        self.assertEqual(result["events"][0]["worker"], "read")
+
+
 class TestRepositoryToolBoundaries(unittest.TestCase):
     """Repository-bounded tool helpers must not trust string-prefix path checks."""
 

@@ -19,9 +19,13 @@ async def grep_worker(state: CodeMapState) -> dict:
     clone_path = state.get("clone_path", "")
 
     logger.info("[GrepWorker] 시작 — pattern=%r path=%s", pattern, rel_path or ".")
+    started_event = {"type": "worker_started", "worker": "grep", "target": rel_path or "."}
     content = grep_repository_path(clone_path, rel_path, pattern)
     if not content:
-        return {"worker_results": [], "events": []}
+        return {"worker_results": [], "events": [
+            started_event,
+            {"type": "worker_result", "worker": "grep", "resultCount": 0, "evidenceIds": []},
+        ]}
 
     result = WorkerResult(
         id=f"ev_{uuid.uuid4().hex[:8]}",
@@ -34,10 +38,13 @@ async def grep_worker(state: CodeMapState) -> dict:
     )
     return {
         "worker_results": [result],
-        "events": [{
-            "type": "worker_result",
-            "worker": "grep",
-            "resultCount": 1,
-            "evidenceIds": [result["id"]],
-        }],
+        "events": [
+            started_event,
+            {
+                "type": "worker_result",
+                "worker": "grep",
+                "resultCount": 1,
+                "evidenceIds": [result["id"]],
+            },
+        ],
     }

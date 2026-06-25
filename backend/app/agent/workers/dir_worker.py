@@ -18,9 +18,13 @@ async def dir_worker(state: CodeMapState) -> dict:
     clone_path = state.get("clone_path", "")
 
     logger.info("[DirWorker] 시작 — path=%s", rel_path or ".")
+    started_event = {"type": "worker_started", "worker": "dir", "target": rel_path or "."}
     content = scan_directory_tree(clone_path, rel_path)
     if not content:
-        return {"worker_results": [], "events": []}
+        return {"worker_results": [], "events": [
+            started_event,
+            {"type": "worker_result", "worker": "dir", "resultCount": 0, "evidenceIds": []},
+        ]}
 
     result = WorkerResult(
         id=f"ev_{uuid.uuid4().hex[:8]}",
@@ -33,10 +37,13 @@ async def dir_worker(state: CodeMapState) -> dict:
     )
     return {
         "worker_results": [result],
-        "events": [{
-            "type": "worker_result",
-            "worker": "dir",
-            "resultCount": 1,
-            "evidenceIds": [result["id"]],
-        }],
+        "events": [
+            started_event,
+            {
+                "type": "worker_result",
+                "worker": "dir",
+                "resultCount": 1,
+                "evidenceIds": [result["id"]],
+            },
+        ],
     }

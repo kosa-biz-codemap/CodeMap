@@ -1,37 +1,39 @@
 # ============================================================
 # API ID  : LLM-CHAT-API-001
-# 기능명  : Repo Chat SSE 스트리밍
+# 기능명  : Repo Chat Run 생성 및 SSE 스트리밍
 # Method  : POST
-# Endpoint: /api/chat/{repo_id}
+# Endpoint: /api/chat/{repo_id}/runs
 # Auth    : 필요
 # 관련 기능 ID: LLM-CHAT-B-101, LLM-CHAT-B-202,
 #   LLM-CHAT-F-201, LLM-CHAT-F-202, LLM-CHAT-F-203,
 #   LLM-CHAT-F-204, LLM-CHAT-F-205, LLM-CHAT-F-206,
 #   LLM-TOOL-B-202, LLM-TOOL-B-203, LLM-TOOL-B-204,
 #   LLM-TOOL-B-207 (Advanced Reasoning은 Phase 2 보류)
-# 상태    : 시작 전
+# 상태    : 구현 완료
 #
 # Description:
-# 저장소에 대한 자연어 질문을 SSE 스트리밍으로 답변.
-# 최대 5회 도구 호출, 20초 타임아웃 내 자율 탐색.
-# SSE 이벤트: agent_status | token | agent_completed | agent_failed
+# 저장소에 대한 자연어 질문으로 run을 생성한 뒤 streamUrl에 SSE 연결.
+# SSE 이벤트: graph_started | planner_plan | route_validated | worker_started |
+# worker_result | evidence_compacted | answer_delta | references | completed | failed
 # # curl 테스트:
-# # curl -N -X POST http://localhost:8000/api/chat/{repo_id} \
+# # curl -X POST http://localhost:8000/api/chat/{repo_id}/runs \
 # #   -H 'Authorization: Bearer {token}' \
 # #   -H 'Content-Type: application/json' \
-# #   -H 'Accept: text/event-stream' \
 # #   -d '{"question": "인증 미들웨어는 어디에 있나요?"}'
+# # curl -N http://localhost:8000{streamUrl} \
+# #   -H 'Authorization: Bearer {token}' \
+# #   -H 'Accept: text/event-stream'
 # ============================================================
 
 @baseUrl = http://localhost:8000
 @accessToken = replace-me
 @repo_id = replace-me-repo_id
+@run_id = replace-me-run_id
 
-### 정상 요청
-POST {{baseUrl}}/api/chat/{{repo_id}}
+### 정상 요청 - Run 생성
+POST {{baseUrl}}/api/chat/{{repo_id}}/runs
 Authorization: Bearer {{accessToken}}
 Content-Type: application/json
-Accept: text/event-stream
 
 {
   "question": "인증 미들웨어는 어디에 있고 어떻게 동작하나요?",
@@ -39,19 +41,41 @@ Accept: text/event-stream
   "timeoutSeconds": 20
 }
 
+# Success Response: 202 Accepted
+# {
+#   "code": 202,
+#   "message": "accepted",
+#   "data": {
+#     "runId": "...",
+#     "sessionId": "...",
+#     "status": "queued",
+#     "streamUrl": "/api/chat/{repo_id}/runs/{run_id}/stream",
+#     "statusUrl": "/api/chat/{repo_id}/runs/{run_id}",
+#     "evidenceUrl": "/api/chat/{repo_id}/runs/{run_id}/evidence"
+#   }
+# }
+
+### 정상 요청 - SSE Stream 연결
+GET {{baseUrl}}/api/chat/{{repo_id}}/runs/{{run_id}}/stream
+Authorization: Bearer {{accessToken}}
+Accept: text/event-stream
+
 # Success Response: SSE Stream
-# event: agent_status
-# data: {"step": "searching", "toolCall": "search_vector_db", "count": 1}
+# event: graph_started
+# data: {"runId":"...","stateKeys":["user_query"]}
 #
-# event: token
+# event: worker_started
+# data: {"worker":"search","target":null}
+#
+# event: answer_delta
 # data: {"content": "인증 미들웨어는"}
 #
-# event: agent_completed
-# data: {"answer": "...", "sourceFiles": [...], "toolCallCount": 2, "elapsedSeconds": 6.3}
+# event: completed
+# data: {"runId":"...","status":"completed"}
 
 
 ### 에러 케이스 - 인증 없음
-POST {{baseUrl}}/api/chat/{{repo_id}}
+POST {{baseUrl}}/api/chat/{{repo_id}}/runs
 Content-Type: application/json
 
 {}

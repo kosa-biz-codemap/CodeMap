@@ -1,0 +1,29 @@
+### ============================================================================
+### LLM-AGENT-API-001 | 에이전트 실행 상태 조회
+### Markdown source: docs/03_Specifications/03_LLM/api/LLM_API_SPEC.md
+### Endpoint: GET /api/chat/{repo_id}/runs/{run_id}
+### 관련 기능 ID: LLM-AGENT-B-201, LLM-AGENT-B-202, LLM-AGENT-B-203,
+### LLM-AGENT-B-204
+### 상태: 구현 완료
+### ============================================================================
+@baseUrl = http://localhost:8000
+@accessToken = replace-me
+@repoId = 3f7cc46e-d954-83ab-9f12-013b0c9d2a1e
+@runId = replace-me-run-id
+
+GET {{baseUrl}}/api/chat/{{repoId}}/runs/{{runId}}
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### 200 OK
+### {"code":200,"message":"success","data":{"runId":"...","sessionId":"...","status":"running","currentNode":"worker_started","state":{"userQuery":"로그인 어딧음?","rewrittenQuery":"login signin auth authentication","accessPlan":{"selectedWorkers":["search","grep"],"allowedPaths":["backend/app"]},"securityResult":{"allowed":true,"parallelGroups":[["search"],["grep"]]},"workerResultCount":2,"compactContextReady":false,"stateKeys":["user_query","rewritten_query","access_plan","security_result","worker_results"]},"durations":{},"finalAnswer":null,"error":null}}
+### status: queued | running | streaming | completed | failed | cancelled
+### status/evidence/cancel은 run registry에 보존된 RunRecord를 기준으로 응답한다.
+
+### [오류] 없는 run
+GET {{baseUrl}}/api/chat/{{repoId}}/runs/missing-run
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### 401 UNAUTHORIZED / 404 LLM_RUN_NOT_FOUND
+### {"detail":"Run not found"}

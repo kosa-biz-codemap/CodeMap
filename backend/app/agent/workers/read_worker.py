@@ -18,9 +18,13 @@ async def read_worker(state: CodeMapState) -> dict:
     clone_path = state.get("clone_path", "")
 
     logger.info("[ReadWorker] 시작 — path=%s", rel_path)
+    started_event = {"type": "worker_started", "worker": "read", "target": rel_path or "."}
     content = read_repository_file(clone_path, rel_path)
     if not content:
-        return {"worker_results": [], "events": []}
+        return {"worker_results": [], "events": [
+            started_event,
+            {"type": "worker_result", "worker": "read", "resultCount": 0, "evidenceIds": []},
+        ]}
 
     result = WorkerResult(
         id=f"ev_{uuid.uuid4().hex[:8]}",
@@ -33,10 +37,13 @@ async def read_worker(state: CodeMapState) -> dict:
     )
     return {
         "worker_results": [result],
-        "events": [{
-            "type": "worker_result",
-            "worker": "read",
-            "resultCount": 1,
-            "evidenceIds": [result["id"]],
-        }],
+        "events": [
+            started_event,
+            {
+                "type": "worker_result",
+                "worker": "read",
+                "resultCount": 1,
+                "evidenceIds": [result["id"]],
+            },
+        ],
     }

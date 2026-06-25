@@ -1,6 +1,6 @@
 # LLM AGENT 기능 명세서 (통합본)
 
-> **도메인**: Agent | **모듈**: LLM-AGENT | **최종 업데이트**: 2026-06-24
+> **도메인**: Agent | **모듈**: LLM-AGENT | **최종 업데이트**: 2026-06-25
 
 본 문서는 LangGraph 기반 `Agent` 도메인의 **단일 진실 공급원(SSOT)** 설계 명세서로, 기존 `AGENT_GRAPH` · `AGENT_MEMORY_EXTENSION` · `AGENT_CORE`(→ **LLM-OPS** 운영 관심사) 명세와 `AGENT_SUPERVISOR_ROUTE`의 **라우팅/보안** 부분을 통합한다.
 
@@ -108,18 +108,23 @@
 프론트엔드 실시간 타임라인(Exploration Timeline) 렌더링을 위해 그래프 진행 단계마다 이벤트를 `events` 채널에 누적·발행한다.
 
 ### 2. 입/출력 규격
-- **현재 코드에서 실제 발행되는 Agent 그래프 이벤트**:
-  - `graph_started` — 그래프 실행 시작
+- **Agent 그래프 내부 이벤트** (각 노드/워커가 `events` 채널에 누적):
   - `planner_plan` — Planner Node가 `access_plan` 수립 완료
-  - `route_validated` — `dispatcher_node` 보안 검증 결과(`allowed`, `parallelGroups`). 이벤트명은 기존 프론트 호환을 위해 유지
+  - `route_validated` — `dispatcher_node` 보안 검증 결과. 이벤트명은 기존 프론트 호환을 위해 유지
+  - `worker_started` — 개별 워커 실행 시작
   - `worker_result` — 개별 워커 근거 수집
   - `evidence_compacted` — Evaluator 압축/충분성 평가 완료
-  - 터미널: `completed` / `failed` / `error`
-- Chat 스트리밍 계층 이벤트(`answer_delta`, `references`, `completed`, `failed` 등)는 **Chat 도메인** 책임이며 본 명세 범위 밖. 이전 legacy bridge 이벤트(`content`, `done`, `exploration` 등)는 제거되었으며, 프론트엔드는 Run stream 이벤트를 직접 수신한다.
+- **Chat Application Layer 터미널 이벤트** (`chat/router.py`가 SSE stream에서 직접 발행):
+  - `graph_started` — 그래프 실행 시작 (stream 핸들러 진입 시 발행)
+  - `answer_delta` — Final Answer Agent 답변 토큰
+  - `references` — 참조 파일 목록
+  - `completed` — run 정상 완료
+  - `failed` — run 실패
+- 이전 legacy bridge 이벤트(`content`, `done`, `exploration` 등)는 제거되었으며, 프론트엔드는 Run stream 이벤트를 직접 수신한다.
 
 ### 3. 완료 조건
 - 각 이벤트는 `{"type": ..., ...payload}` 형태로 `events`(operator.add) 채널에 누적되어 SSE로 스트리밍된다.
-- 프론트 타임라인 연동은 위 발행 목록을 기준으로 한다. (`worker_started`/`worker_completed`/`cancelled` 등 단계 세분화 이벤트는 **구현 예정**.)
+- 프론트 타임라인 연동은 위 발행 목록을 기준으로 한다. (`worker_completed` 등 세부 duration 이벤트는 후속 확장으로 둔다.)
 
 ---
 

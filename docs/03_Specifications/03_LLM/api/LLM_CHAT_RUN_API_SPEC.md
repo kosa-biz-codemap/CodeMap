@@ -12,7 +12,7 @@
 | Method | POST |
 | 관련 기능 ID | `LLM-CHAT-B-101`, `LLM-CHAT-B-201`, `LLM-GRAPH-B-201`, `LLM-PLANNER-B-201` |
 | 목적 | 사용자 질문을 받아 LangGraph 멀티에이전트 run을 생성하고 SSE stream URL을 반환 |
-| 상태 | 설계 확정 / 구현 예정 |
+| 상태 | 구현 완료 |
 
 ### 요청
 
@@ -104,7 +104,7 @@ Authorization: Bearer {access_token}
 | Method | GET |
 | 관련 기능 ID | `LLM-CHAT-B-203`, `LLM-OPS-B-201`, `LLM-OPS-B-202`, `LLM-OPS-B-204` |
 | 목적 | LangGraph 실행 과정과 Final Answer 토큰을 SSE로 실시간 전달 |
-| 상태 | 설계 확정 / 구현 예정 |
+| 상태 | 구현 완료 |
 
 ### 요청
 
@@ -126,6 +126,9 @@ data: {"rewrittenQuery":"login signin auth authentication","selectedWorkers":["s
 
 event: route_validated
 data: {"allowed":true,"parallelGroups":[["search","grep"],["read"]]}
+
+event: worker_started
+data: {"worker":"grep","target":"backend/app"}
 
 event: worker_result
 data: {"worker":"grep","resultCount":3,"evidenceIds":["ev_001","ev_002","ev_003"]}

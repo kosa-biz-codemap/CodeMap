@@ -1,5 +1,18 @@
 # Current Work
 
+## 2026-06-25 — Run registry and Phase 1 stream contract alignment
+
+- Current branch: `refactor/split-core-to-infra-common`
+- Current goal: Move the implementation toward the Phase 1 agent/run contract instead of documenting temporary gaps.
+- Current status:
+  - Preserved `AGENT_GRAPH_FLOW.md` as a Phase 1 target diagram and restored `worker_started` in the worker sequence.
+  - Added a shared chat run registry so run create, stream, status, evidence, and cancel operate on the same run record.
+  - Replaced run management 501 stubs with registry-backed status/evidence/cancel responses.
+  - Added `worker_started` events from worker adapters and wired the frontend stream handler to display them.
+  - Updated LLM specs/API docs to treat Run create, Run stream, status, evidence, cancel, references, and worker_started as implemented Phase 1 contracts.
+- Validation:
+  - Pending for this change set.
+
 ## 2026-06-25 — Agent spec implementation-contract cleanup
 
 - Current branch: `refactor/split-core-to-infra-common`
