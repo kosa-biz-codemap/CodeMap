@@ -1,6 +1,9 @@
 # LLM Advanced API 명세서
 
-> **도메인**: LLM | **범위**: Memory / Allowed Tools / Reasoning Extension | **최종 업데이트**: 2026-06-23
+> **도메인**: LLM | **범위**: Memory / Allowed Tools / Reasoning Extension | **최종 업데이트**: 2026-06-25
+
+> [!NOTE]
+> 본 문서의 모든 API는 **Phase 2** 범위이며 현재 미구현 상태입니다.
 
 ## LLM-ADVANCED-API-001 에이전트 장기 기억 조회
 

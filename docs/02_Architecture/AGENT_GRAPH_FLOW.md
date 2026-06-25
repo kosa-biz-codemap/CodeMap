@@ -56,10 +56,10 @@ graph TD
 
 | Worker | 구현 | 역할 |
 | --- | --- | --- |
-| `search_worker` | `workers/search_worker.py` | 시맨틱 벡터 검색 (Hybrid Search + RRF) |
-| `dir_worker` | `workers/dir_worker.py` | 디렉토리 구조 스캔 |
-| `grep_worker` | `workers/grep_worker.py` | 패턴 기반 코드 검색 |
-| `read_worker` | `workers/read_worker.py` | 파일 내용 읽기 |
+| `search_worker` | `backend/app/agent/workers/search_worker.py` | 시맨틱 벡터 검색 (Hybrid Search + RRF) |
+| `dir_worker` | `backend/app/agent/workers/dir_worker.py` | 디렉토리 구조 스캔 |
+| `grep_worker` | `backend/app/agent/workers/grep_worker.py` | 패턴 기반 코드 검색 |
+| `read_worker` | `backend/app/agent/workers/read_worker.py` | 파일 내용 읽기 |
 
 - **SSE 이벤트**: `worker_started`, `worker_result`
 

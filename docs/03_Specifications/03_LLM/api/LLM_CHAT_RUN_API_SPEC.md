@@ -1,6 +1,6 @@
 # LLM Chat Run API 명세서
 
-> **도메인**: LLM | **범위**: Run Create / SSE Stream | **최종 업데이트**: 2026-06-23
+> **도메인**: LLM | **범위**: Run Create / SSE Stream | **최종 업데이트**: 2026-06-25
 
 ## LLM-CHAT-API-001 멀티에이전트 채팅 실행 요청
 
