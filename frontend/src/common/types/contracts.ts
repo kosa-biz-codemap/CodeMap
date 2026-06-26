@@ -433,3 +433,41 @@ export interface PreValidateResponse {
   message: string;
   data: PreValidateData;
 }
+
+// ── DOCS-GEN types ─────────────────────────────────────────────────────────────
+
+export interface DocFolderSummary {
+  path: string;
+  summary: string;
+}
+
+export interface DocGetMarkdownData {
+  repoId: string;
+  repoName: string;
+  content: string;
+  generatedAt: string;
+  version: number;
+}
+
+export interface DocGetJsonData {
+  summary: string | null;
+  stack: string[];
+  readingOrder: string[];
+  dangerFiles: string[];
+  coreFlow: string | null;
+  folderSummaries: DocFolderSummary[];
+  generatedAt: string;
+  version: number;
+}
+
+export interface DocGetMarkdownResponse {
+  code: number;
+  message: string;
+  data: DocGetMarkdownData;
+}
+
+export interface DocGetJsonResponse {
+  code: number;
+  message: string;
+  data: DocGetJsonData;
+}
