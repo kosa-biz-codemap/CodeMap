@@ -157,4 +157,3 @@
 - 팀 초대 pending/accepted/declined/expired 상태 전이가 API와 UI에 반영된다.
 - LIST/REPO/CHAT API 테스트에 private/team 권한 우회 방지 케이스가 포함된다.
 - 기존 legacy job은 마이그레이션 정책에 따라 안전하게 private 또는 관리자 검토 대상으로 분류된다.
-

@@ -230,4 +230,3 @@ Authorization: Bearer {access_token}
 3. `visibility=private`이면 `created_by_user_id == current_user.id`
 4. `visibility=team`이면 `team_members(team_id, current_user.id, status=active)` 존재 여부 확인
 5. 실패 시 403 반환
-
