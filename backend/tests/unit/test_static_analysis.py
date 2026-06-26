@@ -8,10 +8,10 @@ def test_static_analysis_for_pydantic_and_typing():
     Any/dict 남용은 당장 CI가 깨지지 않도록 경고(리포트) 용도로만 콘솔에 출력합니다.
     """
     app_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../app'))
-    
+
     fatal_issues = []
     warning_issues = []
-    
+
     for root, _, files in os.walk(app_dir):
         for file in files:
             if not file.endswith('.py'):
@@ -24,7 +24,7 @@ def test_static_analysis_for_pydantic_and_typing():
             except Exception as e:
                 fatal_issues.append(f"[Error Reading] {rel_path}: {str(e)}")
                 continue
-            
+
             # Pydantic V1 메소드 검출 (치명적 이슈)
             if '.dict(' in content:
                 fatal_issues.append(f'[V1 Method] {rel_path} contains .dict() instead of .model_dump()')
@@ -32,7 +32,7 @@ def test_static_analysis_for_pydantic_and_typing():
                 fatal_issues.append(f'[V1 Method] {rel_path} contains .parse_obj() instead of .model_validate()')
             if 'class Config:' in content:
                 fatal_issues.append(f'[V1 Config] {rel_path} uses class Config: instead of model_config = ConfigDict(...)')
-                
+
             # AST 분석
             try:
                 tree = ast.parse(content)
@@ -40,7 +40,7 @@ def test_static_analysis_for_pydantic_and_typing():
                     # Any 사용 찾기 (경고)
                     if isinstance(node, ast.Name) and node.id == 'Any':
                         warning_issues.append(f'[Type Strictness] {rel_path}:{node.lineno} uses Any type hint')
-                        
+
                     # 함수 인자 중 Optional 없이 None을 기본값으로 가지는지 (단, | None 문법 제외) (치명적)
                     if isinstance(node, ast.FunctionDef):
                         num_defaults = len(node.args.defaults)
@@ -56,7 +56,7 @@ def test_static_analysis_for_pydantic_and_typing():
                                             is_optional = True
                                     if ann and not is_optional:
                                         fatal_issues.append(f'[Nullable Safety] {rel_path}:{node.lineno} function {node.name} arg {arg.arg} defaults to None but is typed as {ast.unparse(ann)}')
-                                        
+
                     # 데이터 불변성: mutable default arguments 확인 (치명적)
                     if isinstance(node, ast.FunctionDef):
                         for default in node.args.defaults:
@@ -74,12 +74,12 @@ def test_static_analysis_for_pydantic_and_typing():
                                 pass
             except SyntaxError:
                 fatal_issues.append(f"[Syntax Error] Cannot parse {rel_path}")
-                
+
     # 발견된 경고 사항은 pytest 실행 시 콘솔에 출력 (-s 옵션 사용 시 확인 가능)
     if warning_issues:
         print("\n--- [Static Analysis Warnings (Type Strictness)] ---")
         for w in warning_issues:
             print(w)
-            
+
     # 치명적 이슈(V1 문법 등)가 있으면 assert fail 로 CI를 깨뜨림
     assert len(fatal_issues) == 0, f"Static analysis found fatal issues:\n" + "\n".join(fatal_issues)

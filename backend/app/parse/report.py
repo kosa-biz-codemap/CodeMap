@@ -142,7 +142,7 @@ def report_file_summaries(report_json: JsonDict) -> list[JsonDict]:
     summaries = report_json.get("file_summaries", [])
     if isinstance(summaries, list) and summaries:
         return [item for item in summaries if isinstance(item, dict)]
-    
+
     result: list[JsonDict] = []
     for item in report_files(report_json):
         if not isinstance(item, dict):

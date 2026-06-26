@@ -11,8 +11,11 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from app.repo.models import AnalysisJob
 
 
 @dataclass
@@ -26,7 +29,7 @@ class RunRecord:
     # 실행 준비 데이터 (create_chat_run에서 저장)
     request: Any = None  # ChatRunRequest
     thread: dict[str, Any] = field(default_factory=dict)
-    job: asyncio.Task | None = None
+    job: AnalysisJob | None = None
     clone_path: str = ""
     mode: str = "standard"
 

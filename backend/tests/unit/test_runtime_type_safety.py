@@ -15,7 +15,7 @@ from langchain_core.messages import HumanMessage
 def test_codemapstate_type_safety():
     """CodeMapState (TypedDict)의 런타임 타입 검증"""
     adapter = TypeAdapter(CodeMapState)
-    
+
     # 정상 데이터
     valid_data = {
         "repo_id": str(uuid4()),
@@ -74,7 +74,7 @@ def test_parseresult_strict_validation():
 def test_payload_too_large_string():
     """매우 긴 문자열 주입 시 Pydantic의 파싱 정상 동작(거부하지 않고 수용) 및 타입 힌트 유지 확인"""
     large_string = "A" * 10_000_000  # 10MB 크기의 문자열
-    
+
     parsed = ParsedFile(
         path="huge_file.txt",
         file_type="FILE",
@@ -86,7 +86,7 @@ def test_payload_too_large_string():
     # 데이터가 들어가긴 하지만, 타입이 str로 정확히 들어갔는지 확인
     assert len(parsed.content) == 10_000_000
     assert parsed.file_type == "FILE"
-    
+
     # 만약 content에 int가 들어가면 에러가 나야 함
     with pytest.raises(ValidationError):
         ParsedFile(
@@ -106,17 +106,17 @@ def test_deeply_nested_dict():
     for _ in range(2000):
         current["nested"] = {}
         current = current["nested"]
-        
+
     # CodeMapState의 compact_context에 주입 시도
     adapter = TypeAdapter(CodeMapState)
-    
+
     record_data = {
         "repo_id": str(uuid4()),
         "run_id": str(uuid4()),
         "session_id": "sess_1",
         "clone_path": "/tmp/clone",
         "user_query": "What is this?",
-        "worker_results": [], 
+        "worker_results": [],
         "search_history": [],
         "compact_context": deep_dict, # 깊은 재귀 딕셔너리 할당
         "memory_context": {},
@@ -142,7 +142,7 @@ def test_deeply_nested_dict():
 def test_large_list_of_objects():
     """요소가 비정상적으로 많은 리스트 주입 시(OOM / 성능 지연 방어)"""
     # 요소 100만 개 (성능 문제로 10만 개로 타협)
-    
+
     adapter = TypeAdapter(CodeMapState)
     valid_data = {
         "repo_id": str(uuid4()),
@@ -190,11 +190,11 @@ def test_async_validation_timeout():
         }
         for i in range(10_000)
     ]
-    
+
     async def validate_data():
         adapter = TypeAdapter(list[ParsedFile])
         return adapter.validate_python(large_files)
-        
+
     async def run_test():
         # Validation이 2초 내로 수행되는지 확인 (매우 크면 asyncio.to_thread로 빼야 함을 암시)
         try:
@@ -202,5 +202,5 @@ def test_async_validation_timeout():
             assert len(result) == 10_000
         except asyncio.TimeoutError:
             pytest.fail("Pydantic validation blocked the event loop for too long. Consider asyncio.to_thread.")
-            
+
     asyncio.run(run_test())
