@@ -43,7 +43,7 @@ class AnalysisJobRepository:
         branch: str,
         model_used: str = "auto",
         force_refresh: bool = False,
-        user_id: Any | None = None,
+        user_id: UUID | None = None,
         is_private: bool = False,
     ) -> AnalysisJob:
         """
