@@ -156,6 +156,7 @@ async def stream_final_answer(
         answer = (
             f"`{repo_name}` 저장소에서 관련 코드를 찾았습니다.\n\n{bullets}\n\n"
             "상세 설명을 원하시면 서버에 `OPENAI_API_KEY`를 설정해 주세요."
+        )
     else:
         answer = (
             f"현재 `{repo_name}` 저장소에서 질문과 관련된 코드를 찾지 못했습니다. "
