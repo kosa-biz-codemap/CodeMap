@@ -258,3 +258,6 @@ mkcert.exe
 docs/basecode/
 docs/notion/
 package-lock.json
+
+# Agent rules and history
+.agents/
