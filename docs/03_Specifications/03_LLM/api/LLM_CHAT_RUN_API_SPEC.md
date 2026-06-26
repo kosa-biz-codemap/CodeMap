@@ -88,6 +88,8 @@ Authorization: Bearer {access_token}
 | --- | --- | --- | --- |
 | 400 | `INVALID_CHAT_REQUEST` | body 검증 | 질문 누락, mode 오류, 옵션 상한 초과 |
 | 401 | `UNAUTHORIZED` | 인증 검증 | 토큰 누락 또는 만료 |
+| 403 | `TEAM_ACCESS_DENIED` | 권한 검증 | Phase 2: 팀 공유 repo의 active member가 아님 |
+| 403 | `PRIVATE_RESOURCE_DENIED` | 권한 검증 | Phase 2: 다른 사용자의 private repo/chat 접근 |
 | 404 | `REPO_NOT_FOUND` | repo 조회 | 저장소 없음 |
 | 409 | `REPO_NOT_ANALYZED` | 사전 검증 | 분석/임베딩 미완료 |
 | 500 | `LLM_RUN_CREATE_FAILED` | run 생성 | run 생성 실패 |
@@ -227,5 +229,6 @@ sequenceDiagram
 | HTTP Status | Error Code | 발생 시점 | 설명 |
 | --- | --- | --- | --- |
 | 401 | `UNAUTHORIZED` | 인증 검증 | 토큰 누락 또는 만료 |
+| 403 | `TEAM_ACCESS_DENIED` | 권한 검증 | Phase 2: run 대상 repo 또는 thread에 접근 권한 없음 |
 | 404 | `LLM_RUN_NOT_FOUND` | run 조회 | run 없음 |
 | 500 | `AGENT_STREAM_FAILED` | stream 처리 | stream 초기화 또는 전송 실패 |

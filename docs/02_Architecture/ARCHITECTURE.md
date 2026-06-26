@@ -51,6 +51,7 @@ backend/app/
 │   └── workers/          #    search/dir/grep/read 단일 목적 worker adapters
 ├── tool/                 # 🔧 도구 도메인 (검색 알고리즘 + MCP I/O)
 ├── auth/                 # 🔐 인증 도메인
+├── team/                 # 👥 팀 workspace, 초대, 멤버십, 공유 범위 도메인 (Phase 2)
 ├── chat/                 # 💬 채팅 대화 도메인 (Final Answer 생성 및 스트리밍)
 │   ├── final_answer_agent.py # 최종 답변 정제 에이전트
 │   └── ...
@@ -78,6 +79,7 @@ backend/app/
   * `workers/`: `search_worker.py`, `dir_worker.py`, `grep_worker.py`, `read_worker.py`처럼 단일 목적 worker adapter만 둡니다.
   * `llm_client.py`: 모델 생성 factory만 담당하고, node 책임을 흡수하지 않습니다.
 * **`app/tool` (도구 도메인)**: RAG 검색 알고리즘(Hybrid Search, RRF), 파일 읽기, grep, 디렉토리 스캔과 MCP I/O 외부 인터페이스를 제공합니다.
+* **`app/team` (팀 workspace 도메인, Phase 2)**: 팀 생성, 초대/수락, 멤버십, 개인/private 기록과 팀 공유 기록의 visibility 정책을 담당합니다. LIST/REPO/CHAT 도메인은 `repo_id`만 신뢰하지 않고 `analysis_jobs.created_by_user_id`, `visibility`, `team_id`와 팀 멤버십을 함께 확인해야 합니다.
 
 ---
 

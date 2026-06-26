@@ -309,7 +309,7 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
 | `DOCS-GEN-F-205` | DOCS | GEN | Frontend | 주의/위험 소스코드 및 다음 행동 가이드 경고창 | 설정 파일 유출 위험이나 복잡도가 너무 높은 병목 코드 등 수정 시작 전 주의해야 할 위험 요소를 경고해 주는 모달/경고 카드 컴포넌트 |
 | `DOCS-GUARD-B-201` | DOCS | GUARD | Backend | 민감정보 마스킹 | API key, token, password pattern 탐지 시 원문 제거. report 생성 전 report에 민감정보 원문 미노출하도록 검증 |
 
-### 🥈 Phase 2: 고도화 추가 기능 (23개)
+### 🥈 Phase 2: 고도화 추가 기능 (26개)
 
 | 기능 ID | 카테고리 | 도메인(모듈) | 구분 | 기능명 | 상세 설명 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -318,6 +318,9 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
 | `PROJECT-LIST-F-201` | PROJECT |  | Frontend | UI Component | store에서 최근 job 목록 조회 |
 | `PROJECT-LIST-F-202` | PROJECT |  | Frontend | UI Component | job 상태 업데이트 |
 | `PROJECT-LIST-F-203` | PROJECT |  | Frontend | UI Component | 실패 job error 저장 |
+| `PROJECT-TEAM-B-101` | PROJECT | TEAM | Backend | 팀 생성 및 멤버십 관리 | 팀 workspace 생성, 멤버 목록, owner/member role 관리 |
+| `PROJECT-TEAM-B-102` | PROJECT | TEAM | Backend | 팀 초대/수락 API | 이메일 기반 초대 생성, pending/accepted/declined 상태 전이 |
+| `PROJECT-TEAM-B-203` | PROJECT | TEAM | Backend | 개인/팀 기록 권한 필터링 | private 분석/채팅은 생성자만, team 분석/채팅은 active member만 조회 가능하게 제한 |
 | `PROJECT-PIPELINE-B-201` | PROJECT |  | Backend | Service | 분석 단계 상태 관리 |
 | `PROJECT-PIPELINE-B-202` | PROJECT |  | Backend | Service | 비동기 깊은 분석 파이프라인 |
 | `PROJECT-PIPELINE-B-203` | PROJECT |  | Backend | Service | 파이프라인 외부 연동 |

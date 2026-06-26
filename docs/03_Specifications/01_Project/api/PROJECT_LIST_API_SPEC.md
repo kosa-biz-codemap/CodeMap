@@ -45,6 +45,8 @@
 | --- | --- | --- | --- | --- |
 | page | Integer | 선택 | 1 | 조회할 페이지 번호 |
 | limit | Integer | 선택 | 10 | 페이지당 반환할 이력 수 |
+| scope | String | 선택 | private | Phase 2: `private`, `team`, `all` |
+| teamId | UUID | 조건부 | null | Phase 2: `scope=team`일 때 조회할 팀 ID |
 
 **요청 예시**
 ```
@@ -73,12 +75,17 @@ Authorization: Bearer eyJhbGci...
 | data.jobs[].errorMessage | String | 구체적인 에러 메시지 (실패 시에만, 그 외 null) |
 | data.jobs[].createdAt | String (ISO 8601) | 작업 생성 시각 |
 | data.jobs[].updatedAt | String (ISO 8601) | 작업 최종 변경 시각 |
+| data.jobs[].visibility | String | Phase 2: `private` 또는 `team` |
+| data.jobs[].teamId | String(UUID) \| null | Phase 2: 팀 공유 분석이면 팀 ID |
+
+> Phase 2 권한 계약: `scope=private`는 현재 사용자가 생성한 private job만 반환합니다. `scope=team`은 `teamId`의 active member에게만 결과를 반환합니다. `scope=all`은 private 결과와 접근 가능한 team 결과를 합칩니다. 자세한 기준은 `PROJECT_TEAM_SPEC.md`와 `PROJECT_TEAM_API_SPEC.md`를 따릅니다.
 
 **에러 응답**
 
 | HTTP Status | Error Code | 설명 |
 | --- | --- | --- |
 | 401 | UNAUTHORIZED | 토큰이 누락되었거나 만료됨 |
+| 403 | TEAM_ACCESS_DENIED | Phase 2: 요청한 팀 기록에 접근 권한이 없음 |
 | 500 | DATABASE_ERROR | 데이터베이스 조회 중 예외 발생 |
 
 
@@ -248,5 +255,4 @@ PROJECT-LIST-API-002와 동일한 엔드포인트. 명세 작성 예정.
 ### 응답 (Response)
 
 > ⚠️ 명세 미작성 — 추후 업데이트 예정
-
 

@@ -18,6 +18,8 @@
 
 `Final Answer Agent`는 LangGraph 데이터 수집 그래프 내부가 아니라 `chat/final_answer_agent.py`에 위치합니다. 이 agent는 `CodeMapState.worker_results`와 `compact_context`를 입력으로 받아 사용자에게 보여줄 최종 답변만 생성합니다.
 
+Phase 2 팀/개인 기록 분리에서는 `LLM-CHAT`이 `repo_id`만으로 접근을 허용하지 않습니다. run 생성과 thread/message 조회 전에 `analysis_jobs.created_by_user_id`, `visibility`, `team_id` 및 active team membership을 확인해야 합니다. 상세 정책은 `PROJECT_TEAM_SPEC.md`를 따릅니다.
+
 ---
 
 ## 전체 기능 요약
@@ -29,6 +31,7 @@
 | LLM-CHAT-B-202 | Final Answer Agent | Backend | Phase 1 |
 | LLM-CHAT-B-203 | SSE 스트리밍 이벤트 제어 | Backend | Phase 1 |
 | LLM-CHAT-B-204 | run 상태 및 취소 제어 | Backend | Phase 1 |
+| LLM-CHAT-B-301 | chat thread/message visibility 권한 검사 | Backend | Phase 2 |
 | LLM-CHAT-F-201 | AI 응답 UI | Frontend | Phase 1 |
 | LLM-CHAT-F-202 | agent run 상태 표시 | Frontend | Phase 1 |
 | LLM-CHAT-F-203 | 관련 근거 파일 표시 | Frontend | Phase 1 |
@@ -84,6 +87,7 @@ User
 **구현 노트**
 
 - 저장소 분석/임베딩 완료 여부를 먼저 확인합니다.
+- Phase 2에서는 repo가 private job이면 생성자만, team job이면 active team member만 run을 생성할 수 있습니다.
 - 요청 body의 `question`, `mode`, `includeEvidence`, `maxToolCalls`, `timeoutSeconds`를 검증합니다.
 - 생성 직후 상태는 `queued` 또는 `running`으로 저장합니다.
 - `chat/service.py`가 LangGraph 실행을 비동기로 예약합니다.
@@ -119,6 +123,7 @@ await compiled_graph.ainvoke(
 - run 생성 응답에 `streamUrl`이 포함됩니다.
 - repo가 분석되지 않은 경우 `REPO_NOT_ANALYZED`를 반환합니다.
 - 질문이 비어 있거나 너무 긴 경우 `INVALID_CHAT_REQUEST`를 반환합니다.
+- 접근 권한이 없는 repo에 대해 403을 반환합니다.
 
 ### LLM-CHAT-B-201: chat/service 실행 관리자
 
