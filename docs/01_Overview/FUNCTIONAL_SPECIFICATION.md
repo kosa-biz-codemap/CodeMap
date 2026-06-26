@@ -233,6 +233,8 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
 
 | 기능 ID | 카테고리 | 도메인(모듈) | 구분 | 기능명 | 상세 설명 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| `PROJECT-AUTH-F-104` | PROJECT | AUTH | Frontend | Auth 실패 메시지 사용자 언어 정규화 | Issue #174: 회원가입/로그인 실패 시 HTTP status 대신 사용자 문구와 field-level 오류 표시 |
+| `PROJECT-AUTH-F-105` | PROJECT | AUTH | Frontend | 회원가입 실시간 검증 및 입력 피드백 | Issue #175: 이메일/비밀번호/확인 입력을 제출 전 검증하고 reduced-motion 대응 micro feedback 제공 |
 | `PROJECT-LIST-B-101` | PROJECT | LIST | Backend | 레포 목록 조회 API | `GET /api/list/analysis` 전체 분석 이력 목록 반환 |
 | `PROJECT-LIST-B-201` | PROJECT | LIST | Backend | 레포 파일 수 및 용량 사전 계산 서비스 | 클론 실행 전에 메타데이터 API 등을 통해 전체 파일 수와 용량을 사전 조회하고 계산하는 로직 |
 | `PROJECT-LIST-B-203` | PROJECT | LIST | Backend | 제한 용량 초과 예외 응답 및 경고 서비스 | 사전 검증 또는 클론 후 제한 파일 수(100개) 혹은 용량(100KB) 초과 시 예외 처리 및 에러 스펙 규격 응답 생성 |
@@ -309,7 +311,7 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
 | `DOCS-GEN-F-205` | DOCS | GEN | Frontend | 주의/위험 소스코드 및 다음 행동 가이드 경고창 | 설정 파일 유출 위험이나 복잡도가 너무 높은 병목 코드 등 수정 시작 전 주의해야 할 위험 요소를 경고해 주는 모달/경고 카드 컴포넌트 |
 | `DOCS-GUARD-B-201` | DOCS | GUARD | Backend | 민감정보 마스킹 | API key, token, password pattern 탐지 시 원문 제거. report 생성 전 report에 민감정보 원문 미노출하도록 검증 |
 
-### 🥈 Phase 2: 고도화 추가 기능 (46개)
+### 🥈 Phase 2: 고도화 추가 기능 (53개)
 
 | 기능 ID | 카테고리 | 도메인(모듈) | 구분 | 기능명 | 상세 설명 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -318,6 +320,9 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
 | `PROJECT-LIST-F-201` | PROJECT |  | Frontend | UI Component | store에서 최근 job 목록 조회 |
 | `PROJECT-LIST-F-202` | PROJECT |  | Frontend | UI Component | job 상태 업데이트 |
 | `PROJECT-LIST-F-203` | PROJECT |  | Frontend | UI Component | 실패 job error 저장 |
+| `PROJECT-LIST-F-205` | PROJECT | LIST | Frontend | History 검색/필터/재시도/삭제 UX | Issue #177: HistoryList 자체 검색, 상태/scope 필터, 실패 job 재시도, 삭제/숨김 action |
+| `PROJECT-CORE-F-201` | PROJECT | CORE | Frontend | 공통 API 에러 파서 | Issue #176: Auth/Analysis/Chat/List client 오류를 `{ status, code, message, field, retryable }`로 정규화 |
+| `PROJECT-CORE-F-202` | PROJECT | CORE | Frontend | 접근성/i18n/motion baseline | Issue #180: locale, html lang, aria-label, focus, reduced motion 기준 정리 |
 | `PROJECT-TEAM-B-101` | PROJECT | TEAM | Backend | 팀 생성 및 멤버십 관리 | 팀 workspace 생성, 멤버 목록, owner/member role 관리 |
 | `PROJECT-TEAM-B-102` | PROJECT | TEAM | Backend | 팀 초대/수락 API | 이메일 기반 초대 생성, pending/accepted/declined 상태 전이 |
 | `PROJECT-TEAM-B-203` | PROJECT | TEAM | Backend | 개인/팀 기록 권한 필터링 | private 분석/채팅은 생성자만, team 분석/채팅은 active member만 조회 가능하게 제한 |
@@ -329,6 +334,8 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
 | `PROJECT-ANALYZE-F-102` | PROJECT | ANALYZE | Frontend | 근거 라인 이동/하이라이트 | Issue #161: 근거 파일 클릭 시 해당 줄로 이동 |
 | `PROJECT-ANALYZE-F-103` | PROJECT | ANALYZE | Frontend | Repository/History 동시 접근 | Issue #162: Repository와 검색 기록을 같은 화면에서 접근 |
 | `PROJECT-ANALYZE-F-104` | PROJECT | ANALYZE | Frontend | 실제 report 기반 DashboardCharts | Issue #163: mock 차트를 실제 분석 데이터로 대체 |
+| `PROJECT-ANALYZE-F-105` | PROJECT | ANALYZE | Frontend | 리포트 표시와 RAG 인덱싱 상태 분리 | Issue #178: reportReady/ragReady/chatReady를 분리해 리포트 표시를 막지 않음 |
+| `PROJECT-ANALYZE-F-106` | PROJECT | ANALYZE | Frontend | 앱 네이티브 피드백/확인 UI | Issue #179: `window.alert`/`window.confirm`을 inline feedback, banner, confirm modal로 대체 |
 | `PROJECT-PIPELINE-B-201` | PROJECT |  | Backend | Service | 분석 단계 상태 관리 |
 | `PROJECT-PIPELINE-B-202` | PROJECT |  | Backend | Service | 비동기 깊은 분석 파이프라인 |
 | `PROJECT-PIPELINE-B-203` | PROJECT |  | Backend | Service | 파이프라인 외부 연동 |
@@ -354,6 +361,8 @@ MVP(최소 기능 제품) 구현을 위한 **Phase 1(핵심 기능)**과 이후 
 | `LLM-CHAT-F-213` | LLM | CHAT | Frontend | 검색 결과 없음 empty state | Issue #171: 근거 없음 단문 대신 안내 문구와 후속 액션 제공 |
 | `LLM-CHAT-B-212` | LLM | CHAT | Backend | Chat 404/409 사전조건 및 충돌 방어 | Issue #173: repo/run/session 관계 검증과 중복 submit 방어 |
 | `LLM-CHAT-F-214` | LLM | CHAT | Frontend | Chat 404/409 복구 UI | Issue #173: 404/409별 사용자 안내와 stale run 복구 액션 |
+| `LLM-COMMON-B-201` | LLM | COMMON | Backend | 모델 카탈로그/allowlist 제공 | Issue #181: 지원 모델, enabled 상태, disabledReason, default model 계약 제공 |
+| `LLM-COMMON-F-201` | LLM | COMMON | Frontend | 모델 선택 UI 카탈로그 동기화 | Issue #181: 프론트 선택지를 backend allowlist/catalog와 일치 |
 | `LLM-WORKER-B-206` | LLM | WORKER | Backend | Service | 허용된 외부 도구 worker 확장 |
 | `LLM-WORKER-B-207` | LLM | WORKER | Backend | Service | 선택형 reasoning worker 고도화 |
 | `DOCS-GEN-B-208` | DOCS |  | Backend | Service | 추천 작업 생성 |

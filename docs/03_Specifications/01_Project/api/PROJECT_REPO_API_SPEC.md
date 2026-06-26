@@ -1,6 +1,6 @@
 # PROJECT REPO API 명세서
 
-> **최종 업데이트**: 2026-06-19
+> **최종 업데이트**: 2026-06-26
 
 
 ## API 목록
@@ -173,8 +173,15 @@ job_id에 해당하는 분석 작업의 현재 상태(IN_PROGRESS / COMPLETED / 
 | data.branch | String | 분석 대상 브랜치 |
 | data.clonePath | String | 서버 내 임시 clone 경로 (참조용) |
 | data.status | String | 현재 상태: IN_PROGRESS / COMPLETED / FAILED |
+| data.reportReady | Boolean | Issue #178: 분석 리포트 표시 가능 여부 |
+| data.ragReady | Boolean | Issue #178: RAG 임베딩/인덱싱 완료 여부 |
+| data.chatReady | Boolean | Issue #178: Chat run 생성 가능 여부 |
+| data.indexingStatus | String | Issue #178: `pending`, `running`, `completed`, `failed` |
+| data.indexingMessage | String \| null | Issue #178: RAG/Chat 준비 상태 사용자 안내 문구 |
 | data.createdAt | String (ISO 8601) | 작업 생성 시각 |
 | data.updatedAt | String (ISO 8601) | 마지막 상태 변경 시각 |
+
+> Issue #178: `status=COMPLETED`는 report 생성 완료를 의미할 수 있으므로, Chat 사용 가능 여부는 `ragReady`와 `chatReady`를 별도로 확인합니다. `reportReady=true`, `ragReady=false`인 경우 `/analyze`는 리포트를 표시하고 Chat 영역에 인덱싱 중 상태를 보여줍니다.
 
 **에러 응답**
 

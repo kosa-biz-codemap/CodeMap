@@ -33,6 +33,21 @@
 | 500 | `CLONE_FAILED` | Clone 실행 | clone 중 subprocess 오류 발생 |
 | 500 | `WORKSPACE_CLEANUP_FAILED` | cleanup 단계 | 임시 디렉토리 삭제 실패 (내부 알람 발송) |
 
+## 1A. PROJECT-AUTH-API (인증)
+`POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`
+
+| HTTP Status | Error Code | 발생 시점 | 설명 |
+| :--- | :--- | :--- | :--- |
+| 400 | `INVALID_EMAIL` | 회원가입 입력 검증 | 이메일 형식이 올바르지 않음 |
+| 400 | `PASSWORD_TOO_SHORT` | 회원가입 입력 검증 | 비밀번호가 최소 길이를 만족하지 않음 |
+| 400 | `PASSWORD_RULE_VIOLATION` | 회원가입 입력 검증 | 비밀번호가 서비스 비밀번호 규칙을 만족하지 않음 |
+| 401 | `INVALID_CREDENTIALS` | 로그인 인증 | 이메일 또는 비밀번호가 일치하지 않음 |
+| 401 | `INVALID_REFRESH_TOKEN` | 토큰 갱신 | Refresh Token 만료 또는 위조 |
+| 404 | `USER_NOT_FOUND` | 로그인 인증 | 존재하지 않는 이메일 |
+| 409 | `EMAIL_ALREADY_EXISTS` | 회원가입 중복 검사 | 이미 등록된 이메일 |
+
+Issue #174, #175: Auth UI는 위 오류를 HTTP status 중심 문구가 아니라 사용자 언어와 field-level 피드백으로 표시합니다. `error.field`가 `email`, `password`, `confirmPassword` 중 하나이면 해당 입력칸에 표시하고, 필드가 없으면 form 상단 전역 오류로 표시합니다.
+
 ## 2. PROJECT-REPO-API-003 (작업 상태 조회)
 `GET /api/repo/analysis/{job_id}`
 
@@ -146,8 +161,11 @@
 | 400 | `INVALID_JOB_ID` | Path 검증 | job_id가 UUID 형식이 아님 |
 | 400 | `INVALID_STATUS` | 상태 저장 | 허용되지 않는 상태 값 |
 | 400 | `INVALID_PROGRESS` | 상태 저장 | progress가 0-100 범위를 벗어남 |
+| 400 | `INVALID_HISTORY_FILTER` | 이력 조회 | 허용되지 않은 검색/필터/정렬 조건 |
 | 401 | `UNAUTHORIZED` | 인증 검증 | 토큰 누락 또는 만료 |
 | 404 | `JOB_NOT_FOUND` | DB 조회 | 분석 작업 없음 |
+| 409 | `JOB_NOT_RETRYABLE` | 재시도 요청 | failed 상태가 아니거나 재시도 가능한 오류가 아님 |
+| 409 | `JOB_DELETE_CONFLICT` | 삭제/숨김 요청 | running job 등 삭제할 수 없는 상태 |
 | 413 | `FILE_LIMIT_EXCEEDED` | 제한 검증 | 파일 수 또는 파일 크기 제한 초과 |
 | 422 | `REPO_LIMIT_EXCEEDED` | 제한 검증 | 저장소 규모가 분석 허용 범위 초과 |
 | 500 | `VALIDATION_FAILED` | 사전 검증 | 파일 수 또는 용량 계산 실패 |
@@ -185,7 +203,16 @@
 | 500 | `PDF_RENDER_FAILED` | PDF 변환 | HTML-PDF 렌더링 실패 |
 | 500 | `SHARE_FAILED` | 외부 전송 | 이메일 또는 Slack 발송 실패 |
 
-## 16. 클라이언트 처리 원칙
+## 16. LLM-MODEL-CATALOG API
+`GET /api/llm/models` 또는 동일 책임의 정적/공유 모델 카탈로그 계약
+
+| HTTP Status | Error Code | 발생 시점 | 설명 |
+| :--- | :--- | :--- | :--- |
+| 400 | `UNSUPPORTED_MODEL` | 모델 선택 검증 | 요청한 model id가 backend allowlist에 없음 |
+| 422 | `MODEL_DISABLED` | 모델 선택 검증 | 카탈로그에는 있으나 현재 환경에서 비활성화된 모델 |
+| 500 | `MODEL_CATALOG_UNAVAILABLE` | 카탈로그 조회 | 모델 카탈로그를 불러올 수 없음 |
+
+## 17. 클라이언트 처리 원칙
 
 - `400`, `403`, `404`, `413`, `422`: 요청 또는 상태를 수정하기 전 자동 재시도 금지
 - `401`: 재인증 후 새 요청
@@ -194,3 +221,6 @@
 - `500`: `error.retryable`이 true인 경우에만 제한적으로 재시도
 - SSE 연결 후 오류는 HTTP status가 아니라 `event: error`로 처리
 - WebSocket 종료는 close code와 최종 이벤트를 함께 기록
+- Issue #176: frontend API client는 공통 `parseApiError` 규칙으로 `{ status, code, message, field, retryable, detail }`을 정규화한 뒤 UI에 전달합니다.
+- Issue #176: `error.detail`이 객체인 경우에도 UI에 `[object Object]`를 직접 표시하지 않고, 사용자 메시지는 최상위 `message` 또는 error code mapping을 우선합니다.
+- Issue #180: icon-only control, modal, toast, banner가 오류를 표시할 때 accessible name, focus 이동, reduced motion 설정을 함께 만족해야 합니다.
