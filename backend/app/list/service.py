@@ -109,9 +109,9 @@ class ListService:
         )
         return AnalysisJobStatusUpdateResult(job=job)
 
-    async def delete_job(self, job_id: UUID) -> bool:
+    async def delete_job(self, job_id: UUID, user_id: UUID) -> bool:
         """분석 이력을 삭제합니다."""
-        return await self.repository.delete_job(job_id)
+        return await self.repository.delete_job(job_id, user_id)
 
     def _to_db_status(self, status: str) -> str:
         """API 상태값을 DB 저장 상태값으로 변환합니다."""
