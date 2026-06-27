@@ -33,13 +33,14 @@ export function CodePreviewPanel({ jobId, filePath, onClose }: CodePreviewPanelP
     if (!filePath) return;
 
     abortRef.current?.abort();
-    abortRef.current = new AbortController();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     setLoadState("loading");
     setContent("");
     setErrorMsg("");
 
-    fetchFileContent(jobId, filePath)
+    fetchFileContent(jobId, filePath, controller.signal)
       .then((res) => {
         setContent(res.data.content);
         setLanguage(res.data.language);
@@ -48,12 +49,13 @@ export function CodePreviewPanel({ jobId, filePath, onClose }: CodePreviewPanelP
         setLoadState("success");
       })
       .catch((err: Error) => {
+        if (err.name === "AbortError") return;
         setErrorMsg(err.message);
         setLoadState("error");
       });
 
     return () => {
-      abortRef.current?.abort();
+      controller.abort();
     };
   }, [jobId, filePath]);
 

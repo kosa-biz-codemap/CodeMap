@@ -145,6 +145,7 @@ export function buildWsUrl(wsPath: string): string {
 export async function fetchFileContent(
   jobId: string,
   path: string,
+  signal?: AbortSignal,
 ): Promise<{
   data: {
     path: string;
@@ -158,7 +159,7 @@ export async function fetchFileContent(
     apiPath(
       `/repo/analysis/${encodeURIComponent(jobId)}/files/content?path=${encodeURIComponent(path)}`,
     ),
-    { headers: { Authorization: getAuthorizationHeader() } },
+    { headers: { Authorization: getAuthorizationHeader() }, signal },
   );
 
   if (!resp.ok) {
