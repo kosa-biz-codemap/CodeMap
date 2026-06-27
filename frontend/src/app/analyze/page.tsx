@@ -20,12 +20,16 @@ import { HistoryList } from "@/features/history/components/HistoryList";
 import { WorkspaceReport } from "@/features/analysis/components/WorkspaceReport";
 import { FileTree } from "@/features/chat/components/FileTree";
 import { ChatInterface } from "@/features/chat/components/ChatInterface";
+import { CodePreviewPanel } from "@/features/analysis/components/CodePreviewPanel";
+import { SymbolsPanel } from "@/features/analysis/components/SymbolsPanel";
 import { demoWorkspaceReport } from "@/features/analysis/data/demoWorkspace";
 import { getRagIndexBanner } from "@/features/analysis/utils/ragIndexStatus.mjs";
 import { useAnalysisJob } from "@/features/analysis/hooks/useAnalysisJob";
 import { WorkspaceSelector, type WorkspaceScope } from "@/features/team/components/WorkspaceSelector";
+import { AccountFooter } from "@/features/workspace/components/AccountFooter";
 import { useConfirm } from "@/common/hooks/useConfirm";
 import { useApp } from "@/common/contexts/AppContext";
+import type { FileSymbol } from "@/common/types/contracts";
 
 function AnalyzeWorkspace() {
   const { theme, locale } = useApp();
@@ -37,6 +41,8 @@ function AnalyzeWorkspace() {
   const queryJobId = searchParams.get("job");
   const initialPath = searchParams.get("path") || undefined;
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const [selectedLine, setSelectedLine] = useState<number | null>(null);
+  const [previewSymbols, setPreviewSymbols] = useState<FileSymbol[]>([]);
   const [chatPrompt, setChatPrompt] = useState("");
   const [chatPromptNonce, setChatPromptNonce] = useState(0);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
@@ -128,17 +134,16 @@ function AnalyzeWorkspace() {
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <aside className={`hidden w-[290px] shrink-0 border-r lg:block ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
-          {showNewAnalysis || !report ? (
-            <div className={`h-full overflow-y-auto p-3 ${isDark ? "bg-zinc-950" : "bg-white"}`}>
-              {report && <button onClick={() => setShowNewAnalysis(false)} className={`mb-3 inline-flex items-center gap-1 text-[10px] font-semibold transition ${isDark ? "text-zinc-500 hover:text-white" : "text-zinc-500 hover:text-zinc-900"}`}><ChevronLeft className="size-3" /> {isKo ? "현재 프로젝트로 돌아가기" : "Back to current project"}</button>}
-              {workspaceSelector}
+        <aside className={`hidden w-[290px] shrink-0 flex-col border-r lg:flex ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
+          <div className={`min-h-0 flex-1 overflow-y-auto p-3 ${isDark ? "bg-zinc-950" : "bg-white"}`}>
+            {report && showNewAnalysis && <button onClick={() => setShowNewAnalysis(false)} className={`mb-3 inline-flex items-center gap-1 text-[10px] font-semibold transition ${isDark ? "text-zinc-500 hover:text-white" : "text-zinc-500 hover:text-zinc-900"}`}><ChevronLeft className="size-3" /> {isKo ? "현재 프로젝트로 돌아가기" : "Back to current project"}</button>}
+            {workspaceSelector}
+            {(showNewAnalysis || !report) && (
               <RepoInput onSubmit={submit} disabled={status === "running"} initialPath={initialPath} initialMode="github" visibility={workspaceScope} selectedTeamId={selectedTeamId} selectedTeamName={selectedTeamName} />
-              <div className="mt-3"><HistoryList onSelect={selectHistory} activeJobId={jobId} scope={workspaceScope === "team" ? "team" : "private"} teamId={workspaceScope === "team" ? selectedTeamId : null} /></div>
-            </div>
-          ) : (
-            <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={setSelectedFile} className="border-r-0" />
-          )}
+            )}
+            <div className="mt-3"><HistoryList onSelect={selectHistory} activeJobId={jobId} scope={workspaceScope === "team" ? "team" : "private"} teamId={workspaceScope === "team" ? selectedTeamId : null} teamName={workspaceScope === "team" ? selectedTeamName : null} /></div>
+          </div>
+          <AccountFooter isDark={isDark} isKo={isKo} />
         </aside>
 
         <section className={`min-w-0 flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6 ${isDark ? "bg-[#0b0b0e]" : "bg-zinc-50"}`}>
@@ -185,7 +190,43 @@ function AnalyzeWorkspace() {
             </div>
           )}
 
-          {status === "completed" && report && <WorkspaceReport report={report} preview={preview} onAsk={ask} onFileSelect={setSelectedFile} />}
+          {status === "completed" && report && !selectedFile && (
+            <WorkspaceReport report={report} preview={preview} onAsk={ask} onFileSelect={(f) => { setSelectedFile(f); setSelectedLine(null); setPreviewSymbols([]); }} />
+          )}
+
+          {status === "completed" && report && selectedFile && chatRepoId && (
+            <div className="flex h-full min-h-0 gap-3">
+              <div className="hidden w-[240px] shrink-0 lg:block">
+                <FileTree
+                  repoName={repoName}
+                  files={report.files}
+                  entrypoints={report.entrypoints}
+                  activeFile={selectedFile}
+                  onFileSelect={(f) => { setSelectedFile(f); setSelectedLine(null); setPreviewSymbols([]); }}
+                  className="rounded-lg border"
+                />
+              </div>
+              <div className="min-w-0 flex-1">
+                <CodePreviewPanel
+                  repoId={chatRepoId}
+                  path={selectedFile}
+                  highlightLine={selectedLine}
+                  isDark={isDark}
+                  onClose={() => { setSelectedFile(null); setSelectedLine(null); setPreviewSymbols([]); }}
+                  onContentLoaded={(c) => setPreviewSymbols(c.symbols)}
+                />
+              </div>
+              {previewSymbols.length > 0 && (
+                <div className="hidden w-[220px] shrink-0 xl:block">
+                  <SymbolsPanel
+                    symbols={previewSymbols}
+                    isDark={isDark}
+                    onSymbolClick={(line) => setSelectedLine(line)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         <aside className={`hidden w-[400px] shrink-0 border-l xl:block ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
@@ -199,7 +240,7 @@ function AnalyzeWorkspace() {
             initialPrompt={chatPrompt}
             initialPromptKey={chatPromptNonce}
             onThreadChange={setThreadId}
-            onReferenceClick={(file) => setSelectedFile(file)}
+            onReferenceClick={(file, line) => { setSelectedFile(file); setSelectedLine(line ?? null); }}
             onClearContextFile={() => setSelectedFile(null)}
             expandHref={fullChatUrl}
           />
@@ -209,7 +250,7 @@ function AnalyzeWorkspace() {
       {mobileChatOpen && (
         <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm xl:hidden" onMouseDown={(event) => { if (event.target === event.currentTarget) setMobileChatOpen(false); }}>
           <div className="absolute inset-y-0 right-0 w-full max-w-[430px] border-l border-zinc-800 bg-zinc-950 shadow-2xl">
-            <ChatInterface repoId={chatRepoId} repoName={repoName} threadId={threadId} compact preview={preview} contextFile={selectedFile} initialPrompt={chatPrompt} initialPromptKey={chatPromptNonce} onThreadChange={setThreadId} onReferenceClick={(file) => setSelectedFile(file)} onClearContextFile={() => setSelectedFile(null)} expandHref={fullChatUrl} onClose={() => setMobileChatOpen(false)} />
+            <ChatInterface repoId={chatRepoId} repoName={repoName} threadId={threadId} compact preview={preview} contextFile={selectedFile} initialPrompt={chatPrompt} initialPromptKey={chatPromptNonce} onThreadChange={setThreadId} onReferenceClick={(file, line) => { setSelectedFile(file); setSelectedLine(line ?? null); }} onClearContextFile={() => setSelectedFile(null)} expandHref={fullChatUrl} onClose={() => setMobileChatOpen(false)} />
           </div>
         </div>
       )}
@@ -222,17 +263,21 @@ function AnalyzeWorkspace() {
               <button onClick={() => setMobileSidebarOpen(false)} className={`rounded-lg p-1.5 transition ${isDark ? "text-zinc-500 hover:bg-zinc-900 hover:text-white" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"}`}><X className="size-4" /></button>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
-              {showNewAnalysis || !report ? (
-                <div className="p-3">
-                  {report && <button onClick={() => setShowNewAnalysis(false)} className={`mb-3 inline-flex items-center gap-1 text-[10px] font-semibold transition ${isDark ? "text-zinc-500 hover:text-white" : "text-zinc-500 hover:text-zinc-900"}`}><ChevronLeft className="size-3" /> {isKo ? "현재 프로젝트로 돌아가기" : "Back to current project"}</button>}
-                  {workspaceSelector}
+              <div className="p-3">
+                {report && showNewAnalysis && <button onClick={() => setShowNewAnalysis(false)} className={`mb-3 inline-flex items-center gap-1 text-[10px] font-semibold transition ${isDark ? "text-zinc-500 hover:text-white" : "text-zinc-500 hover:text-zinc-900"}`}><ChevronLeft className="size-3" /> {isKo ? "현재 프로젝트로 돌아가기" : "Back to current project"}</button>}
+                {workspaceSelector}
+                {(showNewAnalysis || !report) && (
                   <RepoInput onSubmit={(input) => { submit(input); setMobileSidebarOpen(false); }} disabled={status === "running"} initialPath={initialPath} initialMode="github" visibility={workspaceScope} selectedTeamId={selectedTeamId} selectedTeamName={selectedTeamName} />
-                  <div className="mt-3"><HistoryList onSelect={(id) => { selectHistory(id); setMobileSidebarOpen(false); }} activeJobId={jobId} scope={workspaceScope === "team" ? "team" : "private"} teamId={workspaceScope === "team" ? selectedTeamId : null} /></div>
+                )}
+                <div className="mt-3"><HistoryList onSelect={(id) => { selectHistory(id); setMobileSidebarOpen(false); }} activeJobId={jobId} scope={workspaceScope === "team" ? "team" : "private"} teamId={workspaceScope === "team" ? selectedTeamId : null} teamName={workspaceScope === "team" ? selectedTeamName : null} /></div>
+              </div>
+              {report && selectedFile && (
+                <div className={`border-t p-3 ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
+                  <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={(f) => { setSelectedFile(f); setSelectedLine(null); setPreviewSymbols([]); setMobileSidebarOpen(false); }} className="rounded-lg border" />
                 </div>
-              ) : (
-                <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={(f) => { setSelectedFile(f); setMobileSidebarOpen(false); }} className="border-r-0" />
               )}
             </div>
+            <AccountFooter isDark={isDark} isKo={isKo} />
           </div>
         </div>
       )}

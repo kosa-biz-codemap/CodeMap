@@ -290,6 +290,21 @@ export interface TeamInviteItem {
   expiresAt: string;
 }
 
+export interface TeamMemberInfo {
+  userId: string;
+  email: string;
+  role: "owner" | "member" | string;
+  status: string;
+}
+
+export interface SentInvite {
+  inviteId: string;
+  email: string;
+  status: string;
+  expiresAt: string;
+  invitedByEmail?: string | null;
+}
+
 export interface GuardrailRegexBlock {
   original_text: string;
   rule_id: string;
@@ -438,6 +453,24 @@ export interface CodeReference {
   snippet?: string;
   language?: string;
   score?: number;
+}
+
+
+// ── File content & symbols types ─────────────────────────────────────────────
+
+export interface FileSymbol {
+  name: string;
+  kind: 'function' | 'class' | 'module' | 'other' | string;
+  startLine: number;
+  endLine: number;
+}
+
+export interface FileContent {
+  path: string;
+  language: string | null;
+  lineCount: number;
+  content: string;
+  symbols: FileSymbol[];
 }
 
 

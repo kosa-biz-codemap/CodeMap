@@ -101,7 +101,7 @@ class EmbedRepository:
                 "type": file_type_value,
                 "depth": file.depth,
                 "chunk_index": -1,              # -1: 대표 파일 노드 구분자
-                "content": None,
+                "content": file.content,
                 "summary": file.summary,
                 "embedding": None,              # 파일 대표 노드는 임베딩 없음
                 # parse 단계 metadata(is_config 등)를 보존한 채 파일 노드 표식 및 메타데이터를 덧붙인다.
@@ -116,7 +116,7 @@ class EmbedRepository:
             })
 
         if file_node_rows:
-            await self._upsert_nodes(file_node_rows, conflict_update_cols=["summary", "language", "file_metadata"])
+            await self._upsert_nodes(file_node_rows, conflict_update_cols=["content", "summary", "language", "file_metadata"])
             logger.info(
                 "[임베딩 저장] job=%s | 파일 대표 노드 %d개 upsert 완료",
                 job_id, len(file_node_rows),
