@@ -89,6 +89,16 @@ def _context_from_worker_results(worker_results: list[dict]) -> dict:
     return {"groupedByFile": grouped_by_file}
 
 
+def _has_grounded_evidence(compact_context: dict) -> bool:
+    """Return True only when evaluator did not mark the gathered evidence insufficient."""
+    if not compact_context.get("groupedByFile"):
+        return False
+    decision = compact_context.get("evaluatorDecision") or compact_context.get("evaluator_decision")
+    if isinstance(decision, dict) and decision.get("sufficient") is False:
+        return False
+    return True
+
+
 # ──────────────────────────────────────────────
 # 최종 답변 스트리밍 함수
 # ──────────────────────────────────────────────
@@ -109,7 +119,7 @@ async def stream_final_answer(
     if not compact_context.get("groupedByFile") and worker_results:
         compact_context = _context_from_worker_results(worker_results)
         
-    has_evidence = bool(compact_context.get("groupedByFile"))
+    has_evidence = _has_grounded_evidence(compact_context)
     evidence_rule = _PARTIAL_EVIDENCE_RULE if has_evidence else _NO_EVIDENCE_RULE
     
     context_text = _build_context(compact_context)
