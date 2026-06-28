@@ -278,3 +278,5 @@ export async function declineInvite(inviteId: string): Promise<void> {
     throw new Error(errData?.message || errData?.detail || `Failed to decline invite: ${resp.status}`);
   }
 }
+=======
+>>>>>>> origin/main

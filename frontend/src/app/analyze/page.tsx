@@ -137,7 +137,14 @@ function AnalyzeWorkspace() {
               <div className="mt-3"><HistoryList onSelect={selectHistory} activeJobId={jobId} scope={workspaceScope === "team" ? "team" : "private"} teamId={workspaceScope === "team" ? selectedTeamId : null} /></div>
             </div>
           ) : (
-            <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={setSelectedFile} className="border-r-0" />
+            <div className={`flex h-full min-h-0 flex-col ${isDark ? "bg-zinc-950" : "bg-white"}`}>
+              <div className="min-h-0 flex-1">
+                <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={setSelectedFile} className="border-r-0" />
+              </div>
+              <div className={`max-h-[42%] shrink-0 overflow-y-auto border-t p-3 ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
+                <HistoryList onSelect={selectHistory} activeJobId={jobId} />
+              </div>
+            </div>
           )}
         </aside>
 
@@ -230,7 +237,14 @@ function AnalyzeWorkspace() {
                   <div className="mt-3"><HistoryList onSelect={(id) => { selectHistory(id); setMobileSidebarOpen(false); }} activeJobId={jobId} scope={workspaceScope === "team" ? "team" : "private"} teamId={workspaceScope === "team" ? selectedTeamId : null} /></div>
                 </div>
               ) : (
-                <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={(f) => { setSelectedFile(f); setMobileSidebarOpen(false); }} className="border-r-0" />
+                <div className="flex h-full min-h-0 flex-col">
+                  <div className="min-h-0 flex-1">
+                    <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={(f) => { setSelectedFile(f); setMobileSidebarOpen(false); }} className="border-r-0" />
+                  </div>
+                  <div className={`max-h-[42%] shrink-0 overflow-y-auto border-t p-3 ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
+                    <HistoryList onSelect={(id) => { selectHistory(id); setMobileSidebarOpen(false); }} activeJobId={jobId} />
+                  </div>
+                </div>
               )}
             </div>
           </div>
