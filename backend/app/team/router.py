@@ -378,7 +378,7 @@ async def list_team_invites(
 ):
     current_user_id = _current_user_id(current_user)
     await _require_member(db, team_id, current_user_id, owner_only=True)
-    
+
     result = await db.execute(
         select(TeamInvite, Team, User)
         .join(Team, Team.id == TeamInvite.team_id)
@@ -386,7 +386,7 @@ async def list_team_invites(
         .where(TeamInvite.team_id == team_id, TeamInvite.status == "pending")
         .order_by(TeamInvite.created_at.desc())
     )
-    
+
     now = datetime.now(timezone.utc)
     invites = []
     for invite, team, inviter in result.all():
@@ -417,13 +417,13 @@ async def cancel_invite(
 ):
     current_user_id = _current_user_id(current_user)
     await _require_member(db, team_id, current_user_id, owner_only=True)
-    
+
     result = await db.execute(select(TeamInvite).where(TeamInvite.id == invite_id, TeamInvite.team_id == team_id))
     invite = result.scalar_one_or_none()
-    
+
     if not invite or invite.status != "pending":
         raise HTTPException(status_code=404, detail="INVITE_NOT_FOUND_OR_NOT_PENDING")
-        
+
     invite.status = "cancelled"
     await db.commit()
     return {"message": "cancelled", "inviteId": invite.id}
