@@ -350,6 +350,7 @@ class DownloadRegressionTests(unittest.TestCase):
         from fastapi import FastAPI
         from app.gen.router import router
         from app.infra.database import get_db
+        from app.infra.auth import get_current_user
         from app.common.exceptions import register_exception_handlers
         from app.gen.schemas import DocGetMarkdownData
 
@@ -358,6 +359,8 @@ class DownloadRegressionTests(unittest.TestCase):
         self.app.include_router(router)
         self.mock_db = MagicMock()
         self.app.dependency_overrides[get_db] = lambda: self.mock_db
+        ## GET /{repo_id}에 인증이 추가되어 get_current_user를 mock으로 대체한다.
+        self.app.dependency_overrides[get_current_user] = lambda: {"id": "test-user"}
         self.client = TestClient(self.app, raise_server_exceptions=False)
 
         self._md_data = DocGetMarkdownData(
