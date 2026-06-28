@@ -68,7 +68,11 @@ export function CodePreviewPanel({
   useEffect(() => {
     if (loadState !== "success") return;
     if (!highlightLine) return;
-    highlightRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    highlightRowRef.current?.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "center",
+    });
   }, [loadState, highlightLine]);
 
   const handleCopy = () => {
@@ -86,7 +90,7 @@ export function CodePreviewPanel({
   };
 
   const fileName = filePath.split("/").pop() ?? filePath;
-  const codeLines = content.split("\n");
+  const codeLines = content.endsWith("\n") ? content.slice(0, -1).split("\n") : content.split("\n");
 
   return (
     <div
@@ -121,6 +125,7 @@ export function CodePreviewPanel({
             type="button"
             onClick={handleCopy}
             title="코드 복사"
+            aria-label="코드 복사"
             className={`shrink-0 rounded p-1 transition ${
               isDark
                 ? "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
@@ -134,6 +139,7 @@ export function CodePreviewPanel({
           type="button"
           onClick={onClose}
           title="닫기"
+          aria-label="코드 프리뷰 닫기"
           className={`shrink-0 rounded p-1 transition ${
             isDark
               ? "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
@@ -160,7 +166,7 @@ export function CodePreviewPanel({
       <div className="min-h-0 flex-1 overflow-auto">
         {loadState === "loading" && (
           <div className="flex h-full items-center justify-center">
-            <div className="size-5 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+            <div className="size-5 rounded-full border-2 border-blue-400 border-t-transparent motion-safe:animate-spin" />
           </div>
         )}
 
@@ -174,7 +180,7 @@ export function CodePreviewPanel({
         )}
 
         {loadState === "success" && (
-          <table className="w-full border-collapse">
+          <table className="w-full min-w-max border-collapse">
             <tbody>
               {codeLines.map((lineText, idx) => {
                 const highlighted = isHighlighted(idx);
@@ -220,6 +226,7 @@ export function CodePreviewPanel({
                             ? "text-zinc-300"
                             : "text-zinc-800"
                       }`}
+                      style={{ width: "100%" }}
                     >
                       {lineText}
                     </td>
