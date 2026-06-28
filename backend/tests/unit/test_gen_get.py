@@ -97,6 +97,8 @@ class DocGetJsonSchemaTests(unittest.TestCase):
 
     def _make_data(self, **kwargs):
         defaults = {
+            "repo_id": _REPO_ID,
+            "repo_name": "sample-repo",
             "generated_at": _NOW,
             "version": 1,
         }
@@ -104,12 +106,14 @@ class DocGetJsonSchemaTests(unittest.TestCase):
         return DocGetJsonData(**defaults)
 
     def test_camel_alias_serialization(self):
-        """readingOrder, dangerFiles, coreFlow, folderSummaries, generatedAt가 camelCase여야 한다."""
+        """repoId, repoName, readingOrder, dangerFiles, coreFlow, folderSummaries, generatedAt가 camelCase여야 한다."""
         data = self._make_data(
             reading_order=[{"rank": 1, "path": "README.md"}],
             danger_files=[{"path": "config.py"}],
         )
         dumped = data.model_dump(by_alias=True)
+        self.assertIn("repoId", dumped)
+        self.assertIn("repoName", dumped)
         self.assertIn("readingOrder", dumped)
         self.assertIn("dangerFiles", dumped)
         self.assertIn("coreFlow", dumped)
@@ -401,6 +405,8 @@ class GenGetRouterTests(unittest.TestCase):
 
     def _make_json_data(self):
         return DocGetJsonData(
+            repo_id=_REPO_ID,
+            repo_name="sample-repo",
             generated_at=_NOW,
             version=1,
             stack=["Python"],
@@ -433,6 +439,8 @@ class GenGetRouterTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
         self.assertEqual(body["code"], 200)
+        self.assertIn("repoId", body["data"])
+        self.assertIn("repoName", body["data"])
         self.assertIn("stack", body["data"])
         self.assertIn("readingOrder", body["data"])
 
