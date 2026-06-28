@@ -12,8 +12,9 @@ import type {
   PreValidateRequest,
   PreValidateResponse,
 } from "@/common/types/contracts";
-import { parseApiError } from "@/common/api/error";
 import { getAccessToken } from "@/features/auth/utils/tokenMemory";
+import { parseApiError } from "@/common/api/error";
+
 
 const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/$/, "");
 const BASE_URL = `${BASE_PATH}/api`;
@@ -129,7 +130,19 @@ export function buildSseUrl(jobId: string): string {
 }
 
 /**
- * GET /api/repo/analysis/{jobId}/files/content — 파일 내용 조회
+ * Build WebSocket URL for real-time progress
+ * WS /ws/progress/{jobId}
+ */
+export function buildWsUrl(wsPath: string): string {
+  if (/^wss?:\/\//i.test(wsPath)) return wsPath;
+  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const host = window.location.host;
+  const path = wsPath.startsWith("/") ? wsPath : `/${wsPath}`;
+  return `${proto}//${host}${BASE_PATH}${path}`;
+}
+
+/**
+ * GET /api/repo/analysis/{jobId}/files/content — job 기준 파일 컨텐츠 조회
  */
 export async function fetchFileContent(
   jobId: string,
@@ -148,27 +161,14 @@ export async function fetchFileContent(
     apiPath(
       `/repo/analysis/${encodeURIComponent(jobId)}/files/content?path=${encodeURIComponent(path)}`,
     ),
-    {
-      headers: { Authorization: getAuthorizationHeader() },
-      signal,
-    },
+    { headers: { Authorization: getAuthorizationHeader() }, signal },
   );
+
   if (!resp.ok) {
     throw await parseApiError(resp);
   }
-  return await resp.json();
-}
 
-/**
- * Build WebSocket URL for real-time progress
- * WS /ws/progress/{jobId}
- */
-export function buildWsUrl(wsPath: string): string {
-  if (/^wss?:\/\//i.test(wsPath)) return wsPath;
-  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = window.location.host;
-  const path = wsPath.startsWith("/") ? wsPath : `/${wsPath}`;
-  return `${proto}//${host}${BASE_PATH}${path}`;
+  return await resp.json();
 }
 
 /**

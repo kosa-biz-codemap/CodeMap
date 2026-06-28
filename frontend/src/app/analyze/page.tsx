@@ -354,31 +354,36 @@ function AnalyzeWorkspace() {
             </div>
           )}
 
-          {status === "completed" && report && !selectedFile && (
-            <WorkspaceReport
-              report={report}
-              preview={preview}
-              onAsk={ask}
-              onFileSelect={(file) => {
-                setSelectedFile(file);
-                setSelectedLine(null);
-                setSelectedLineEnd(null);
-              }}
-            />
-          )}
-
-          {status === "completed" && report && selectedFile && jobId && (
-            <CodePreviewPanel
-              jobId={jobId}
-              filePath={selectedFile}
-              highlightLine={selectedLine}
-              highlightLineEnd={selectedLineEnd}
-              onClose={() => {
-                setSelectedFile(null);
-                setSelectedLine(null);
-                setSelectedLineEnd(null);
-              }}
-            />
+          {status === "completed" && report && (
+            <div className={`flex min-h-0 gap-0 ${selectedFile ? "h-full" : ""}`}>
+              <div className={`min-w-0 ${selectedFile ? "hidden xl:block xl:flex-1" : "flex-1"}`}>
+                <WorkspaceReport
+                  report={report}
+                  preview={preview}
+                  onAsk={ask}
+                  onFileSelect={(file) => {
+                    setSelectedFile(file);
+                    setSelectedLine(null);
+                    setSelectedLineEnd(null);
+                  }}
+                />
+              </div>
+              {selectedFile && jobId && (
+                <div className="w-full flex-1 xl:max-w-[600px]">
+                  <CodePreviewPanel
+                    jobId={jobId}
+                    filePath={selectedFile}
+                    highlightLine={selectedLine}
+                    highlightLineEnd={selectedLineEnd}
+                    onClose={() => {
+                      setSelectedFile(null);
+                      setSelectedLine(null);
+                      setSelectedLineEnd(null);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           )}
         </section>
 
