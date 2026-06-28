@@ -17,6 +17,7 @@ from sqlalchemy import text
 # Import model classes to ensure they register on Base.metadata
 from app.embed.models import CodeNode, Dependency
 from app.gen.models import OnboardingDoc  # noqa: F401 — docs 테이블 Base 등록용
+from app.infra.redis import init_redis, close_redis
 
 from app.auth.router import router as auth_router
 from app.list.router import router as list_router
@@ -34,6 +35,7 @@ from app.team.router import invite_router as team_invite_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await init_redis()
     run_registry_sweeper = asyncio.create_task(sweep_run_registry())
     # 애플리케이션 시작 시 DB vector extension 및 필수 RAG 테이블 존재 여부 검증
     try:
@@ -72,6 +74,7 @@ async def lifespan(app: FastAPI):
             await run_registry_sweeper
         # 애플리케이션 종료 시 커넥션 풀 닫기
         await engine.dispose()
+        await close_redis()
 
 # ──────────────────────────────────────────────
 # FastAPI 앱 인스턴스 생성

@@ -241,42 +241,42 @@ class MasterReportToMarkdownTests(unittest.TestCase):
 # 5. background.py 진행 상태 추적기 검증
 # ──────────────────────────────────────────────────────────────
 
-class BackgroundProgressTrackerTests(unittest.TestCase):
+class BackgroundProgressTrackerTests(unittest.IsolatedAsyncioTestCase):
     """is_generation_in_progress / _mark_in_progress / _mark_done 검증"""
 
     def setUp(self):
         """테스트 전 in-progress 집합을 초기화한다."""
         bg_module._DOCS_GENERATION_IN_PROGRESS.clear()
 
-    def test_not_in_progress_by_default(self):
+    async def test_not_in_progress_by_default(self):
         """마킹하지 않은 repo는 진행 중이 아니어야 한다."""
-        self.assertFalse(is_generation_in_progress(_REPO_ID))
+        self.assertFalse(await is_generation_in_progress(_REPO_ID))
 
-    def test_mark_in_progress_sets_flag(self):
+    async def test_mark_in_progress_sets_flag(self):
         """_mark_in_progress 호출 후 is_generation_in_progress는 True이어야 한다."""
-        _mark_in_progress(_REPO_ID)
-        self.assertTrue(is_generation_in_progress(_REPO_ID))
+        await _mark_in_progress(_REPO_ID)
+        self.assertTrue(await is_generation_in_progress(_REPO_ID))
 
-    def test_mark_done_clears_flag(self):
+    async def test_mark_done_clears_flag(self):
         """_mark_done 호출 후 is_generation_in_progress는 False이어야 한다."""
-        _mark_in_progress(_REPO_ID)
-        _mark_done(_REPO_ID)
-        self.assertFalse(is_generation_in_progress(_REPO_ID))
+        await _mark_in_progress(_REPO_ID)
+        await _mark_done(_REPO_ID)
+        self.assertFalse(await is_generation_in_progress(_REPO_ID))
 
-    def test_mark_done_idempotent(self):
+    async def test_mark_done_idempotent(self):
         """_mark_done은 마킹되지 않은 repo에 호출해도 예외가 없어야 한다."""
         other_id = uuid.UUID("dddddddd-dddd-dddd-dddd-dddddddddddd")
         try:
-            _mark_done(other_id)
+            await _mark_done(other_id)
         except Exception as exc:
             self.fail(f"_mark_done이 예외를 발생시켰습니다: {exc}")
 
-    def test_different_repos_tracked_independently(self):
+    async def test_different_repos_tracked_independently(self):
         """서로 다른 repo_id는 독립적으로 추적되어야 한다."""
         other_id = uuid.UUID("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
-        _mark_in_progress(_REPO_ID)
-        self.assertTrue(is_generation_in_progress(_REPO_ID))
-        self.assertFalse(is_generation_in_progress(other_id))
+        await _mark_in_progress(_REPO_ID)
+        self.assertTrue(await is_generation_in_progress(_REPO_ID))
+        self.assertFalse(await is_generation_in_progress(other_id))
 
 
 # ──────────────────────────────────────────────────────────────

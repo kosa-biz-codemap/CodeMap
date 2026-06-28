@@ -143,7 +143,7 @@ async def validate_and_queue_doc_generation(
         raise RepoNotFoundError()
 
     ## 2. 가이드북 생성 중복 실행 검사
-    if is_generation_in_progress(repo_id):
+    if not await _mark_in_progress(repo_id):
         logger.warning("[DOCS-GEN-API-002] 생성 진행 중 | repo_id=%s", repo_id)
         raise DocsGenerationInProgressError()
 
@@ -170,7 +170,6 @@ async def validate_and_queue_doc_generation(
     next_version = latest_version + 1
     clone_path = f"{settings.CLONE_BASE_DIR}/{repo_id}/repo"
 
-    _mark_in_progress(repo_id)
     background_tasks.add_task(
         run_doc_generation,
         repo_id=repo_id,
