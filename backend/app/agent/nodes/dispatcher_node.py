@@ -75,7 +75,7 @@ def dispatcher_node(state: CodeMapState) -> dict:
 
     # 이전 반복(재계획)에서 이미 실행된 (tool, target) 집합 — 누적 worker_results에서 도출.
     # 같은 path/query를 또 탐색하지 않도록 결정론적으로 스킵한다(프롬프트 soft 지시 보강).
-    executed: set[tuple[str, str]] = set()
+    executed: set[tuple[str, str]] = set(state.get("attempted_signatures") or set())
     for result in state.get("worker_results", []):
         meta = result.get("metadata") or {}
         worker = meta.get("worker")
@@ -112,6 +112,7 @@ def dispatcher_node(state: CodeMapState) -> dict:
 
     return {
         "security_result": {"approved": approved, "rejected": rejected},
+        "attempted_signatures": seen,
         "events": [{
             "type": "route_validated",
             "allowed": len(approved) > 0,
