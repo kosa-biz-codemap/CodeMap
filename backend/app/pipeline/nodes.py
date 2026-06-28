@@ -21,6 +21,7 @@ os.path.exists()로 이미 Clone된 경우를 감지한다.
 from __future__ import annotations
 
 import asyncio
+import typing
 import json
 import logging
 import os
@@ -198,7 +199,7 @@ async def code_map_node(state: PipelineState) -> dict:
             status=JobStatus.IN_PROGRESS.value,
             stage=PipelineStage.CODE_MAP.value,
             progress=55,
-            message=f"{report['stats']['files']}개 파일 구조 분석 완료",
+            message=f"{typing.cast(dict, report['stats'])['files']}개 파일 구조 분석 완료",
             report_json=report,
         )
         await _publish(job_id, PipelineStage.CODE_MAP, JobStatus.IN_PROGRESS, 55, "구조 분석 완료")

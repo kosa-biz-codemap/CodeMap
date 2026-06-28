@@ -178,7 +178,7 @@ def scan_repository(root_path: str, repo_name: str) -> dict[str, Union[str, int,
         "affected_files": entrypoints[:3], "priority": "medium",
     })
 
-    files.sort(key=lambda item: (item["path"].count("/"), item["path"]))
+    files.sort(key=lambda item: (str(item["path"]).count("/"), str(item["path"])))
     # [TODO] Git Commit Log 분석을 통한 Contributor 통계 추출 로직 추가
     # 대시보드 시각화(기여자 비율, 파이/도넛 차트) 및 코드 변경 빈도(Churn) 히트맵을 위해
     # 분석 시점에 로컬 .git 로그나 GitHub API를 연동하여 기여자 메타데이터를 수집하는 범위 확정이 필요합니다.
@@ -226,5 +226,5 @@ def search_repository(root_path: str, query: str, limit: int = 6) -> list[dict[s
             "file": relative, "line": start + 1, "snippet": snippet,
             "language": LANGUAGE_BY_SUFFIX.get(path.suffix.lower(), "text"),
         }))
-    results.sort(key=lambda item: (-item[0], len(item[1]["file"])))
+    results.sort(key=lambda item: (-item[0], len(str(item[1]["file"]))))
     return [item for _, item in results[:limit]]

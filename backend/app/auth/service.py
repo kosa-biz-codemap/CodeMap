@@ -119,7 +119,7 @@ class AuthService:
 
         # Refresh Token 증식 방지 (기존 토큰 모두 삭제 후 새 토큰 발급 - 단일 기기 로그인 원칙 적용)
         await self.repo.delete_all_refresh_tokens(user.id)
-        
+
         expires_at = datetime.now(timezone.utc) + timedelta(
             days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS
         )

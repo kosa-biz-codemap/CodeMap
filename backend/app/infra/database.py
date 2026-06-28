@@ -5,6 +5,8 @@ SQLAlchemy 비동기 엔진과 세션 팩토리를 설정하고,
 FastAPI 의존성 주입(Dependency Injection)용 get_db 함수를 제공한다.
 """
 
+from collections.abc import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 
@@ -16,7 +18,7 @@ import re
 
 # PostgreSQL 비동기 드라이버(asyncpg) 사용을 위한 URL 변환
 # psycopg2 등 다른 드라이버가 지정되었더라도 강제로 asyncpg로 교체하여 엔진 크래시 방지
-db_url_str = settings.DATABASE_URL.get_secret_value() if hasattr(settings.DATABASE_URL, "get_secret_value") else settings.DATABASE_URL
+db_url_str = settings.DATABASE_URL.get_secret_value() if hasattr(settings.DATABASE_URL, "get_secret_value") else str(settings.DATABASE_URL)
 ASYNC_DATABASE_URL = re.sub(r"^postgresql(\+[a-zA-Z0-9_]+)?://", "postgresql+asyncpg://", db_url_str)
 
 # 비동기 SQLAlchemy 엔진 생성
@@ -40,7 +42,7 @@ class Base(DeclarativeBase):
     pass
 
 
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     FastAPI 의존성 주입용 DB 세션 제공 함수
 
