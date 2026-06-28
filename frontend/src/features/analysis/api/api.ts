@@ -13,6 +13,8 @@ import type {
   PreValidateResponse,
 } from "@/common/types/contracts";
 import { getAccessToken } from "@/features/auth/utils/tokenMemory";
+import { parseApiError } from "@/common/api/error";
+
 
 const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/$/, "");
 const BASE_URL = `${BASE_PATH}/api`;
@@ -140,6 +142,36 @@ export function buildWsUrl(wsPath: string): string {
 }
 
 /**
+ * GET /api/repo/analysis/{jobId}/files/content — job 기준 파일 컨텐츠 조회
+ */
+export async function fetchFileContent(
+  jobId: string,
+  path: string,
+  signal?: AbortSignal,
+): Promise<{
+  data: {
+    path: string;
+    content: string;
+    language: string | null;
+    lines: number;
+    truncated: boolean;
+  };
+}> {
+  const resp = await fetch(
+    apiPath(
+      `/repo/analysis/${encodeURIComponent(jobId)}/files/content?path=${encodeURIComponent(path)}`,
+    ),
+    { headers: { Authorization: getAuthorizationHeader() }, signal },
+  );
+
+  if (!resp.ok) {
+    throw await parseApiError(resp);
+  }
+
+  return await resp.json();
+}
+
+/**
  * POST /api/list/validate — 저장소 사전 검증
  */
 export async function validateRepository(
@@ -161,4 +193,21 @@ export async function validateRepository(
   }
 
   return await resp.json();
+}
+
+/**
+ * DELETE /api/list/analysis/{jobId} — 분석 작업 삭제
+ */
+export async function deleteAnalysisJob(jobId: string): Promise<void> {
+  const resp = await fetch(apiPath(`/list/analysis/${jobId}`), {
+    method: "DELETE",
+    headers: {
+      Authorization: getAuthorizationHeader(),
+    },
+  });
+
+  if (!resp.ok) {
+    const errData = await resp.json().catch(() => ({}));
+    throw new Error(errData?.message || errData?.error || `Failed to delete analysis job: ${resp.status}`);
+  }
 }

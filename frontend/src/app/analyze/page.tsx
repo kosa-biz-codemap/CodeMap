@@ -18,6 +18,7 @@ import {
 import { RepoInput, type RepoSource } from "@/features/repository/components/RepoInput";
 import { HistoryList } from "@/features/history/components/HistoryList";
 import { WorkspaceReport } from "@/features/analysis/components/WorkspaceReport";
+import { CodePreviewPanel } from "@/features/analysis/components/CodePreviewPanel";
 import { FileTree } from "@/features/chat/components/FileTree";
 import { ChatInterface } from "@/features/chat/components/ChatInterface";
 import { demoWorkspaceReport } from "@/features/analysis/data/demoWorkspace";
@@ -296,7 +297,14 @@ function AnalyzeWorkspace() {
               <div className="mt-3"><HistoryList onSelect={selectHistory} activeJobId={jobId} /></div>
             </div>
           ) : (
-            <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={setSelectedFile} className="border-r-0" />
+            <div className={`flex h-full min-h-0 flex-col ${isDark ? "bg-zinc-950" : "bg-white"}`}>
+              <div className="min-h-0 flex-1">
+                <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={setSelectedFile} className="border-r-0" />
+              </div>
+              <div className={`max-h-[42%] shrink-0 overflow-y-auto border-t p-3 ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
+                <HistoryList onSelect={selectHistory} activeJobId={jobId} />
+              </div>
+            </div>
           )}
         </aside>
 
@@ -344,7 +352,22 @@ function AnalyzeWorkspace() {
             </div>
           )}
 
-          {status === "completed" && report && <WorkspaceReport report={report} preview={preview} onAsk={ask} onFileSelect={setSelectedFile} />}
+          {status === "completed" && report && (
+            <div className={`flex min-h-0 gap-0 ${selectedFile ? "h-full" : ""}`}>
+              <div className={`min-w-0 ${selectedFile ? "hidden xl:block xl:flex-1" : "flex-1"}`}>
+                <WorkspaceReport report={report} preview={preview} onAsk={ask} onFileSelect={setSelectedFile} />
+              </div>
+              {selectedFile && jobId && (
+                <div className="w-full flex-1 xl:max-w-[600px]">
+                  <CodePreviewPanel
+                    jobId={jobId}
+                    filePath={selectedFile}
+                    onClose={() => setSelectedFile(null)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         <aside className={`hidden w-[400px] shrink-0 border-l xl:block ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
@@ -388,7 +411,14 @@ function AnalyzeWorkspace() {
                   <div className="mt-3"><HistoryList onSelect={(id) => { selectHistory(id); setMobileSidebarOpen(false); }} activeJobId={jobId} /></div>
                 </div>
               ) : (
-                <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={(f) => { setSelectedFile(f); setMobileSidebarOpen(false); }} className="border-r-0" />
+                <div className="flex h-full min-h-0 flex-col">
+                  <div className="min-h-0 flex-1">
+                    <FileTree repoName={repoName} files={report.files} entrypoints={report.entrypoints} activeFile={selectedFile} onFileSelect={(f) => { setSelectedFile(f); setMobileSidebarOpen(false); }} className="border-r-0" />
+                  </div>
+                  <div className={`max-h-[42%] shrink-0 overflow-y-auto border-t p-3 ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
+                    <HistoryList onSelect={(id) => { selectHistory(id); setMobileSidebarOpen(false); }} activeJobId={jobId} />
+                  </div>
+                </div>
               )}
             </div>
           </div>
