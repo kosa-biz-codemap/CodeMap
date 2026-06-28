@@ -13,6 +13,8 @@ import type {
   PreValidateResponse,
 } from "@/common/types/contracts";
 import { getAccessToken } from "@/features/auth/utils/tokenMemory";
+import { parseApiError } from "@/common/api/error";
+
 
 const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/$/, "");
 const BASE_URL = `${BASE_PATH}/api`;
@@ -137,6 +139,36 @@ export function buildWsUrl(wsPath: string): string {
   const host = window.location.host;
   const path = wsPath.startsWith("/") ? wsPath : `/${wsPath}`;
   return `${proto}//${host}${BASE_PATH}${path}`;
+}
+
+/**
+ * GET /api/repo/analysis/{jobId}/files/content — job 기준 파일 컨텐츠 조회
+ */
+export async function fetchFileContent(
+  jobId: string,
+  path: string,
+  signal?: AbortSignal,
+): Promise<{
+  data: {
+    path: string;
+    content: string;
+    language: string | null;
+    lines: number;
+    truncated: boolean;
+  };
+}> {
+  const resp = await fetch(
+    apiPath(
+      `/repo/analysis/${encodeURIComponent(jobId)}/files/content?path=${encodeURIComponent(path)}`,
+    ),
+    { headers: { Authorization: getAuthorizationHeader() }, signal },
+  );
+
+  if (!resp.ok) {
+    throw await parseApiError(resp);
+  }
+
+  return await resp.json();
 }
 
 /**
