@@ -7,13 +7,12 @@ POST /api/gen/docs/{repo_id}/save — Markdown DB 저장 (API-005, 내부용)
 """
 
 import logging
-from typing import Literal, Union
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infra.database import get_db
 from app.gen.schemas import (
     DocGetMarkdownResponse,
     DocGetJsonResponse,
@@ -29,6 +28,8 @@ from app.gen.service import (
     save_onboarding_doc,
     validate_and_queue_doc_generation,
 )
+from app.infra.auth import get_current_user
+from app.infra.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,7 @@ router = APIRouter(prefix="/api/gen/docs", tags=["DOCS GEN"])
 )
 async def get_doc(
     repo_id: UUID,
+    _current_user: Annotated[dict, Depends(get_current_user)],
     format: Literal["markdown", "json"] = Query(default="markdown", description="응답 형식"),
     db: AsyncSession = Depends(get_db),
 ) -> DocGetMarkdownResponse | DocGetJsonResponse:

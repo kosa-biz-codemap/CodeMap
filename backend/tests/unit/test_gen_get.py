@@ -25,9 +25,11 @@ Self 리뷰 결과 (CLAUDE.md §7):
 import uuid
 import unittest
 from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from app.common.exceptions import DocsNotFoundError, RepoNotFoundError
 from app.gen.schemas import (
@@ -139,10 +141,10 @@ class DocGetJsonSchemaTests(unittest.TestCase):
         data = self._make_data(summary=None)
         self.assertIsNone(data.summary)
 
-    def test_summary_accepts_dict(self):
-        """summary 필드는 dict도 허용해야 한다."""
-        data = self._make_data(summary={"purpose": "테스트"})
-        self.assertIsInstance(data.summary, dict)
+    def test_summary_rejects_dict(self):
+        """summary 필드는 DOCS_API_SPEC에 맞게 문자열이어야 한다."""
+        with self.assertRaises(ValidationError):
+            self._make_data(summary={"purpose": "테스트"})
 
 
 # ──────────────────────────────────────────────────────────────
@@ -196,6 +198,27 @@ class OnboardingDocNewColumnTests(unittest.TestCase):
         from app.gen.models import OnboardingDoc
         col = OnboardingDoc.__table__.c["report_json"]
         self.assertTrue(col.nullable)
+
+
+class DatabaseInitSchemaTests(unittest.TestCase):
+    """database/init.sql docs 테이블 계약 검증"""
+
+    def test_docs_table_and_new_columns_exist_in_init_sql(self):
+        init_sql = (
+            Path(__file__).resolve().parents[3] / "database" / "init.sql"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("CREATE TABLE IF NOT EXISTS docs", init_sql)
+        self.assertIn("is_active BOOLEAN NOT NULL DEFAULT TRUE", init_sql)
+        self.assertIn("report_json JSONB", init_sql)
+        self.assertIn(
+            "ALTER TABLE docs ADD COLUMN IF NOT EXISTS is_active",
+            init_sql,
+        )
+        self.assertIn(
+            "ALTER TABLE docs ADD COLUMN IF NOT EXISTS report_json",
+            init_sql,
+        )
 
 
 # ──────────────────────────────────────────────────────────────
@@ -330,8 +353,8 @@ class GetOnboardingDocServiceTests(unittest.IsolatedAsyncioTestCase):
             "summary": {"purpose": "테스트"},
             "stack": ["Python"],
             "guide": {
-                "reading_order": [{"rank": 1, "path": "README.md"}],
-                "risk_files": [{"path": "config.py"}],
+                "reading_order": ["README.md"],
+                "risk_files": [{"file": "config.py", "reason": "환경 설정 주의"}],
             },
             "file_map": {"backend/": "API 서버"},
         }
@@ -349,9 +372,14 @@ class GetOnboardingDocServiceTests(unittest.IsolatedAsyncioTestCase):
             result = await get_onboarding_doc(self._make_db(), _REPO_ID, fmt="json")
 
         self.assertIsInstance(result, DocGetJsonData)
+        self.assertEqual(result.summary, "테스트")
         self.assertEqual(result.stack, ["Python"])
-        self.assertEqual(len(result.reading_order), 1)
-        self.assertEqual(len(result.danger_files), 1)
+        self.assertEqual(result.reading_order[0].rank, 1)
+        self.assertEqual(result.reading_order[0].path, "README.md")
+        self.assertEqual(result.reading_order[0].reason, "")
+        self.assertEqual(result.danger_files[0].path, "config.py")
+        self.assertEqual(result.danger_files[0].reason, "환경 설정 주의")
+        self.assertEqual(result.folder_summaries[0].path, "backend/")
 
     async def test_json_format_with_none_report_json(self):
         """report_json이 None일 때 format=json은 빈 데이터를 반환해야 한다."""
@@ -385,6 +413,7 @@ class GenGetRouterTests(unittest.TestCase):
         from fastapi import FastAPI
         from app.gen.router import router
         from app.infra.database import get_db
+        from app.infra.auth import get_current_user
         from app.common.exceptions import register_exception_handlers
 
         self.app = FastAPI()
@@ -392,7 +421,12 @@ class GenGetRouterTests(unittest.TestCase):
         self.app.include_router(router)
         self.mock_db = MagicMock()
         self.app.dependency_overrides[get_db] = lambda: self.mock_db
+        self.app.dependency_overrides[get_current_user] = lambda: {
+            "sub": "test-user",
+            "email": "test@example.com",
+        }
         self.client = TestClient(self.app, raise_server_exceptions=False)
+        self.get_current_user = get_current_user
 
     def _make_markdown_data(self):
         return DocGetMarkdownData(
@@ -486,6 +520,12 @@ class GenGetRouterTests(unittest.TestCase):
         """repo_id가 UUID 형식이 아니면 422를 반환해야 한다."""
         resp = self.client.get("/api/gen/docs/not-a-uuid")
         self.assertEqual(resp.status_code, 422)
+
+    def test_requires_authentication(self):
+        """GET /api/gen/docs/{repo_id}는 인증이 필요해야 한다."""
+        self.app.dependency_overrides.pop(self.get_current_user, None)
+        resp = self.client.get(f"/api/gen/docs/{_REPO_ID}")
+        self.assertEqual(resp.status_code, 401)
 
 
 # ──────────────────────────────────────────────────────────────
