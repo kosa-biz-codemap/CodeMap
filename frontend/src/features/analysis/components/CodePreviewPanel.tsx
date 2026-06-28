@@ -139,7 +139,7 @@ export function CodePreviewPanel({ jobId, filePath, onClose }: CodePreviewPanelP
       <div className="min-h-0 flex-1 overflow-auto">
         {loadState === "loading" && (
           <div className="flex h-full items-center justify-center">
-            <Loader2 className="size-5 animate-spin text-zinc-500" />
+            <Loader2 className="size-5 text-zinc-500 motion-safe:animate-spin" />
           </div>
         )}
 
