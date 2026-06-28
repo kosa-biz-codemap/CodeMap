@@ -852,70 +852,6 @@ class AnalysisService:
         )
         await event_manager.publish(job_id, event)
 
-
-# ──────────────────────────────────────────────
-# API-002: GitHub URL 형식 및 접근 가능 여부 검증 서비스
-# ──────────────────────────────────────────────
-class RepoValidateService:
-    """저장소 URL 검증 전용 서비스"""
-
-    async def validate_repo(
-        self,
-        request: RepoValidateRequest,
-    ) -> RepoValidateResponse:
-        match = GITHUB_URL_PATTERN.match(request.repoUrl.strip())
-        if not match:
-            raise InvalidRepoUrlError(
-                f"올바른 GitHub URL 형식이 아닙니다: {request.repoUrl}"
-            )
-
-        owner = match.group("owner")
-        repo_name = match.group("repo")
-        api_url = f"https://api.github.com/repos/{owner}/{repo_name}"
-
-        try:
-            async with httpx.AsyncClient(timeout=5) as client:
-                response = await client.get(
-                    api_url,
-                    headers={"User-Agent": "CodeMap"},
-                )
-
-            if response.status_code == 404:
-                raise RepositoryNotFoundError(
-                    "저장소가 없거나 접근할 수 없습니다."
-                )
-            if response.status_code >= 400:
-                raise CodeMapException(
-                    500,
-                    "GITHUB_API_ERROR",
-                    f"GitHub API 호출 중 오류가 발생했습니다: "
-                    f"HTTP {response.status_code}",
-                )
-
-            payload = response.json()
-        except RepositoryNotFoundError:
-            raise
-        except CodeMapException:
-            raise
-        except (httpx.RequestError, ValueError) as exc:
-            raise CodeMapException(
-                500,
-                "GITHUB_API_ERROR",
-                f"GitHub API 호출 중 오류가 발생했습니다: {exc}"
-            ) from exc
-
-        return RepoValidateResponse(
-            code=200,
-            message="success",
-            data=RepoValidateData(
-                valid=True,
-                repoName=repo_name,
-                owner=owner,
-                defaultBranch=payload.get("default_branch", "main"),
-                isPrivate=bool(payload.get("private", False)),
-            ),
-        )
-
     # ──────────────────────────────────────────
     # execute_analysis_and_persist
     # ──────────────────────────────────────────
@@ -926,6 +862,8 @@ class RepoValidateService:
         CWD 경로 기반으로 개별 정적 분석 도구들을 병렬로 호출하여
         최종 report_json 딕셔너리를 조립하고 DB에 입력합니다.
         """
+        from uuid import UUID
+        from app.repo.schemas import JobStatus, PipelineStage
         from app.tool.dir_scan import list_repository_files
         from app.tool.file_read import extract_file_static_metadata
         from app.tool.grep_scan import count_todo_annotations
@@ -966,6 +904,10 @@ class RepoValidateService:
             }
             await self.repository.update_job_status(
                 job_id=job_id,
+                status=JobStatus.IN_PROGRESS.value,
+                stage=PipelineStage.CODE_MAP.value,
+                progress=55,
+                message="분석 대상 텍스트 파일이 없습니다.",
                 report_json=report,
             )
             await self.db.commit()
@@ -1114,10 +1056,80 @@ class RepoValidateService:
         ## 7. DB 최종 영속화 및 커밋
         await self.repository.update_job_status(
             job_id=job_id,
+            status=JobStatus.IN_PROGRESS.value,
+            stage=PipelineStage.CODE_MAP.value,
+            progress=55,
+            message=f"{total_files}개 파일 구조 분석 완료",
             report_json=report,
         )
         await self.db.commit()
         return report
+
+
+# ──────────────────────────────────────────────
+# API-002: GitHub URL 형식 및 접근 가능 여부 검증 서비스
+# ──────────────────────────────────────────────
+class RepoValidateService:
+    """저장소 URL 검증 전용 서비스"""
+
+    async def validate_repo(
+        self,
+        request: RepoValidateRequest,
+    ) -> RepoValidateResponse:
+        match = GITHUB_URL_PATTERN.match(request.repoUrl.strip())
+        if not match:
+            raise InvalidRepoUrlError(
+                f"올바른 GitHub URL 형식이 아닙니다: {request.repoUrl}"
+            )
+
+        owner = match.group("owner")
+        repo_name = match.group("repo")
+        api_url = f"https://api.github.com/repos/{owner}/{repo_name}"
+
+        try:
+            async with httpx.AsyncClient(timeout=5) as client:
+                response = await client.get(
+                    api_url,
+                    headers={"User-Agent": "CodeMap"},
+                )
+
+            if response.status_code == 404:
+                raise RepositoryNotFoundError(
+                    "저장소가 없거나 접근할 수 없습니다."
+                )
+            if response.status_code >= 400:
+                raise CodeMapException(
+                    500,
+                    "GITHUB_API_ERROR",
+                    f"GitHub API 호출 중 오류가 발생했습니다: "
+                    f"HTTP {response.status_code}",
+                )
+
+            payload = response.json()
+        except RepositoryNotFoundError:
+            raise
+        except CodeMapException:
+            raise
+        except (httpx.RequestError, ValueError) as exc:
+            raise CodeMapException(
+                500,
+                "GITHUB_API_ERROR",
+                f"GitHub API 호출 중 오류가 발생했습니다: {exc}"
+            ) from exc
+
+        return RepoValidateResponse(
+            code=200,
+            message="success",
+            data=RepoValidateData(
+                valid=True,
+                repoName=repo_name,
+                owner=owner,
+                defaultBranch=payload.get("default_branch", "main"),
+                isPrivate=bool(payload.get("private", False)),
+            ),
+        )
+
+
 
 
 def _filter_workspace(repo_dir: Path) -> None:
