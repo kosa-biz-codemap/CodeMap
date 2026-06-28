@@ -5,6 +5,7 @@ AUTH 도메인 Service 계층 (PROJECT-AUTH)
 """
 
 import logging
+import uuid
 import bcrypt
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
@@ -217,3 +218,21 @@ class AuthService:
         await self.db.commit()
         logger.info("[AUTH] 로그아웃: 삭제된 토큰 %d건", deleted)
         return LogoutResponse(success=True)
+
+    # ──────────────────────────────────────────────
+    # 회원 탈퇴 (PROJECT-AUTH-B-106)
+    # ──────────────────────────────────────────────
+    async def withdraw(self, user_id: uuid.UUID) -> None:
+        """
+        사용자 계정 탈퇴 처리.
+        - 자신이 만든 팀 분석 이력(team job)은 다른 팀원에게 자동 양도
+        - 계정 정보 삭제 (CASCADE 연관 데이터 포함)
+        """
+        from app.team.service import TeamService
+        
+        team_service = TeamService(self.db)
+        await team_service.transfer_orphan_ownership(user_id)
+        
+        await self.repo.delete_user(user_id)
+        await self.db.commit()
+        logger.info("[AUTH] 회원 탈퇴: user_id=%s", user_id)
