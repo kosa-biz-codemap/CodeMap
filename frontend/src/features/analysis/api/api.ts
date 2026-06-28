@@ -181,7 +181,7 @@ export async function fetchFileContent(
     apiPath(
       `/repo/analysis/${encodeURIComponent(jobId)}/files/content?path=${encodeURIComponent(path)}`,
     ),
-    { headers: { Authorization: getAuthorizationHeader() }, signal },
+    { headers: getAuthorizationHeaders(), signal },
   );
 
   if (!resp.ok) {
