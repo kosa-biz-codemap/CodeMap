@@ -28,6 +28,8 @@ _SYSTEM_PROMPT_BASE = """당신은 CodeMap 저장소 분석 전문가입니다.
 
 _NO_EVIDENCE_RULE = """- 검색된 근거가 없거나 질문과 무관할 경우, "현재 저장소에서 질문과 관련된 코드를 찾지 못했습니다. 검색어를 다르게 입력해 보시거나 구체적인 파일을 지정해 보세요."라고 안내하세요. 추가로 "일반적인 지식을 바탕으로 답변해 드릴까요?"라고 되물어보세요.\n"""
 
+_PARTIAL_EVIDENCE_RULE = """- 제공된 근거만으로 질문의 특정 주장을 설명할 수 없는 경우, 답변 전체를 "근거 없음"으로 처리하지 말고 해당 주장에 대해서만 "[근거 없음]"이라고 claim 단위로 명확히 표시하세요.\n"""
+
 _MAX_SNIPPET_CHARS = 1_000
 _MAX_CONTEXT_CHARS = 12_000
 _MAX_USER_QUERY_CHARS = 4_000
@@ -108,7 +110,7 @@ async def stream_final_answer(
         compact_context = _context_from_worker_results(worker_results)
         
     has_evidence = bool(compact_context.get("groupedByFile"))
-    evidence_rule = "" if has_evidence else _NO_EVIDENCE_RULE
+    evidence_rule = _PARTIAL_EVIDENCE_RULE if has_evidence else _NO_EVIDENCE_RULE
     
     context_text = _build_context(compact_context)
     system_prompt = _SYSTEM_PROMPT_BASE.format(
