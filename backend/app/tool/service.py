@@ -16,6 +16,7 @@ from app.agent.state import WorkerResult
 from app.infra.config import get_settings
 from app.repo.repository import AnalysisJobRepository
 from app.tool.ast_quality_tool import calculate_ast_quality
+from app.tool.env_validation_tool import calculate_env_validation
 from app.tool.dir_scan import scan_directory_tree
 from app.tool.file_read import read_repository_file
 from app.tool.grep_scan import grep_repository_path
@@ -23,7 +24,7 @@ from app.tool.hybrid_search import hybrid_search
 
 logger = logging.getLogger(__name__)
 
-_SUPPORTED_TOOLS = frozenset({"vector_search", "file_read", "dir_scan", "grep_scan", "ast_quality"})
+_SUPPORTED_TOOLS = frozenset({"vector_search", "file_read", "dir_scan", "grep_scan", "ast_quality", "env_validation"})
 
 
 # ──────────────────────────────────────────────
@@ -64,6 +65,8 @@ class CodeMapToolService:
             results = await self._execute_vector_search(job_id, tool_name, arguments)
         elif tool_name == "ast_quality":
             results = await self._execute_ast_quality(job_id, tool_name, arguments)
+        elif tool_name == "env_validation":
+            results = await self._execute_env_validation(job_id, tool_name, arguments)
         else:
             results = self._execute_filesystem_tool(job_id, tool_name, arguments)
 
@@ -177,3 +180,10 @@ class CodeMapToolService:
                 },
             )
         ]
+
+    async def _execute_env_validation(self, job_id: UUID, tool_name: str, arguments: dict) -> list[WorkerResult]:
+        clone_path = self._get_clone_path(job_id)
+        rel_path = arguments.get("rel_path")
+        metrics = await asyncio.to_thread(calculate_env_validation, str(clone_path), rel_path)
+        content = f"Security Score: {metrics["security"]}\nQuality Score: {metrics["quality"]}"
+        return [WorkerResult(tool_name=tool_name, content=content, is_error=False)]

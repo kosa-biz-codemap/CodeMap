@@ -36,6 +36,8 @@ from pydantic import BaseModel, ValidationError
 from app.infra.config import get_settings
 from app.infra.database import async_session_factory
 from app.repo.analyzer import scan_repository
+from app.tool.ast_quality_tool import calculate_ast_quality
+from app.tool.env_validation_tool import calculate_env_validation
 from app.pipeline.event_manager import event_manager
 from app.pipeline.state import PipelineState
 from app.repo.repository import AnalysisJobRepository
@@ -191,6 +193,12 @@ async def code_map_node(state: PipelineState) -> dict:
             clone_path,
             state["repo_name"],
         )
+        
+        ast_metrics = await asyncio.to_thread(calculate_ast_quality, str(clone_path))
+        env_metrics = await asyncio.to_thread(calculate_env_validation, str(clone_path))
+        if "health_metrics" in report:
+            report["health_metrics"].update(ast_metrics)
+            report["health_metrics"].update(env_metrics)
         elapsed = time.perf_counter() - _t0
         logger.info("[단계별 소요시간] job=%s | 2.코드 구조 분석=%.3f초", job_id, elapsed)
         await _update_db(
