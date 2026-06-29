@@ -448,7 +448,8 @@ async def rebuild_onboarding_doc(
         raise DatabaseSaveFailedError() from exc
 
     ## 4. 재생성 백그라운드 작업 등록
-    clone_path = f"{settings.CLONE_BASE_DIR}/{repo_id}"
+    ## 프로젝트 표준 클론 경로: {CLONE_BASE_DIR}/{repo_id}/repo
+    clone_path = f"{settings.CLONE_BASE_DIR}/{repo_id}/repo"
     if reason:
         logger.info(
             "[DOCS-GEN-API-003] 재생성 사유 | repo_id=%s reason=%s",
@@ -463,6 +464,7 @@ async def rebuild_onboarding_doc(
         repo_name=analysis_job.repo_name,
         version=new_version,
         clone_path=clone_path,
+        model=model,
     )
 
     logger.info(
