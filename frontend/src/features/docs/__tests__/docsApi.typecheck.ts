@@ -11,6 +11,8 @@ import type {
   DocGetJsonResponse,
   DocGetMarkdownData,
   DocGetMarkdownResponse,
+  DocReadingOrderItem,
+  DocDangerFileItem,
 } from "@/common/types/contracts";
 import type { GuideViewerProps } from "@/features/docs/components/GuideViewer";
 import type { ExportButtonsProps } from "@/features/docs/components/ExportButtons";
@@ -38,11 +40,26 @@ const markdownData: DocGetMarkdownData = {
 assertAssignable<DocGetMarkdownData>(markdownData);
 
 // ── 3. DocGetJsonData 구조 — 모든 필드 검증 ─────────────────────────────
+const readingOrderItem: DocReadingOrderItem = {
+  rank:   1,
+  path:   "src/app/page.tsx",
+  reason: "FastAPI 앱 진입점",
+};
+assertAssignable<DocReadingOrderItem>(readingOrderItem);
+
+const dangerFileItem: DocDangerFileItem = {
+  path:   "backend/app/core/config.py",
+  reason: "환경변수 및 API 키 관리 파일",
+};
+assertAssignable<DocDangerFileItem>(dangerFileItem);
+
 const jsonData: DocGetJsonData = {
+  repoId:          "3f7cc46e-d954-83ab-9f12-013b0c9d2a1e",
+  repoName:        "CodeMap",
   summary:         "CodeMap 프로젝트 요약",
   stack:           ["Next.js", "FastAPI", "PostgreSQL"],
-  readingOrder:    ["src/app/page.tsx", "src/features/analysis/api/api.ts"],
-  dangerFiles:     ["backend/app/core/config.py"],
+  readingOrder:    [readingOrderItem],
+  dangerFiles:     [dangerFileItem],
   coreFlow:        "사용자 요청 → FastAPI 라우터 → 서비스 → DB",
   folderSummaries: [folderSummary],
   generatedAt:     "2026-06-27T00:00:00Z",
@@ -52,6 +69,8 @@ assertAssignable<DocGetJsonData>(jsonData);
 
 // ── 4. nullable 필드가 null 허용 ─────────────────────────────────────────
 const jsonDataNullable: DocGetJsonData = {
+  repoId:          "3f7cc46e-d954-83ab-9f12-013b0c9d2a1e",
+  repoName:        "CodeMap",
   summary:         null,
   stack:           [],
   readingOrder:    [],

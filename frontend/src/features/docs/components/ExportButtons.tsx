@@ -8,32 +8,37 @@ export interface ExportButtonsProps {
 }
 
 export function ExportButtons({ repoId }: ExportButtonsProps) {
-  const handleMarkdownDownload = () => {
-    if (!repoId) return;
-    const url = buildMarkdownDownloadUrl(repoId);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "";
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-  };
+  const url = repoId ? buildMarkdownDownloadUrl(repoId) : null;
 
   return (
     <div className="flex flex-wrap gap-2">
-      <button
-        type="button"
-        disabled={!repoId}
-        onClick={handleMarkdownDownload}
-        className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
-        style={{
-          borderColor: "var(--border-primary)",
-          color: "var(--text-secondary)",
-        }}
-      >
-        <Download className="size-3.5" />
-        Markdown 다운로드
-      </button>
+      {url ? (
+        <a
+          href={url}
+          download
+          className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition hover:opacity-80"
+          style={{
+            borderColor: "var(--border-primary)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          <Download className="size-3.5" />
+          Markdown 다운로드
+        </a>
+      ) : (
+        <button
+          type="button"
+          disabled
+          className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm cursor-not-allowed opacity-40"
+          style={{
+            borderColor: "var(--border-primary)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          <Download className="size-3.5" />
+          Markdown 다운로드
+        </button>
+      )}
     </div>
   );
 }

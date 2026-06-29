@@ -12,7 +12,11 @@ import {
   LoaderCircle,
   ShieldAlert,
 } from "lucide-react";
-import type { DocGetJsonData } from "@/common/types/contracts";
+import type {
+  DocGetJsonData,
+  DocReadingOrderItem,
+  DocDangerFileItem,
+} from "@/common/types/contracts";
 
 // ── 탭 정의 ────────────────────────────────────────────────────
 
@@ -85,7 +89,7 @@ function StackPanel({ items }: { items: string[] }) {
   );
 }
 
-function ReadingOrderPanel({ items }: { items: string[] }) {
+function ReadingOrderPanel({ items }: { items: DocReadingOrderItem[] }) {
   if (items.length === 0) {
     return (
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -94,9 +98,9 @@ function ReadingOrderPanel({ items }: { items: string[] }) {
     );
   }
   return (
-    <ol className="space-y-2">
-      {items.map((path, idx) => (
-        <li key={path} className="flex items-start gap-3">
+    <ol className="space-y-3">
+      {items.map((item) => (
+        <li key={item.path} className="flex items-start gap-3">
           <span
             className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
             style={{
@@ -105,21 +109,31 @@ function ReadingOrderPanel({ items }: { items: string[] }) {
               color: "var(--accent-primary)",
             }}
           >
-            {idx + 1}
+            {item.rank}
           </span>
-          <span
-            className="break-all font-mono text-xs leading-5"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            {path}
-          </span>
+          <div className="min-w-0">
+            <span
+              className="break-all font-mono text-xs leading-5"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {item.path}
+            </span>
+            {item.reason && (
+              <p
+                className="mt-0.5 text-[11px] leading-5"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {item.reason}
+              </p>
+            )}
+          </div>
         </li>
       ))}
     </ol>
   );
 }
 
-function DangerFilesPanel({ items }: { items: string[] }) {
+function DangerFilesPanel({ items }: { items: DocDangerFileItem[] }) {
   if (items.length === 0) {
     return (
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -129,15 +143,25 @@ function DangerFilesPanel({ items }: { items: string[] }) {
   }
   return (
     <ul className="space-y-2">
-      {items.map((path) => (
-        <li key={path} className="flex items-start gap-2">
+      {items.map((item) => (
+        <li key={item.path} className="flex items-start gap-2">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-400" />
-          <span
-            className="break-all font-mono text-xs leading-5"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            {path}
-          </span>
+          <div className="min-w-0">
+            <span
+              className="break-all font-mono text-xs leading-5"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {item.path}
+            </span>
+            {item.reason && (
+              <p
+                className="mt-0.5 text-[11px] leading-5"
+                style={{ color: "var(--text-muted)" }}
+              >
+                {item.reason}
+              </p>
+            )}
+          </div>
         </li>
       ))}
     </ul>

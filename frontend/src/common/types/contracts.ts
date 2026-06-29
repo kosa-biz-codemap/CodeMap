@@ -478,6 +478,17 @@ export interface DocFolderSummary {
   summary: string;
 }
 
+export interface DocReadingOrderItem {
+  rank: number;
+  path: string;
+  reason: string;
+}
+
+export interface DocDangerFileItem {
+  path: string;
+  reason: string;
+}
+
 export interface DocGetMarkdownData {
   repoId: string;
   repoName: string;
@@ -487,10 +498,12 @@ export interface DocGetMarkdownData {
 }
 
 export interface DocGetJsonData {
+  repoId: string;
+  repoName: string;
   summary: string | null;
   stack: string[];
-  readingOrder: string[];
-  dangerFiles: string[];
+  readingOrder: DocReadingOrderItem[];
+  dangerFiles: DocDangerFileItem[];
   coreFlow: string | null;
   folderSummaries: DocFolderSummary[];
   generatedAt: string;

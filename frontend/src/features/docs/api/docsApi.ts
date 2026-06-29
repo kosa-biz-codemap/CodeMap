@@ -2,6 +2,7 @@ import type {
   DocGetJsonResponse,
   DocGetMarkdownResponse,
 } from "@/common/types/contracts";
+import { parseApiError } from "@/common/api/error";
 import { apiPath } from "@/features/analysis/api/api";
 import { getAccessToken } from "@/features/auth/utils/tokenMemory";
 
@@ -22,11 +23,7 @@ export async function fetchOnboardingDocMarkdown(
     { headers: authHeader() },
   );
   if (!resp.ok) {
-    const body = await resp.json().catch(() => ({}));
-    throw new Error(
-      (body as { message?: string }).message ||
-        `가이드북 조회 실패 (HTTP ${resp.status})`,
-    );
+    throw await parseApiError(resp);
   }
   return resp.json() as Promise<DocGetMarkdownResponse>;
 }
@@ -43,11 +40,7 @@ export async function fetchOnboardingDocJson(
     { headers: authHeader() },
   );
   if (!resp.ok) {
-    const body = await resp.json().catch(() => ({}));
-    throw new Error(
-      (body as { message?: string }).message ||
-        `가이드북 조회 실패 (HTTP ${resp.status})`,
-    );
+    throw await parseApiError(resp);
   }
   return resp.json() as Promise<DocGetJsonResponse>;
 }
