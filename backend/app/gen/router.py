@@ -219,8 +219,9 @@ async def download_doc(
 
     content, repo_name = await get_doc_download_content(db=db, repo_id=repo_id)
 
-    ## 파일명 특수문자 제거 (Content-Disposition 헤더 안전성)
-    safe_name = re.sub(r"[^\w\-]", "_", repo_name)
+    ## 파일명 ASCII 외 문자 제거 (Content-Disposition 헤더는 latin-1만 허용)
+    ## flags=re.ASCII 없이는 \w가 한글 등 유니코드 문자도 허용해 인코딩 오류 위험이 있다
+    safe_name = re.sub(r"[^\w\-]", "_", repo_name, flags=re.ASCII)
     filename = f"{safe_name}_onboarding.md"
 
     logger.info(

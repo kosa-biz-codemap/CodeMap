@@ -338,6 +338,28 @@ class FilenameEscapingTests(unittest.TestCase):
         filename_part = disp.split("filename=")[-1].strip('"')
         self.assertNotIn(" ", filename_part)
 
+    def test_korean_repo_name_sanitized(self):
+        """한글 저장소 이름은 Content-Disposition 헤더에 그대로 들어가지 않아야 한다.
+
+        re.sub flags=re.ASCII 없이는 \\w가 유니코드 한글을 허용해
+        Content-Disposition 헤더에 비-ASCII 문자가 포함되어 인코딩 오류가 발생할 수 있다.
+        """
+        with patch(
+            "app.gen.router.get_doc_download_content",
+            new=AsyncMock(return_value=(_MARKDOWN, "코드맵-프로젝트")),
+        ):
+            resp = self.client.get(f"/api/gen/docs/{_REPO_ID}/download")
+
+        self.assertEqual(resp.status_code, 200)
+        disp = resp.headers.get("content-disposition", "")
+        filename_part = disp.split("filename=")[-1].strip('"')
+        ## 한글이 _ 로 치환되어 파일명에 비-ASCII 문자가 없어야 한다
+        self.assertTrue(
+            filename_part.isascii(),
+            f"파일명에 비-ASCII 문자가 포함됨: {filename_part!r}",
+        )
+        self.assertIn("_onboarding.md", filename_part)
+
 
 # ──────────────────────────────────────────────────────────────
 # 5. 회귀 검증 — 기존 엔드포인트 영향 없음
