@@ -205,10 +205,12 @@ export function HistoryList({ onSelect, activeJobId, refreshToken = 0, scope = "
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
                 >
-                  <button
-                    type="button"
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => onSelect(it.job_id)}
-                    className={`block w-full px-4 py-3 text-left transition-all border-l-2 ${
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onSelect(it.job_id); }}
+                    className={`block w-full px-4 py-3 text-left transition-all border-l-2 cursor-pointer ${
                       isActive ? activeItemClass : `${itemHoverClass} border-l-transparent`
                     }`}
                   >
@@ -253,7 +255,7 @@ export function HistoryList({ onSelect, activeJobId, refreshToken = 0, scope = "
                         </button>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 </motion.li>
               );
             })}
