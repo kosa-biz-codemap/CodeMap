@@ -112,7 +112,7 @@ async def validate_required_schema() -> None:
                     f"Required database table '{table}' is missing. "
                     "Please initialize your database schema first."
                 )
->>>>>>> origin/main
+
 
 # 비동기 SQLAlchemy 엔진 생성
 engine = create_async_engine(

@@ -175,10 +175,12 @@ async def rebuild_doc(
 
     return DocRebuildResponse(
         data=DocRebuildData(
-            job_id=job_id,
-            repo_id=repo_id,
-            previous_version=previous_version,
-            new_version=new_version,
+            **{
+                "job_id": job_id,
+                "repo_id": repo_id,
+                "previous_version": previous_version,
+                "new_version": new_version,
+            }
         )
     )
 
