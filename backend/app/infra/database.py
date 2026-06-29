@@ -6,6 +6,12 @@ FastAPI 의존성 주입(Dependency Injection)용 get_db 함수를 제공한다.
 """
 
 from collections.abc import AsyncGenerator
+from typing import cast
+
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from psycopg import AsyncConnection
+from psycopg.rows import DictRow
+from psycopg_pool import AsyncConnectionPool
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
@@ -36,15 +42,14 @@ PSYCOPG_URL = re.sub(
     db_url_str,
 )
 
-# LangGraph checkpoint용 psycopg Connection Pool
-from psycopg_pool import AsyncConnectionPool
-from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
-
-checkpoint_pool = AsyncConnectionPool(
-    conninfo=PSYCOPG_URL,
-    max_size=10,
-    kwargs={"autocommit": True, "prepare_threshold": 0},
-    open=False,
+checkpoint_pool = cast(
+    AsyncConnectionPool[AsyncConnection[DictRow]],
+    AsyncConnectionPool(
+        conninfo=PSYCOPG_URL,
+        max_size=10,
+        kwargs={"autocommit": True, "prepare_threshold": 0},
+        open=False,
+    ),
 )
 _checkpoint_saver = None
 
