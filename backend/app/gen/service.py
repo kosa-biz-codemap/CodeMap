@@ -28,6 +28,7 @@ from app.gen.repository import GenDocRepository
 from app.gen.schemas import (
     DocDangerFileItem,
     DocFolderSummaryItem,
+    DocFileSummaryItem,
     DocGetJsonData,
     DocGetMarkdownData,
     DocReadingOrderItem,
