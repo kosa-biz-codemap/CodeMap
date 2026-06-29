@@ -947,8 +947,11 @@ class AnalysisService:
                 "files": [],
                 "health_score": 50,
                 "health_metrics": {
-                    "security": 50, "modularity": 50, "quality": 50,
-                    "test": 50, "complexity": 50
+                    "score": 50,
+                    "test_ratio": 0.0,
+                    "todo_ratio": 0.0,
+                    "oversized_ratio": 0.0,
+                    "duplicate_code_ratio": 0.0,
                 },
                 "executive_summary": "분석 대상 텍스트 파일이 없는 빈 저장소입니다.",
                 "key_strengths": ["분석 대상 텍스트 파일이 없습니다."],
@@ -1087,16 +1090,6 @@ class AnalysisService:
         }
 
         ## 분석 소견/가이드라인 보강
-        if test_ratio < 0.05:
-            report["key_risks"].append(
-                "테스트 커버리지 및 회귀 테스트 기반이 부실합니다."
-            )
-            report["recommendations"].append({
-                "title": "테스트 커버리지 보완",
-                "detail": "핵심 로직에 대한 단위 및 통합 테스트를 보강하세요.",
-                "affected_files": env_res["entrypoints"][:3],
-                "priority": "high",
-            })
         if not env_res["has_mandatory_manifest"]:
             report["key_risks"].append(
                 f"{primary_language} 빌드 구성 파일이 결락되어 "
