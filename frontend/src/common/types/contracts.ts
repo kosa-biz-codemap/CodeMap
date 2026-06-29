@@ -295,6 +295,7 @@ export interface TeamInviteItem {
   inviteId: string;
   teamId: string;
   teamName: string;
+  email?: string;
   invitedByEmail?: string | null;
   status: string;
   expiresAt: string;
@@ -471,22 +472,22 @@ export interface PreValidateResponse {
   data: PreValidateData;
 }
 
+// ── DOCS-GEN types ─────────────────────────────────────────────────────────────
 
-// ── DOCS-GEN 타입 ─────────────────────────────────────────────────────────────
 export interface DocFolderSummary {
   path: string;
   summary: string;
 }
 
-export interface DocGetJsonData {
-  summary: string | null;
-  stack: string[];
-  readingOrder: string[];
-  dangerFiles: string[];
-  coreFlow: string | null;
-  folderSummaries: DocFolderSummary[];
-  generatedAt: string;
-  version: number;
+export interface DocReadingOrderItem {
+  rank: number;
+  path: string;
+  reason: string;
+}
+
+export interface DocDangerFileItem {
+  path: string;
+  reason: string;
 }
 
 export interface DocGetMarkdownData {
@@ -497,10 +498,17 @@ export interface DocGetMarkdownData {
   version: number;
 }
 
-export interface DocGetJsonResponse {
-  code: number;
-  message: string;
-  data: DocGetJsonData;
+export interface DocGetJsonData {
+  repoId: string;
+  repoName: string;
+  summary: string | null;
+  stack: string[];
+  readingOrder: DocReadingOrderItem[];
+  dangerFiles: DocDangerFileItem[];
+  coreFlow: string | null;
+  folderSummaries: DocFolderSummary[];
+  generatedAt: string;
+  version: number;
 }
 
 export interface DocGetMarkdownResponse {
@@ -509,12 +517,19 @@ export interface DocGetMarkdownResponse {
   data: DocGetMarkdownData;
 }
 
+export interface DocGetJsonResponse {
+  code: number;
+  message: string;
+  data: DocGetJsonData;
+}
+
 // ── DOCS-GEN-F-202 파일 단위 요약 타입 ────────────────────────────────────────
 export interface DocFileSummaryItem {
   path: string;
   fileName: string;
   priority: number | null;
   isDanger: boolean;
+  dangerReason: string | null;
   folderPath: string | null;
   folderSummary: string | null;
 }

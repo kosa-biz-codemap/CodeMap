@@ -1,33 +1,54 @@
 import type {
-    DocGetJsonResponse,
+  DocGetJsonResponse,
+  DocGetMarkdownResponse,
 } from "@/common/types/contracts";
+import { parseApiError } from "@/common/api/error";
+import { apiPath } from "@/features/analysis/api/api";
 import { getAccessToken } from "@/features/auth/utils/tokenMemory";
 
-const BASE_PATH = (process.env.NEXT_PUBLIC_BASE_PATH || "").replace(/\/$/, "");
-const DOCS_BASE = `${BASE_PATH}/api/gen/docs`;
-
-function authHeaders(): HeadersInit {
-    const token = getAccessToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
+function authHeader(): Record<string, string> {
+  const token = getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/**
+ * GET /api/gen/docs/{repo_id}?format=markdown
+ * 온보딩 가이드북 Markdown 전문 조회 (DOCS-GEN-API-001)
+ */
+export async function fetchOnboardingDocMarkdown(
+  repoId: string,
+): Promise<DocGetMarkdownResponse> {
+  const resp = await fetch(
+    apiPath(`/gen/docs/${repoId}?format=markdown`),
+    { headers: authHeader() },
+  );
+  if (!resp.ok) {
+    throw await parseApiError(resp);
+  }
+  return resp.json() as Promise<DocGetMarkdownResponse>;
+}
+
+/**
+ * GET /api/gen/docs/{repo_id}?format=json
+ * 온보딩 가이드북 JSON 구조 조회 (DOCS-GEN-API-001)
+ */
 export async function fetchOnboardingDocJson(
-    repoId: string
+  repoId: string,
 ): Promise<DocGetJsonResponse> {
-    const res = await fetch(
-        `${DOCS_BASE}/${repoId}?format=json`,
-        { headers: authHeaders() }
-    );
-    if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-            (body as { message?: string }).message ??
-            `docs fetch error: ${res.status}`
-        );
-    }
-    return res.json() as Promise<DocGetJsonResponse>;
+  const resp = await fetch(
+    apiPath(`/gen/docs/${repoId}?format=json`),
+    { headers: authHeader() },
+  );
+  if (!resp.ok) {
+    throw await parseApiError(resp);
+  }
+  return resp.json() as Promise<DocGetJsonResponse>;
 }
 
+/**
+ * /api/gen/docs/{repo_id}/download?format=md 다운로드 URL 반환
+ * 실제 fetch는 브라우저 anchor 태그로 처리 (DOCS-GEN-API-004)
+ */
 export function buildMarkdownDownloadUrl(repoId: string): string {
-    return `${DOCS_BASE}/${repoId}/download?format=md`;
+  return apiPath(`/gen/docs/${repoId}/download?format=md`);
 }
