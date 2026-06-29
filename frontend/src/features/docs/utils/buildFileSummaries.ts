@@ -2,8 +2,8 @@ import type {
     DocFolderSummary,
     DocReadingOrderItem,
     DocDangerFileItem,
-    DocFileSummaryRaw,
     DocFileSummaryItem,
+    DocFileSummaryRaw,
 } from "@/common/types/contracts";
 
 
@@ -19,7 +19,7 @@ export function buildFileSummaries(
     const priorityMap = new Map<string, number>(
         readingOrder.map((r) => [r.path, r.rank])
     );
-    const fileSummaryMap = new Map<string, string>(
+    const fileSummaryMap = new Map<string, string | null>(
         fileSummaries.map((f) => [f.path, f.summary])
     );
     const folderMap = new Map<string, DocFolderSummary>(

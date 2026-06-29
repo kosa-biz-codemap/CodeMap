@@ -357,6 +357,9 @@ class GetOnboardingDocServiceTests(unittest.IsolatedAsyncioTestCase):
                 "risk_files": [{"file": "config.py", "reason": "환경 설정 주의"}],
             },
             "file_map": {"backend/": "API 서버"},
+            "file_summaries": [
+                {"path": "src/app/page.tsx", "summary": "Next.js 앱 라우터 진입 경로"}
+            ],
         }
 
         with (
@@ -379,6 +382,9 @@ class GetOnboardingDocServiceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.reading_order[0].reason, "")
         self.assertEqual(result.danger_files[0].path, "config.py")
         self.assertEqual(result.danger_files[0].reason, "환경 설정 주의")
+        self.assertEqual(len(result.file_summaries), 1)
+        self.assertEqual(result.file_summaries[0].path, "src/app/page.tsx")
+        self.assertEqual(result.file_summaries[0].summary, "Next.js 앱 라우터 진입 경로")
         self.assertEqual(result.folder_summaries[0].path, "backend/")
 
     async def test_json_format_with_none_report_json(self):
