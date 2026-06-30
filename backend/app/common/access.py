@@ -15,6 +15,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.models import TeamMember
 
 
+_bg_tasks: set = set()
+
+
 # ──────────────────────────────────────────────
 # user_has_team_access: 팀의 active member 여부
 # ──────────────────────────────────────────────
@@ -88,4 +91,6 @@ def touch_last_accessed(db: AsyncSession, job_id: UUID) -> None:
                 exc_info=True,
             )
 
-    asyncio.create_task(_do_update())
+    task = asyncio.create_task(_do_update())
+    _bg_tasks.add(task)
+    task.add_done_callback(_bg_tasks.discard)

@@ -589,6 +589,7 @@ async def get_file_content(
                 await session.commit()
         except Exception as exc:
             logger.error("[get_file_content] 자동 재클론 복구 실패: %s", exc)
+            raise WorkspaceNotReadyError() from exc
 
     if clone_root.exists() and target.exists() and target.is_file():
         content, truncated = await asyncio.to_thread(
