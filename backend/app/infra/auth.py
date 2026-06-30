@@ -14,15 +14,34 @@ JWT 생성/검증 헬퍼를 제공한다.
 """
 
 from datetime import datetime, timedelta, timezone
+import base64
+import hashlib
 
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, ExpiredSignatureError, jwt
+from cryptography.fernet import Fernet
+import jwt
 
 from app.infra.config import get_settings
 from app.common.exceptions import UnauthorizedError, TokenExpiredError
 
 settings = get_settings()
+
+# JWT_SECRET 기반 Fernet 32바이트 대칭키 결정론적 도출
+_secret_bytes = settings.JWT_SECRET.encode("utf-8")
+_key_hash = hashlib.sha256(_secret_bytes).digest()
+_fernet_key = base64.urlsafe_b64encode(_key_hash)
+_cipher_suite = Fernet(_fernet_key)
+
+
+def encrypt_token(raw_token: str) -> str:
+    """JWT 문자열을 AES 대칭키(Fernet)로 안전하게 암호화합니다."""
+    return _cipher_suite.encrypt(raw_token.encode("utf-8")).decode("utf-8")
+
+
+def decrypt_token(encrypted_token: str) -> str:
+    """암호화된 JWT 문자열을 AES 대칭키(Fernet)로 복호화합니다."""
+    return _cipher_suite.decrypt(encrypted_token.encode("utf-8")).decode("utf-8")
 
 # Bearer 토큰 추출기 — /api/auth/login URL은 인증 불필요이므로 auto_error=False
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
@@ -34,7 +53,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=Fals
 
 def create_access_token(user_id: str, email: str) -> str:
     """
-    JWT Access Token 생성.
+    JWT Access Token 생성 및 AES 대칭 암호화.
 
     payload:
         sub  — user_id (UUID string)
@@ -50,7 +69,8 @@ def create_access_token(user_id: str, email: str) -> str:
         "exp": expire,
         "iat": now,
     }
-    return jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    raw_token = jwt.encode(payload, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
+    return encrypt_token(raw_token)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -59,25 +79,28 @@ def create_access_token(user_id: str, email: str) -> str:
 
 def verify_access_token(token: str) -> dict:
     """
-    JWT Access Token 서명 및 만료 시간 검증.
+    암호화된 토큰을 복호화하고 JWT Access Token 서명 및 만료 시간을 검증.
 
     Returns:
         dict: 디코딩된 payload (sub, email, exp, iat)
 
     Raises:
         TokenExpiredError: 만료
-        UnauthorizedError: 서명 불일치
+        UnauthorizedError: 서명 불일치 또는 복호화 오류
     """
     try:
+        # 1. AES 대칭키 복호화 선수행
+        raw_token = decrypt_token(token)
+        # 2. PyJWT 서명 및 명세 디코딩 검증
         payload = jwt.decode(
-            token,
+            raw_token,
             settings.JWT_SECRET,
             algorithms=[settings.JWT_ALGORITHM],
         )
         return payload
-    except ExpiredSignatureError:
+    except jwt.ExpiredSignatureError:
         raise TokenExpiredError()
-    except JWTError:
+    except (jwt.InvalidTokenError, Exception):
         raise UnauthorizedError()
 
 
