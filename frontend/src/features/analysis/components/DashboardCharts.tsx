@@ -113,7 +113,7 @@ export function DashboardCharts({ report }: Props) {
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius={65} data={radarData}>
               <PolarGrid stroke={isDark ? "#3f3f46" : "#e4e4e7"} />
-              <PolarAngleAxis dataKey="subject" tick={{ fill: isDark ? "#a1a1aa" : "#71717a", fontSize: 10 }} />
+              <PolarAngleAxis dataKey="subject" radius={78} tick={{ fill: isDark ? "#a1a1aa" : "#71717a", fontSize: 10 }} />
               <PolarRadiusAxis
                 angle={90}
                 axisLine={false}
