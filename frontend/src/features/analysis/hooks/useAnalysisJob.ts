@@ -79,17 +79,21 @@ export function useAnalysisJob({
   useEffect(() => {
     if (preview) return;
     if (queryJobId) {
-      setJobId(queryJobId);
-      setShowNewAnalysis(false);
-      setStatus("loading");
-      queueMicrotask(() => void loadJob(queryJobId));
+      queueMicrotask(() => {
+        setJobId(queryJobId);
+        setShowNewAnalysis(false);
+        setStatus("loading");
+        void loadJob(queryJobId);
+      });
     } else {
-      setJobId(null);
-      setJob(null);
-      setReport(null);
-      setStatus("idle");
-      setError(null);
-      setShowNewAnalysis(true);
+      queueMicrotask(() => {
+        setJobId(null);
+        setJob(null);
+        setReport(null);
+        setStatus("idle");
+        setError(null);
+        setShowNewAnalysis(true);
+      });
     }
   }, [queryJobId, loadJob, preview]);
 

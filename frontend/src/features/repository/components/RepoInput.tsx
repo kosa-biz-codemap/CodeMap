@@ -53,7 +53,7 @@ export function RepoInput({
 
   // searchParams(initialPath)가 변경되어 Next.js가 컴포넌트를 재사용할 때 상태를 동기화한다.
   useEffect(() => {
-    if (initialPath) setValue(initialPath);
+    if (initialPath) queueMicrotask(() => setValue(initialPath));
   }, [initialPath]);
   const [branch, setBranch] = useState("");
   const [forceRefresh, setForceRefresh] = useState(false);
