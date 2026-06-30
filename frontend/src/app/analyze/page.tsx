@@ -49,7 +49,7 @@ function getInitialCodePanelWidth() {
 
 const CHAT_PANEL_WIDTH_STORAGE_KEY = "codemap:analyze:chat-panel-width";
 const CHAT_PANEL_DEFAULT_WIDTH = 400;
-const CHAT_PANEL_MIN_WIDTH = 280;
+const CHAT_PANEL_MIN_WIDTH = 400;
 const CHAT_PANEL_MAX_WIDTH = 600;
 
 function clampChatPanelWidth(width: number) {
