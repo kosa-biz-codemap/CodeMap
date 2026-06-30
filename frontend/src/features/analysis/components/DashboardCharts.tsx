@@ -86,7 +86,14 @@ export function DashboardCharts({ report }: Props) {
             <RadarChart cx="50%" cy="50%" outerRadius={65} data={radarData}>
               <PolarGrid stroke={isDark ? "#3f3f46" : "#e4e4e7"} />
               <PolarAngleAxis dataKey="subject" tick={{ fill: isDark ? "#a1a1aa" : "#71717a", fontSize: 10 }} />
-              <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
+              <PolarRadiusAxis
+                angle={0}
+                axisLine={false}
+                domain={[0, 100]}
+                tick={{ fill: isDark ? "#d4d4d8" : "#52525b", fontSize: 9 }}
+                tickLine={false}
+                ticks={[25, 50, 75, 100]}
+              />
               <Radar name="Repository" dataKey="A" stroke="#818cf8" fill="#818cf8" fillOpacity={0.4} />
               <Tooltip 
                 contentStyle={{ 
