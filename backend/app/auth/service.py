@@ -25,6 +25,7 @@ from app.auth.schemas import (
 from app.infra.auth import create_access_token
 from app.infra.config import get_settings
 from app.team.service import TeamService
+from cryptography.fernet import InvalidToken as FernetInvalidToken
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -178,8 +179,11 @@ class AuthService:
             if payload.get("type") != "refresh":
                 logger.warning("[AUTH] 토큰 갱신 실패: 타입 불일치")
                 return RefreshResponse(success=False, message="유효하지 않은 토큰 타입입니다.")
-        except (jwt.InvalidTokenError, Exception):
-            logger.warning("[AUTH] 토큰 갱신 실패: JWT 서명 검증 및 복호화 실패")
+        except jwt.ExpiredSignatureError:
+            logger.warning("[AUTH] 토큰 갱신 실패: JWT 서명 만료", exc_info=True)
+            return RefreshResponse(success=False, message="토큰이 만료되었습니다. 다시 로그인해주세요.")
+        except (jwt.PyJWTError, FernetInvalidToken):
+            logger.warning("[AUTH] 토큰 갱신 실패: JWT 서명 검증 및 복호화 실패", exc_info=True)
             return RefreshResponse(success=False, message="유효하지 않은 토큰입니다.")
 
         # 4. 새 토큰 발급 (Access & Refresh - Rotation)

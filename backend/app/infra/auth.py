@@ -19,7 +19,7 @@ import hashlib
 
 from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken as FernetInvalidToken
 import jwt
 
 from app.infra.config import get_settings
@@ -100,7 +100,7 @@ def verify_access_token(token: str) -> dict:
         return payload
     except jwt.ExpiredSignatureError:
         raise TokenExpiredError()
-    except (jwt.InvalidTokenError, Exception):
+    except (jwt.PyJWTError, FernetInvalidToken):
         raise UnauthorizedError()
 
 
