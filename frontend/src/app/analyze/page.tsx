@@ -163,7 +163,7 @@ function AnalyzeWorkspace() {
     if (contextFile) setSelectedFile(contextFile);
     setChatPrompt(prompt);
     setChatPromptNonce((value) => value + 1);
-    if (window.matchMedia("(max-width: 1279px)").matches) setMobileChatOpen(true);
+    setMobileChatOpen(true);
   };
 
   const repoName = report?.repository.name || job?.repoName || "새 프로젝트";
@@ -215,7 +215,15 @@ function AnalyzeWorkspace() {
         <div className="ml-auto flex items-center gap-1.5">
           {report && <span className={`hidden rounded-md border px-2 py-1 font-mono text-[8px] md:inline ${isDark ? "border-zinc-800 bg-zinc-900 text-zinc-600" : "border-zinc-200 bg-zinc-100 text-zinc-500"}`}>{preview ? "PREVIEW" : jobId?.slice(0, 8)}</span>}
           <button onClick={() => setShowNewAnalysis(true)} className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[10px] font-semibold transition ${isDark ? "border-zinc-800 text-zinc-400 hover:bg-zinc-900 hover:text-white" : "border-zinc-200 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"}`}><Plus className="size-3" /> {isKo ? "새 분석" : "New Analysis"}</button>
-          <button onClick={() => setMobileChatOpen(true)} disabled={!chatRepoId} className={`inline-flex items-center gap-1.5 rounded-lg bg-blue-500 px-2.5 py-1.5 text-[10px] font-bold text-white transition hover:bg-blue-400 disabled:bg-zinc-900 disabled:text-zinc-700 xl:hidden`}><PanelRightOpen className="size-3" /> AI Chat</button>
+          <button
+            onClick={() => setMobileChatOpen((open) => !open)}
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-white transition ${
+              mobileChatOpen ? "bg-zinc-700 hover:bg-zinc-600" : "bg-blue-500 hover:bg-blue-400"
+            }`}
+          >
+            <PanelRightOpen className="size-3" />
+            {mobileChatOpen ? (isKo ? "숨김" : "Close") : (isKo ? "AI 채팅" : "AI Chat")}
+          </button>
         </div>
       </header>
 
@@ -342,25 +350,29 @@ function AnalyzeWorkspace() {
           </>
         )}
 
-        <aside className={`hidden w-[400px] shrink-0 border-l xl:block ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
-          <ChatInterface
-            repoId={chatRepoId}
-            repoName={repoName}
-            threadId={threadId}
-            compact
-            preview={preview}
-            contextFile={selectedFile}
-            initialPrompt={chatPrompt}
-            initialPromptKey={chatPromptNonce}
-            onThreadChange={setThreadId}
-            onReferenceClick={(file, line, lineEnd) => {
-              setSelectedFile(file);
-              setSelectedLine(line ?? null);
-              setSelectedLineEnd(lineEnd ?? null);
-            }}
-            onClearContextFile={() => setSelectedFile(null)}
-            expandHref={fullChatUrl}
-          />
+        <aside className={`hidden shrink-0 overflow-hidden border-l transition-[width] duration-200 ease-out xl:block ${
+          mobileChatOpen ? "w-[400px]" : "w-0 border-l-0"
+        } ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
+          <div className="h-full w-[400px]">
+            <ChatInterface
+              repoId={chatRepoId}
+              repoName={repoName}
+              threadId={threadId}
+              compact
+              preview={preview}
+              contextFile={selectedFile}
+              initialPrompt={chatPrompt}
+              initialPromptKey={chatPromptNonce}
+              onThreadChange={setThreadId}
+              onReferenceClick={(file, line, lineEnd) => {
+                setSelectedFile(file);
+                setSelectedLine(line ?? null);
+                setSelectedLineEnd(lineEnd ?? null);
+              }}
+              onClearContextFile={() => setSelectedFile(null)}
+              expandHref={fullChatUrl}
+            />
+          </div>
         </aside>
       </div>
 
