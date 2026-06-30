@@ -139,3 +139,61 @@ class TestLRUCleanupAndLazyLoading:
             assert job == mock_job
             assert mode == "lite"
             assert str(repo_id) in clone_path
+
+    @pytest.mark.anyio
+    async def test_disk_usage_lru_cleanup_excludes_local_uploads(self):
+        """디스크 클린업 후보 선정 시 local-upload:// 접두사 주소를 가진 잡은 오름차순(LRU)에 관계없이 제외되는지 검증한다."""
+        mock_db = AsyncMock(spec=AsyncSession)
+        
+        # 1. 로컬 업로드 잡 (가장 오래됨)
+        job_local = MagicMock(spec=AnalysisJob)
+        job_local.id = uuid.uuid4()
+        job_local.repo_url = "local-upload://tmp-abcdef"
+        job_local.last_accessed_at = datetime.now(timezone.utc) - timedelta(days=5)
+        
+        # 2. 일반 깃허브 잡 (더 최신임)
+        job_git = MagicMock(spec=AnalysisJob)
+        job_git.id = uuid.uuid4()
+        job_git.repo_url = "https://github.com/user/project"
+        job_git.last_accessed_at = datetime.now(timezone.utc) - timedelta(days=2)
+
+        # DB execute 결과 모킹 (실제 쿼리 결과처럼 모킹 - local-upload는 where절에서 탈락하여 git job만 반환)
+        mock_execute_result = MagicMock()
+        mock_execute_result.scalars.return_value.all.return_value = [job_git]
+        mock_db.execute = AsyncMock(return_value=mock_execute_result)
+
+        service = AnalysisService(mock_db)
+
+        # 디스크 용량 모킹 (임계 초과 -> 정리 후 안전)
+        disk_usage_call_count = 0
+        def fake_disk_usage(path):
+            nonlocal disk_usage_call_count
+            disk_usage_call_count += 1
+            if disk_usage_call_count == 1:
+                return (100, 85, 15)  # 85% 사용량 (임계치 초과)
+            return (100, 65, 35)      # 65% 사용량 (정리 후 안전)
+
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch("shutil.disk_usage", side_effect=fake_disk_usage),
+            patch("app.repo.service.settings") as mock_settings,
+            patch("app.repo.service._safe_remove", MagicMock()) as mock_safe_remove,
+            patch("app.repo.service._remove_empty_parent", MagicMock())
+        ):
+            mock_settings.CLONE_BASE_DIR = tmpdir
+            
+            # jobs 디렉토리 생성
+            import os
+            for j in [job_local, job_git]:
+                os.makedirs(os.path.join(tmpdir, str(j.id), "repo"), exist_ok=True)
+
+            # 디스크 자동 클린업 기동
+            final_percent = await service.auto_cleanup_disk_usage(threshold_percent=80.0, target_percent=70.0)
+            
+            # 최종 용량이 떨어졌고, 가장 오래된 local_upload 대신 git job이 삭제 대상으로 검출 및 매칭되었는지 검증
+            assert final_percent == 65.0
+            mock_safe_remove.assert_called_once()
+            called_path = mock_safe_remove.call_args[0][0]
+            assert str(job_git.id) in str(called_path)
+            assert str(job_local.id) not in str(called_path)
+

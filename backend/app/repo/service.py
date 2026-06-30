@@ -598,7 +598,10 @@ class AnalysisService:
         cleaned_count = 0
         stmt = (
             select(AnalysisJob)
-            .where(AnalysisJob.status.in_([JobStatus.COMPLETED.value, JobStatus.FAILED.value]))
+            .where(
+                AnalysisJob.status.in_([JobStatus.COMPLETED.value, JobStatus.FAILED.value]),
+                ~AnalysisJob.repo_url.like("local-upload://%")
+            )
             .order_by(AnalysisJob.last_accessed_at.asc())
         )
         result = await self.db.execute(stmt)
@@ -645,6 +648,13 @@ class AnalysisService:
         job = await self.repository.get_job_by_id(job_id)
         if not job:
             raise JobNotFoundError()
+
+        if job.repo_url.startswith("local-upload://"):
+            raise CodeMapException(
+                400,
+                "LOCAL_UPLOAD_RESTORE_IMPOSSIBLE",
+                "로컬 업로드 프로젝트 스냅샷은 재클론 복구가 불가능합니다."
+            )
 
         clone_path = Path(settings.CLONE_BASE_DIR) / str(job_id) / "repo"
         if clone_path.exists():
