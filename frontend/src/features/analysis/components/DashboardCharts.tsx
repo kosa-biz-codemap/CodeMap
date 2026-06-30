@@ -112,7 +112,7 @@ export function DashboardCharts({ report }: Props) {
         <p className="text-[10px] text-zinc-500 mb-4">종합 품질 점수(Health Score) 기반 평가</p>
         <div className="h-[200px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius={62} data={radarData}>
+            <RadarChart cx="50%" cy="50%" outerRadius={70} data={radarData}>
               <PolarGrid stroke={isDark ? "#3f3f46" : "#e4e4e7"} />
               <PolarAngleAxis dataKey="subject" tick={{ fill: isDark ? "#a1a1aa" : "#71717a", fontSize: 10 }} />
               <PolarRadiusAxis
