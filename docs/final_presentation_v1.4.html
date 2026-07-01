@@ -625,6 +625,13 @@
       padding: 24px 28px;
     }
 
+    .mock-screen.launch-mock .screen-body {
+      min-height: 348px;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 20px;
+    }
+
     .screen-shot {
       background: #f8fafc;
       border: 1px solid #cfd8e8;
@@ -637,12 +644,12 @@
       width: 100%;
       height: 386px;
       object-fit: cover;
-      object-position: top left;
+      object-position: top center;
     }
 
     .screen-slide-caption {
       position: absolute;
-      left: 18px;
+      left: 50%;
       bottom: 16px;
       max-width: calc(100% - 36px);
       padding: 7px 10px;
@@ -651,7 +658,11 @@
       color: #fff;
       font-size: 12px;
       font-weight: 800;
+      text-align: center;
       backdrop-filter: blur(10px);
+      transform: translateX(-50%);
+      justify-content: center;
+      white-space: nowrap;
     }
 
     .screen-scroll-hint {
@@ -1252,25 +1263,41 @@ CodeMapState
           <span class="kicker">Feature 1</span>
           <h2>랜딩 페이지 렌더링 & 마이크로 인터랙션</h2>
           <div class="split-heavy">
-            <div class="screen">
-              <div class="screen-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-              <div class="screen-body feature-launch">
-                <div class="launch-copy">
-                  <div class="terminal-line">$ CodeMap.launch("https://github.com/vercel/next.js")</div>
-                  <div class="terminal-line">render: ASCII Scene + Repository Launcher</div>
-                  <div class="terminal-line">demo: FastAPI dependency flow → evidence tags</div>
-                  <div class="terminal-line">motion: scenario timer → typing → analyzing → answer</div>
-                  <div class="terminal-line">input: GitHub URL validation → example repo presets</div>
-                  <div class="terminal-line">route: /analyze?repo=... → analysis job bootstrap</div>
-                  <div class="terminal-line">state: recent repositories → session memory restore</div>
+            <div class="carousel-shell code-carousel">
+              <button class="carousel-arrow prev" type="button" aria-label="이전 화면">‹</button>
+              <div class="carousel-track" aria-label="랜딩 흐름과 실제 화면 캡처">
+                <div class="code-carousel-slide">
+                  <div class="mock-screen launch-mock">
+                    <div class="screen-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <div class="screen-body">
+                      <div class="launch-copy">
+                        <div class="terminal-line">$ CodeMap.launch("https://github.com/vercel/next.js")</div>
+                        <div class="terminal-line">render: ASCII Scene + Repository Launcher</div>
+                        <div class="terminal-line">demo: FastAPI dependency flow → evidence tags</div>
+                        <div class="terminal-line">motion: scenario timer → typing → analyzing → answer</div>
+                        <div class="terminal-line">input: GitHub URL validation → example repo presets</div>
+                        <div class="terminal-line">route: /analyze?repo=... → analysis job bootstrap</div>
+                        <div class="terminal-line">state: recent repositories → session memory restore</div>
+                      </div>
+                      <div class="metric-row bottom-pinned">
+                        <div class="metric"><b>10+</b><span>언어·프레임워크</span></div>
+                        <div class="metric"><b>4</b><span>Agent Workers</span></div>
+                        <div class="metric"><b>3</b><span>Demo Scenarios</span></div>
+                        <div class="metric"><b>1</b><span>URL 분석 시작</span></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="metric-row bottom-pinned">
-                  <div class="metric"><b>10+</b><span>언어·프레임워크</span></div>
-                  <div class="metric"><b>4</b><span>Agent Workers</span></div>
-                  <div class="metric"><b>3</b><span>Demo Scenarios</span></div>
-                  <div class="metric"><b>1</b><span>URL 분석 시작</span></div>
-                </div>
+                <figure class="code-carousel-slide screen-shot">
+                  <img src="assets/final_presentation/live-landing-ko-light.png" alt="CodeMap live landing page in Korean light mode">
+                  <figcaption class="screen-slide-caption">랜딩 Hero · Repository Launcher</figcaption>
+                </figure>
+                <figure class="code-carousel-slide screen-shot">
+                  <img src="assets/final_presentation/live-projects-ko-light.png" alt="CodeMap project analysis page in Korean light mode">
+                  <figcaption class="screen-slide-caption">새 저장소 분석 · 분석 기록 · 워크스페이스 CTA</figcaption>
+                </figure>
               </div>
+              <button class="carousel-arrow next" type="button" aria-label="다음 화면">›</button>
             </div>
             <article class="card">
               <span class="label">구현 상세</span>
@@ -1283,25 +1310,19 @@ CodeMapState
               <p class="quote" style="margin-top:14px; font-size: 17px;">단순 홍보 화면이 아니라 “입력 → 분석 → 근거 확인”으로 이어지는 실제 제품 첫 화면입니다.</p>
             </article>
           </div>
-          <div class="capture-gallery">
-            <div class="gallery-head">
-              <div class="gallery-title">Live Demo 캡처: 랜딩에서 분석 워크스페이스 진입까지</div>
-              <div class="gallery-hint">‹ / ›</div>
-            </div>
-            <div class="carousel-shell">
-              <button class="carousel-arrow prev" type="button" aria-label="이전 캡처">‹</button>
-              <div class="capture-track" aria-label="랜딩 페이지 실제 화면 갤러리">
-                <figure class="capture-card">
-                  <img src="assets/final_presentation/live-landing-ko-light.png" alt="CodeMap live landing page in Korean light mode">
-                  <figcaption class="capture-caption">랜딩 Hero · Repository Launcher</figcaption>
-                </figure>
-                <figure class="capture-card">
-                  <img src="assets/final_presentation/live-projects-ko-light.png" alt="CodeMap project analysis page in Korean light mode">
-                  <figcaption class="capture-caption">새 저장소 분석 · 분석 기록 · 워크스페이스 CTA</figcaption>
-                </figure>
-              </div>
-              <button class="carousel-arrow next" type="button" aria-label="다음 캡처">›</button>
-            </div>
+          <div class="grid-3">
+            <article class="card compact blue">
+              <h3>Hero 구성요소</h3>
+              <p class="body">AsciiScene 배경 + Badge + 타이틀 + RepositoryLauncher + 예시 저장소(fastapi, numpy, next.js) + 통계 행</p>
+            </article>
+            <article class="card compact green">
+              <h3>데모 시나리오</h3>
+              <p class="body">FastAPI 의존성 흐름, NumPy 구조 분석, Requests 보안 탐색 — 각 시나리오를 자동 순환 시연</p>
+            </article>
+            <article class="card compact orange">
+              <h3>랜딩 섹션 구성</h3>
+              <p class="body">Hero → Trending → How It Works → Demo → Bento Features → Security → Use Cases → FAQ → CTA</p>
+            </article>
           </div>
         </div>
       </div>
@@ -1365,12 +1386,12 @@ CodeMapState
                   <div class="mock-screen">
                     <div class="screen-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
                     <div class="screen-body">
-                    <div class="terminal-line">src/features/chat/components/ChatMessage.tsx  L37-L49</div>
-                    <div class="terminal-line">37 const getReferenceLineStart = ...</div>
-                    <div class="terminal-line">38 const getReferenceLineEnd = ...</div>
-                    <div class="terminal-line" style="background:rgba(250,204,21,.15); color:#fef3c7; padding:2px 8px; border-radius:6px;">39 const getReferenceLineLabel = ...</div>
-                    <div class="terminal-line">40 if (lineStart === null) return "라인 미확인";</div>
-                    <div class="terminal-line">41 return `L${lineStart}`;</div>
+                      <div class="terminal-line">src/features/chat/components/ChatMessage.tsx  L37-L49</div>
+                      <div class="terminal-line">37 const getReferenceLineStart = ...</div>
+                      <div class="terminal-line">38 const getReferenceLineEnd = ...</div>
+                      <div class="terminal-line" style="background:rgba(250,204,21,.15); color:#fef3c7; padding:2px 8px; border-radius:6px;">39 const getReferenceLineLabel = ...</div>
+                      <div class="terminal-line">40 if (lineStart === null) return "라인 미확인";</div>
+                      <div class="terminal-line">41 return `L${lineStart}`;</div>
                     </div>
                   </div>
                 </div>
