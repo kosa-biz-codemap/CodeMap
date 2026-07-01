@@ -552,15 +552,11 @@
       color: #c7d2fe;
     }
 
-    .screen-carousel {
-      min-height: 386px;
+    .carousel-shell {
+      position: relative;
     }
 
-    .screen-carousel .screen-body {
-      padding: 0;
-    }
-
-    .screen-slide-track {
+    .carousel-track {
       display: grid;
       grid-auto-flow: column;
       grid-auto-columns: 100%;
@@ -571,31 +567,75 @@
       scrollbar-color: rgba(199,210,254,.38) transparent;
     }
 
-    .screen-slide-track::-webkit-scrollbar { height: 7px; }
-    .screen-slide-track::-webkit-scrollbar-thumb {
+    .carousel-track::-webkit-scrollbar { height: 7px; }
+    .carousel-track::-webkit-scrollbar-thumb {
       background: rgba(199,210,254,.38);
       border-radius: 999px;
     }
 
-    .screen-slide {
+    .carousel-arrow {
+      position: absolute;
+      top: 50%;
+      z-index: 4;
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(37,99,235,.24);
+      border-radius: 999px;
+      background: rgba(255,255,255,.92);
+      color: var(--blue);
+      font-size: 26px;
+      font-weight: 900;
+      line-height: 1;
+      box-shadow: 0 12px 28px rgba(15,23,42,.16);
+      cursor: pointer;
+      transform: translateY(-50%);
+    }
+
+    .carousel-arrow.prev { left: 12px; }
+    .carousel-arrow.next { right: 12px; }
+
+    .code-carousel {
+      min-height: 386px;
+    }
+
+    .code-carousel .carousel-track {
+      border-radius: 22px;
+    }
+
+    .code-carousel-slide {
       position: relative;
       min-height: 350px;
+      overflow: hidden;
       scroll-snap-align: start;
     }
 
-    .screen-slide.code-mock {
+    .mock-screen {
+      min-height: 386px;
+      border: 1px solid #cfd8e8;
+      border-radius: 22px;
+      background: #0b1020;
+      color: #dbeafe;
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 20px 52px rgba(15,23,42,.18);
+    }
+
+    .mock-screen .screen-body {
       padding: 24px 28px;
     }
 
     .screen-shot {
-      overflow: hidden;
       background: #f8fafc;
+      border: 1px solid #cfd8e8;
+      border-radius: 22px;
+      box-shadow: 0 20px 52px rgba(15,23,42,.16);
     }
 
     .screen-shot img {
       display: block;
       width: 100%;
-      height: 350px;
+      height: 386px;
       object-fit: cover;
       object-position: top left;
     }
@@ -709,7 +749,7 @@
     .capture-track {
       display: grid;
       grid-auto-flow: column;
-      grid-auto-columns: minmax(560px, 72%);
+      grid-auto-columns: 100%;
       gap: 14px;
       overflow-x: auto;
       overscroll-behavior-x: contain;
@@ -1246,17 +1286,21 @@ CodeMapState
           <div class="capture-gallery">
             <div class="gallery-head">
               <div class="gallery-title">Live Demo 캡처: 랜딩에서 분석 워크스페이스 진입까지</div>
-              <div class="gallery-hint">scroll →</div>
+              <div class="gallery-hint">‹ / ›</div>
             </div>
-            <div class="capture-track" aria-label="랜딩 페이지 실제 화면 갤러리">
-              <figure class="capture-card">
-                <img src="assets/final_presentation/live-landing-ko-light.png" alt="CodeMap live landing page in Korean light mode">
-                <figcaption class="capture-caption">랜딩 Hero · Repository Launcher</figcaption>
-              </figure>
-              <figure class="capture-card">
-                <img src="assets/final_presentation/live-projects-ko-light.png" alt="CodeMap project analysis page in Korean light mode">
-                <figcaption class="capture-caption">새 저장소 분석 · 분석 기록 · 워크스페이스 CTA</figcaption>
-              </figure>
+            <div class="carousel-shell">
+              <button class="carousel-arrow prev" type="button" aria-label="이전 캡처">‹</button>
+              <div class="capture-track" aria-label="랜딩 페이지 실제 화면 갤러리">
+                <figure class="capture-card">
+                  <img src="assets/final_presentation/live-landing-ko-light.png" alt="CodeMap live landing page in Korean light mode">
+                  <figcaption class="capture-caption">랜딩 Hero · Repository Launcher</figcaption>
+                </figure>
+                <figure class="capture-card">
+                  <img src="assets/final_presentation/live-projects-ko-light.png" alt="CodeMap project analysis page in Korean light mode">
+                  <figcaption class="capture-caption">새 저장소 분석 · 분석 기록 · 워크스페이스 CTA</figcaption>
+                </figure>
+              </div>
+              <button class="carousel-arrow next" type="button" aria-label="다음 캡처">›</button>
             </div>
           </div>
         </div>
@@ -1314,29 +1358,32 @@ CodeMapState
           <span class="kicker">Feature 3</span>
           <h2>코드 탐색 에디터: 근거 클릭에서 라인 하이라이트까지</h2>
           <div class="split-heavy">
-            <div class="screen screen-carousel">
-              <div class="screen-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-              <div class="screen-body">
-                <div class="screen-slide-track" aria-label="코드 프리뷰와 실제 화면 캡처">
-                  <div class="screen-slide code-mock">
+            <div class="carousel-shell code-carousel">
+              <button class="carousel-arrow prev" type="button" aria-label="이전 화면">‹</button>
+              <div class="carousel-track" aria-label="코드 프리뷰와 실제 화면 캡처">
+                <div class="code-carousel-slide">
+                  <div class="mock-screen">
+                    <div class="screen-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    <div class="screen-body">
                     <div class="terminal-line">src/features/chat/components/ChatMessage.tsx  L37-L49</div>
                     <div class="terminal-line">37 const getReferenceLineStart = ...</div>
                     <div class="terminal-line">38 const getReferenceLineEnd = ...</div>
                     <div class="terminal-line" style="background:rgba(250,204,21,.15); color:#fef3c7; padding:2px 8px; border-radius:6px;">39 const getReferenceLineLabel = ...</div>
                     <div class="terminal-line">40 if (lineStart === null) return "라인 미확인";</div>
                     <div class="terminal-line">41 return `L${lineStart}`;</div>
-                    <div class="screen-scroll-hint">scroll →</div>
+                    </div>
                   </div>
-                  <figure class="screen-slide screen-shot">
-                    <img src="assets/final_presentation/live-workspace-ko-light.png" alt="CodeMap workspace analysis dashboard in Korean light mode">
-                    <figcaption class="screen-slide-caption">분석 대시보드 · 파일 트리 · 진입점 카드</figcaption>
-                  </figure>
-                  <figure class="screen-slide screen-shot">
-                    <img src="assets/final_presentation/live-code-panel-ko-light.png" alt="CodeMap file context panel in Korean light mode">
-                    <figcaption class="screen-slide-caption">파일 클릭 · 우측 컨텍스트 패널 · 채팅 연결</figcaption>
-                  </figure>
                 </div>
+                <figure class="code-carousel-slide screen-shot">
+                  <img src="assets/final_presentation/live-workspace-ko-light.png" alt="CodeMap workspace analysis dashboard in Korean light mode">
+                  <figcaption class="screen-slide-caption">분석 대시보드 · 파일 트리 · 진입점 카드</figcaption>
+                </figure>
+                <figure class="code-carousel-slide screen-shot">
+                  <img src="assets/final_presentation/live-code-panel-ko-light.png" alt="CodeMap file context panel in Korean light mode">
+                  <figcaption class="screen-slide-caption">파일 클릭 · 우측 컨텍스트 패널 · 채팅 연결</figcaption>
+                </figure>
               </div>
+              <button class="carousel-arrow next" type="button" aria-label="다음 화면">›</button>
             </div>
             <article class="card">
               <span class="label">구현 상세</span>
@@ -1478,6 +1525,18 @@ CodeMapState
 
     document.getElementById("prev").addEventListener("click", () => go(-1));
     document.getElementById("next").addEventListener("click", () => go(1));
+    document.querySelectorAll(".carousel-arrow").forEach((button) => {
+      button.addEventListener("click", () => {
+        const shell = button.closest(".carousel-shell");
+        const track = shell?.querySelector(".carousel-track, .capture-track");
+        if (!track) return;
+        const direction = button.classList.contains("prev") ? -1 : 1;
+        const firstSlide = track.firstElementChild;
+        const gap = Number.parseFloat(getComputedStyle(track).columnGap || "0") || 0;
+        const step = firstSlide ? firstSlide.getBoundingClientRect().width + gap : track.clientWidth;
+        track.scrollTo({ left: track.scrollLeft + direction * step, behavior: "smooth" });
+      });
+    });
     window.addEventListener("keydown", (event) => {
       if (event.key === "ArrowRight" || event.key === " ") go(1);
       if (event.key === "ArrowLeft") go(-1);
