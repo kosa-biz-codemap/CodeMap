@@ -832,8 +832,8 @@
       z-index: 10;
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 9px 14px;
+      gap: clamp(8px, 1vw, 12px);
+      padding: clamp(6px, 0.8vw, 9px) clamp(10px, 1.2vw, 14px);
       border: 1px solid rgba(37, 99, 235, .22);
       border-radius: 999px;
       background: rgba(255,255,255,.88);
@@ -842,23 +842,23 @@
     }
 
     #nav button {
-      width: 36px;
-      height: 36px;
+      width: clamp(28px, 3.5vw, 36px);
+      height: clamp(28px, 3.5vw, 36px);
       border: 0;
       border-radius: 50%;
       background: #e8f0ff;
       color: var(--blue);
-      font-size: 20px;
+      font-size: clamp(16px, 2vw, 20px);
       font-weight: 800;
       cursor: pointer;
     }
 
     #counter {
-      min-width: 58px;
+      min-width: clamp(48px, 5.5vw, 58px);
       text-align: center;
       color: var(--muted);
       font-family: var(--mono);
-      font-size: 13px;
+      font-size: clamp(11px, 1.2vw, 13px);
       font-weight: 800;
     }
 
