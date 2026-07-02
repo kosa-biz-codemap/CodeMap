@@ -1108,30 +1108,20 @@
           <article class="card compact" style="margin-top: 4px;">
             <span class="label">개발 프로세스</span>
             <div class="diagram">
+              <div class="node">Spec-First<br>명세·아키텍처 작성</div>
+              <div class="arrow">→</div>
               <div class="node">Issue 생성<br>요구사항 정의</div>
               <div class="arrow">→</div>
               <div class="node">Feature Branch<br>명세 기반 구현</div>
               <div class="arrow">→</div>
-              <div class="node">Pull Request<br>Spec 대조 리뷰</div>
-              <div class="arrow">→</div>
-              <div class="node">CI 검증<br>팀원 Approve</div>
+              <div class="node">Pull Request<br>2인 Approve</div>
               <div class="arrow">→</div>
               <div class="node">Main 병합<br>자동 배포</div>
             </div>
           </article>
           <article class="card compact" style="background: linear-gradient(135deg, rgba(37, 99, 235, .06), rgba(8, 145, 178, .04));">
             <span class="label">협업 방식</span>
-            <div class="collab-flow">
-              <div>
-                <p class="body" style="margin: 0;"><strong>PR 리뷰 기반 개발</strong> — 모든 기능 변경은 PR로 요청하고, 명세 문서와 대조하여 코드 리뷰를 진행합니다. 리뷰 승인 후에만 main에 병합합니다.</p>
-              </div>
-              <div class="collab-tags">
-                <span class="chip collab-tag">Feature Branch</span>
-                <span class="chip collab-tag">Code Review</span>
-                <span class="chip collab-tag">Spec-First</span>
-                <span class="chip collab-tag">CI/CD</span>
-              </div>
-            </div>
+            <p class="body" style="margin: 0;">GitHub Organization으로 저장소를 관리하고, PR Template과 PR 리뷰 전용 Agent Skill을 활용해 명세 대조 리뷰를 수행합니다. 모든 PR은 <strong>팀원 2명의 Approve</strong>를 받아야 main에 병합됩니다.</p>
           </article>
         </div>
       </div>
