@@ -839,6 +839,13 @@
       background: rgba(255,255,255,.88);
       backdrop-filter: blur(18px);
       box-shadow: 0 12px 34px rgba(15, 23, 42, .14);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    #nav.nav-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 10px);
     }
 
     #nav button {
@@ -1700,6 +1707,27 @@ CodeMapState
     window.addEventListener("resize", scaleSlides);
     scaleSlides();
     render();
+
+    /* Auto-hide navigation on mobile after inactivity */
+    let navTimeout;
+    const navEl = document.getElementById("nav");
+    
+    function resetNavTimer() {
+      navEl.classList.remove("nav-hidden");
+      clearTimeout(navTimeout);
+      
+      if (window.innerWidth <= 768) {
+        navTimeout = setTimeout(() => {
+          navEl.classList.add("nav-hidden");
+        }, 5000);
+      }
+    }
+    
+    ['touchstart', 'touchmove', 'mousedown', 'mousemove', 'keydown'].forEach(evt => {
+      document.addEventListener(evt, resetNavTimer, { passive: true });
+    });
+    window.addEventListener("resize", resetNavTimer);
+    resetNavTimer();
   </script>
 </body>
 </html>
