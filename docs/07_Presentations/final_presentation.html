@@ -1615,20 +1615,72 @@ CodeMapState
       if (event.key === "End") { current = slides.length - 1; render(); }
     });
 
-    /* Touch swipe support */
-    let touchStartX = 0;
-    let touchStartY = 0;
-    document.addEventListener("touchstart", (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-      touchStartY = e.changedTouches[0].screenY;
-    }, { passive: true });
-    document.addEventListener("touchend", (e) => {
-      const dx = e.changedTouches[0].screenX - touchStartX;
-      const dy = e.changedTouches[0].screenY - touchStartY;
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-        go(dx < 0 ? 1 : -1);
+    /* Mouse & Touch drag/swipe support for Slides & Carousels */
+    let pointerStartX = 0;
+    let pointerStartY = 0;
+    let isDragging = false;
+    let dragTarget = null;
+    let dragStartScroll = 0;
+
+    function handlePointerDown(e) {
+      if (e.button === 2) return; // Ignore right click
+      isDragging = true;
+      pointerStartX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+      pointerStartY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+      
+      const track = e.target.closest('.carousel-track, .capture-track');
+      if (track) {
+        dragTarget = track;
+        dragStartScroll = track.scrollLeft;
+        track.style.scrollSnapType = 'none';
+        track.style.scrollBehavior = 'auto';
+      } else {
+        dragTarget = null;
       }
-    }, { passive: true });
+    }
+
+    function handlePointerMove(e) {
+      if (!isDragging) return;
+      if (dragTarget) {
+        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        dragTarget.scrollLeft = dragStartScroll - (clientX - pointerStartX);
+      }
+    }
+
+    function handlePointerUp(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      const clientX = e.type.includes('touch') ? e.changedTouches[0].clientX : e.clientX;
+      const clientY = e.type.includes('touch') ? e.changedTouches[0].clientY : e.clientY;
+      const dx = clientX - pointerStartX;
+      const dy = clientY - pointerStartY;
+      
+      if (dragTarget) {
+        dragTarget.style.scrollSnapType = '';
+        dragTarget.style.scrollBehavior = 'smooth';
+        // Auto-snap to nearest slide based on momentum/direction
+        const firstSlide = dragTarget.firstElementChild;
+        if (firstSlide && Math.abs(dx) > 30) {
+          const gap = Number.parseFloat(getComputedStyle(dragTarget).columnGap || "0") || 0;
+          const step = firstSlide.getBoundingClientRect().width + gap;
+          const targetScroll = dragStartScroll + (dx < 0 ? step : -step);
+          dragTarget.scrollTo({ left: targetScroll, behavior: 'smooth' });
+        }
+        dragTarget = null;
+      } else {
+        // Global slide swipe
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 60) {
+          go(dx < 0 ? 1 : -1);
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('mousemove', handlePointerMove);
+    document.addEventListener('mouseup', handlePointerUp);
+    document.addEventListener('touchstart', handlePointerDown, { passive: true });
+    document.addEventListener('touchmove', handlePointerMove, { passive: true });
+    document.addEventListener('touchend', handlePointerUp);
 
     function scaleSlides() {
       const baseW = 1440;
