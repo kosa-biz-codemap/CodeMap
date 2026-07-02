@@ -1141,7 +1141,7 @@
               <div class="node">Main 병합<br>자동 배포</div>
             </div>
           </article>
-          <div style="display: grid; grid-template-columns: 0.85fr 2.15fr; gap: 22px;">
+          <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 22px;">
             <article class="card compact">
               <span class="label">협업 규칙</span>
               <ul style="margin: 6px 0 0; padding-left: 16px; color: var(--muted); font-size: 14px; line-height: 1.5; font-weight: 500;">
@@ -1154,7 +1154,7 @@
               <span class="label">협업 방식</span>
               <ul style="margin: 6px 0 0; padding-left: 16px; color: var(--muted); font-size: 14px; line-height: 1.5; font-weight: 500; white-space: nowrap;">
                 <li><strong>형상 관리:</strong> GitHub Organization + Feature Branch 전략과 Conventional Commits 컨벤션 적용</li>
-                <li><strong>코드 리뷰:</strong> PR Template, PR 리뷰 전용 Agent Skill 통해 명세 대조 리뷰 수행.<br>모든 PR은 <strong style="color: var(--blue);">팀원 2명의 Approve</strong> 후 병합</li>
+                <li><strong>코드 리뷰:</strong> PR Template, PR 리뷰 전용 Agent Skill 통해 명세 대조 리뷰 수행. 모든 PR은 <strong style="color: var(--blue);">팀원 2명의 Approve</strong> 후 병합</li>
                 <li><strong>산출물 문서화:</strong> <code>docs/</code> 폴더에 요구사항 명세서, API 계약, 설계 결정 문서를 관리하고 코드 변경 시 함께 현행화</li>
                 <li><strong>이슈·일정 관리:</strong> GitHub Issues와 Notion을 병행하여 태스크 생성, 담당자, 우선순위 관리</li>
                 <li><strong>의사소통:</strong> 매일 오전 진행 상황을 공유하고, 이슈 발생 시 실시간 논의 후 GitHub와 Notion에 기록</li>
@@ -1211,11 +1211,11 @@
           <div class="grid-3">
             <article class="card compact blue">
               <h3>53+ 기능 명세</h3>
-              <p class="body">Phase 1·2를 아우르는 기능 사양서와 15개 이상의 상세 스펙 문서로 요구사항을 체계화</p>
+              <p class="body">Phase 1·2를 아우르는 기능 사양서와 15개 이상의 <br>상세 스펙 문서로 요구사항을 체계화</p>
             </article>
             <article class="card compact green">
               <h3>22개 경쟁 분석</h3>
-              <p class="body">CodeWiki, RepoLens, CodeRAG 등 유사 서비스를 비교 분석하여 CodeMap만의 차별점 도출</p>
+              <p class="body">CodeWiki, RepoLens, CodeRAG 등 유사 서비스를 <br>비교 분석하여 CodeMap만의 차별점 도출</p>
             </article>
             <article class="card compact orange">
               <h3>8개 설계 결정</h3>
@@ -1235,12 +1235,21 @@
           <div class="split-heavy">
             <article class="card" style="display:flex; flex-direction:column;">
               <span class="label">Agent Core Pipeline</span>
-              <div style="flex:1; display:grid; place-items:center; border-radius:12px; background:rgba(37,99,235,0.04); border:1px solid rgba(37,99,235,0.1);">
-                <span style="color:var(--muted); font-size:14px; font-weight:500;">(아키텍처 이미지 영역)</span>
+              <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:12px;">
+                <img src="assets/architecture.png" alt="Architecture" style="width:100%; height:auto; border-radius:12px; box-shadow:0 12px 32px rgba(31,42,68,0.08);">
               </div>
             </article>
             <article class="card violet">
               <span class="label">Agent Core Pipeline</span>
+              <div class="diagram">
+                <div class="node">Planner<br>질문 재작성<br>도구 계획</div>
+                <div class="arrow">→</div>
+                <div class="node">Dispatcher<br>경로 검증<br>Fan-out</div>
+                <div class="arrow">→</div>
+                <div class="node">Workers<br>Search<br>Dir/Grep/Read</div>
+                <div class="arrow">→</div>
+                <div class="node">Evaluator<br>근거 압축<br>재탐색 판단</div>
+              </div>
               <ul style="margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.6; font-weight: 500;">
                 <li><b>역할 분리:</b> LLM은 계획과 최종 답변에 집중하고, 파일 접근·보안 검증은 결정론적 코드로 분리</li>
                 <li><b>Dispatcher:</b> 단일 경로 탐색에 그치지 않고, 승인된 경로들을 Search, Dir, Grep, Read - 4개의 워커로 동시 병렬 실행(Fan-out)하여 탐색 속도 극대화</li>
@@ -1253,7 +1262,7 @@
           </div>
           <article class="card compact">
             <span class="label">Session Memory</span>
-            <p class="body" style="margin: 0; line-height: 1.6;">기존 1회성 상태를 넘어서 DB 대화 이력과 LangGraph checkpoint를 함께 사용.<br/>프로젝트별 `sessionId`를 기준으로 이전 질문 · 답변 근거가 Planner 입력에 복원</p>
+            <p class="body" style="margin: 0; line-height: 1.6;">기존 1회성 상태를 넘어서 DB 대화 이력과 LangGraph checkpoint를 함께 사용. 프로젝트별 `sessionId`를 기준으로 이전 질문 · 답변 근거가 Planner 입력에 복원</p>
           </article>
         </div>
       </div>
