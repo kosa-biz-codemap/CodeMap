@@ -1356,6 +1356,7 @@
                 <li><code>Demo Scenarios</code> FastAPI, NumPy, Requests 시나리오를 통해 구조 분석, 보안 탐색, 근거 태그 시연</li>
               </ul>
               <p class="quote" style="margin-top: 24px; font-size: 17px;">“입력 → 분석 → 근거 확인”으로 이어지는 랜딩 페이지 구현</p>
+              <p class="quote" style="margin-top: 12px; font-size: 17px;">해커 느낌의 임팩트 있는 Hero 영역 구현</p>
             </article>
           </div>
           <div class="grid-3" style="grid-template-columns: 1.1fr 0.9fr 1fr;">
@@ -1480,6 +1481,7 @@
                 <li>접근성 설정: <code>prefers-reduced-motion</code> 확인 후 smooth scroll 또는 즉시 이동 분기</li>
                 <li>프리뷰 환경: 현재 가볍고 안정적인 라인 테이블 기반 적용 (Monaco Editor 전환 가능 구조)</li>
                 <li>확장성: <code>@monaco-editor/react</code> 등 IDE형 편집기 확장을 위한 의존성 사전 구성 완료</li>
+                <li>접근성 및 일관성: 시선 분산을 막는 중앙 스크롤 포커싱 및 에디터 전용 커스텀 스크롤바 테마 적용</li>
               </ul>
             </article>
           </div>
@@ -1506,6 +1508,7 @@
                 <li>루프 방어: <code>attempted_signatures</code> 누적을 통한 무의미한 탐색 반복 차단</li>
                 <li>Dispatcher 보안: allowlist 및 path traversal 검증 완료된 plan만 실행</li>
                 <li>Grep Worker 가드: safe regex timeout 적용으로 ReDoS 지연 방지</li>
+                <li>오류 허용(Fault Tolerance): 워커 실패 시 파이프라인 중단 없이 부분 근거만으로 후속 분석 속행</li>
               </ul>
             </article>
             <article class="card violet">
@@ -1569,14 +1572,14 @@
           </div>
           <article class="card compact" style="border-width: 2px; border-color: rgba(37, 99, 235, 0.2); background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(237,244,255,0.9));">
             <span class="label">최종 결론</span>
-            <p class="body" style="font-size: 15px; line-height: 1.65; margin-top: 6px;">CodeMap은 단순 코드 검색기가 아니라, 저장소를 분석하고 근거를 제시하며 온보딩 산출물까지 만드는 <strong>“검증 가능한 AI 코드베이스 안내자”</strong>를 목표로 구현되었습니다. 낯선 코드베이스에서 발생하는 <strong>이해의 비대칭</strong>을 해소하고, 시니어의 반복 설명 을 줄이며, 신입의 막막함 을 없애는 협업 온보딩 플랫폼을 지향합니다.</p>
+            <p class="body" style="font-size: 15px; line-height: 1.65; margin-top: 6px;">CodeMap은 단순 코드 검색기가 아니라, 저장소를 분석하고 근거를 제시하며 온보딩 산출물까지 만드는 <strong>“검증 가능한 AI 코드베이스 안내자”</strong>를 목표로 구현되었습니다.<br>낯선 코드베이스에서 발생하는 <strong>이해의 비대칭</strong>을 해소하고, 시니어의 반복 설명 을 줄이며, 신입의 막막함 을 없애는 협업 온보딩 플랫폼을 지향합니다.</p>
           </article>
           <article class="card compact" style="margin-top: -10px;">
             <span class="label">향후 과제 및 발전 방향 (Future Works)</span>
             <ul style="font-size: 14.5px; margin-top: 6px;">
               <li><strong>GitHub PR 봇 연동:</strong> PR 생성 시 Agent가 변경 영향을 파악해 자동 리뷰 코멘트 작성</li>
               <li><strong>다중 저장소 교차 분석:</strong> MSA 환경에서 백엔드와 프론트엔드 저장소 문맥 연결해 End-to-End 아키텍처 분석</li>
-              <li><strong>엔터프라이즈 RBAC:</strong> 팀 내 역할(Role)에 따라 민감한 코드와 환경 변수 접근을 제한하는 세밀한 보안 모델 도입.</li>
+              <li><strong>엔터프라이즈 RBAC:</strong> 팀 내 역할(Role)에 따라 민감한 코드와 환경 변수 접근을 제한하는 세밀한 보안 모델 도입</li>
             </ul>
           </article>
         </div>
