@@ -131,7 +131,7 @@ async def dispatcher_node(state: CodeMapState) -> dict:
     tasks = []
     for item in approved:
         tool = item.get("tool", "search")
-        worker_state = {**state, "_plan_item": item}
+        worker_state: CodeMapState = {**state, "_plan_item": item}
         if tool == "search":
             tasks.append(search_worker(worker_state))
         elif tool == "dir":

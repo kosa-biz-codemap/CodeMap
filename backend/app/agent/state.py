@@ -87,4 +87,5 @@ class CodeMapState(TypedDict):
     # ── 최종 출력 ─────────────────────────────────────
     final_answer: str | None          # Final Answer Agent가 생성한 최종 응답
 
-
+    # ── 내부 상태 ─────────────────────────────────────
+    _plan_item: NotRequired[AccessPlanItem | None]  # 비동기 워커 직접 가동을 위한 개별 계획 임시 할당용
