@@ -60,7 +60,7 @@ class TestCodeMapState(unittest.TestCase):
         self.assertEqual(r["path"], "app/auth/service.py")
 
 
-class TestDispatcherNodeSecurity(unittest.TestCase):
+class TestDispatcherNodeSecurity(unittest.IsolatedAsyncioTestCase):
     """Dispatcher Node 보안 로직 단위 테스트."""
 
     def _is_safe(self, path):
@@ -92,9 +92,9 @@ class TestDispatcherNodeSecurity(unittest.TestCase):
         self.assertFalse(self._is_safe(".ENV"))
         self.assertFalse(self._is_safe("Id_Rsa"))
 
-    def test_dispatcher_node_returns_security_result(self):
+    async def test_dispatcher_node_returns_security_result(self):
         """dispatcher_node가 보안 검증된 dict를 반환하는지 검증."""
-        from app.agent.nodes.dispatcher_node import dispatcher_node, fanout_to_workers
+        from app.agent.nodes.dispatcher_node import dispatcher_node
 
         state = {
             "user_query": "test",
@@ -121,22 +121,13 @@ class TestDispatcherNodeSecurity(unittest.TestCase):
             "final_answer": None,
         }
 
-        res = dispatcher_node(state)
+        res = await dispatcher_node(state)
         self.assertIn("security_result", res)
         self.assertEqual(len(res["security_result"]["approved"]), 2)
         self.assertEqual(len(res["security_result"]["rejected"]), 1)
         self.assertTrue(res["events"][0]["allowed"])
-        
-        # Add to state to test fanout
-        state["security_result"] = res["security_result"]
-        sends = fanout_to_workers(state)
-        node_names = [s.node for s in sends]
-        self.assertIn("search_worker", node_names)
-        self.assertIn("grep_worker", node_names)
-        self.assertNotIn("read_worker", node_names)  # 차단됨
-        self.assertEqual(len(sends), 2)
 
-    def test_dispatcher_marks_route_disallowed_when_every_plan_is_rejected(self):
+    async def test_dispatcher_marks_route_disallowed_when_every_plan_is_rejected(self):
         from app.agent.nodes.dispatcher_node import dispatcher_node
 
         state = {
@@ -158,12 +149,12 @@ class TestDispatcherNodeSecurity(unittest.TestCase):
             "final_answer": None,
         }
 
-        res = dispatcher_node(state)
+        res = await dispatcher_node(state)
 
         self.assertEqual(res["security_result"]["approved"], [])
         self.assertFalse(res["events"][0]["allowed"])
 
-    def test_dispatcher_skips_attempted_signatures(self):
+    async def test_dispatcher_skips_attempted_signatures(self):
         """0건 반환으로 worker_results에 없어도 attempted_signatures에 있으면 스킵한다."""
         from app.agent.nodes.dispatcher_node import dispatcher_node
         state = {
@@ -175,12 +166,12 @@ class TestDispatcherNodeSecurity(unittest.TestCase):
             ],
             "worker_results": [],
         }
-        res = dispatcher_node(state)
+        res = await dispatcher_node(state)
         approved = res["security_result"]["approved"]
         self.assertEqual(len(approved), 1)
         self.assertEqual(approved[0]["path"], "app/new.py")
 
-    def test_dispatcher_skips_duplicate_searches_within_plan(self):
+    async def test_dispatcher_skips_duplicate_searches_within_plan(self):
         """동일 plan 안의 중복 (tool,target) 항목은 1회로 접힌다(#149)."""
         from app.agent.nodes.dispatcher_node import dispatcher_node
 
@@ -196,12 +187,12 @@ class TestDispatcherNodeSecurity(unittest.TestCase):
             "worker_results": [],
         }
 
-        res = dispatcher_node(state)
+        res = await dispatcher_node(state)
 
         self.assertEqual(len(res["security_result"]["approved"]), 2)  # search 1 + read 1
         self.assertEqual(res["events"][0]["dedupedCount"], 2)
 
-    def test_dispatcher_skips_already_executed_searches(self):
+    async def test_dispatcher_skips_already_executed_searches(self):
         """이전 반복의 worker_results와 동일한 path/query는 재계획에서 스킵된다(#149)."""
         from app.agent.nodes.dispatcher_node import dispatcher_node
 
@@ -219,14 +210,14 @@ class TestDispatcherNodeSecurity(unittest.TestCase):
             ],
         }
 
-        res = dispatcher_node(state)
+        res = await dispatcher_node(state)
 
         approved = res["security_result"]["approved"]
         self.assertEqual(len(approved), 1)
         self.assertEqual(approved[0]["path"], "app/new.py")
         self.assertEqual(res["events"][0]["dedupedCount"], 1)
 
-    def test_dispatcher_keeps_grep_same_query_on_different_paths(self):
+    async def test_dispatcher_keeps_grep_same_query_on_different_paths(self):
         """grep은 path+query를 시그니처로 써서 다른 파일 탐색을 막지 않는다."""
         from app.agent.nodes.dispatcher_node import dispatcher_node
 
@@ -240,13 +231,13 @@ class TestDispatcherNodeSecurity(unittest.TestCase):
             "worker_results": [],
         }
 
-        res = dispatcher_node(state)
+        res = await dispatcher_node(state)
 
         approved = res["security_result"]["approved"]
         self.assertEqual([item["path"] for item in approved], ["app/auth.py", "app/user.py"])
         self.assertEqual(res["events"][0]["dedupedCount"], 0)
 
-    def test_dispatcher_skips_executed_grep_only_for_same_path_and_query(self):
+    async def test_dispatcher_skips_executed_grep_only_for_same_path_and_query(self):
         """이전 grep 결과도 path가 다르면 신규 탐색으로 승인한다."""
         from app.agent.nodes.dispatcher_node import dispatcher_node
 
@@ -269,49 +260,12 @@ class TestDispatcherNodeSecurity(unittest.TestCase):
             ],
         }
 
-        res = dispatcher_node(state)
+        res = await dispatcher_node(state)
 
         approved = res["security_result"]["approved"]
         self.assertEqual(len(approved), 1)
         self.assertEqual(approved[0]["path"], "app/user.py")
         self.assertEqual(res["events"][0]["dedupedCount"], 1)
-
-    def test_fanout_blocks_unregistered_tools(self):
-        """미등록 tool은 LangGraph Send 대상에서 제외됩니다."""
-        from app.agent.nodes.dispatcher_node import _ALLOWED_WORKERS, fanout_to_workers
-
-        self.assertEqual(_ALLOWED_WORKERS, frozenset({"search", "dir", "grep", "read"}))
-
-        state = {
-            "user_query": "test",
-            "repo_id": "r1",
-            "clone_path": "/tmp",
-            "run_id": "r1",
-            "rewritten_query": "test",
-            "access_plan": [],
-            "security_result": {
-                "approved": [
-                    {"tool": "search", "path": None, "query": "test", "scope": "chunk"},
-                    {"tool": "unknown", "path": None, "query": "test", "scope": "chunk"},
-                    {"tool": "read", "path": "app/main.py", "query": "", "scope": "file"},
-                ],
-                "rejected": [],
-            },
-            "worker_results": [],
-            "events": [],
-            "errors": [],
-            "durations": {},
-            "compact_context": {},
-            "evaluator_decision": None,
-            "replan_count": 0,
-            "max_replans": 1,
-            "replan_hint": None,
-            "final_answer": None,
-        }
-
-        node_names = [send.node for send in fanout_to_workers(state)]
-
-        self.assertEqual(node_names, ["search_worker", "read_worker"])
 
 
 class TestEvidenceAggregator(unittest.TestCase):
