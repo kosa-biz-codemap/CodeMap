@@ -105,7 +105,11 @@ User
 
 **세션 연속성 구현 가이드 (Phase 2 구현 예정)** _(수업 실습: sec06 `agent_history_postgresql.py`)_
 
-동일 세션 내에서 이전 질문/답변 맥락을 이어가는 연속 대화는 LangGraph의 `AsyncPostgresSaver` checkpointer를 활용합니다:
+동일 세션 내에서 이전 질문/답변 맥락을 이어가는 연속 대화는
+Chat DB의 `Conversation`/`ChatMessage` 기록을 `memory_context`로 복원해
+Planner 입력에 주입합니다. LangGraph의 `AsyncPostgresSaver` checkpointer는
+run 단위 실행 상태를 저장하되, `sessionId`가 아닌 `runId`를
+`thread_id`로 사용해 per-run evidence state를 격리합니다:
 
 ```python
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
@@ -115,14 +119,15 @@ checkpointer = AsyncPostgresSaver(psycopg_pool)
 await checkpointer.setup()
 compiled_graph = graph.compile(checkpointer=checkpointer)
 
-# run 호출 시 sessionId를 thread_id로 전달
+# run 호출 시 runId를 thread_id로 전달
 await compiled_graph.ainvoke(
     initial_state,
-    config={"configurable": {"thread_id": session_id}}
+    config={"configurable": {"thread_id": run_id}}
 )
 ```
 
-- `sessionId`가 없으면 새 thread(신규 세션), 있으면 기존 checkpoint에서 이어서 실행
+- `sessionId`는 checkpoint key가 아니라 DB conversation memory 조회 키로 사용
+- `runId`는 LangGraph checkpoint `thread_id`로 사용해 `worker_results`, `events`, `attempted_signatures` 누적을 run 단위로 제한
 - Phase 1에서는 세션 내 연속성만 지원하며, 세션 간 장기 기억은 Phase 2에서 구현
 - checkpointer는 `agent/graph.py` compile 단계에서 주입하여 Application Layer와 분리 유지
 
