@@ -47,7 +47,7 @@ jobs:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
       - name: Execute remote SSH commands to deploy
-        uses: 'google-github-actions/ssh-compute@v1'
+        uses: 'google-github-actions/ssh-compute@v2'
         with:
           instance_name: 'codemap-backend-vm'
           zone: 'asia-northeast3-a' # GCP 존이 다르다면 알맞게 수정해주세요.
