@@ -127,6 +127,13 @@ export function FileSummaryPanel({ docData }: FileSummaryPanelProps) {
                         const isFolderSelected =
                             selection?.type === "folder" &&
                             selection.path === g.path;
+                        const folderHasReadingOrder = g.files.some(
+                            (f) => f.priority != null
+                        );
+                        const folderColor =
+                            !isOpen && folderHasReadingOrder
+                                ? "#f59e0b"
+                                : "var(--text-secondary)";
                         return (
                             <li key={g.path}>
                                 <button
@@ -137,7 +144,7 @@ export function FileSummaryPanel({ docData }: FileSummaryPanelProps) {
                                         background: isFolderSelected
                                             ? "var(--bg-tertiary)"
                                             : undefined,
-                                        color: "var(--text-secondary)",
+                                        color: folderColor,
                                     }}
                                 >
                                     <ChevronRight
@@ -191,7 +198,9 @@ export function FileSummaryPanel({ docData }: FileSummaryPanelProps) {
                                                                 : undefined,
                                                             color: file.isDanger
                                                                 ? "#ef4444"
-                                                                : "var(--text-secondary)",
+                                                                : file.priority != null
+                                                                    ? "#f59e0b"
+                                                                    : "var(--text-secondary)",
                                                         }}
                                                     >
                                                         <div className="flex items-center gap-1">
