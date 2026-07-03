@@ -53,6 +53,36 @@ const CHAT_PANEL_WIDTH_STORAGE_KEY = "codemap:analyze:chat-panel-width";
 const CHAT_PANEL_DEFAULT_WIDTH = 400;
 const CHAT_PANEL_MIN_WIDTH = 400;
 const CHAT_PANEL_MAX_WIDTH = 600;
+const ANALYSIS_PROGRESS_COPY = {
+  ko: [
+    "저장소 구조를 훑어보며 분석할 단서를 모으고 있습니다.",
+    "파일 트리와 진입점을 정리하고 있습니다.",
+    "주요 모듈과 의존 관계를 연결하고 있습니다.",
+    "위험 신호와 복잡한 흐름을 살펴보고 있습니다.",
+    "팀원이 바로 읽을 수 있는 가이드 재료를 준비하고 있습니다.",
+    "분석 리포트로 묶을 근거를 선별하고 있습니다.",
+  ],
+  en: [
+    "Scanning the repository structure for useful signals.",
+    "Organizing the file tree and entry points.",
+    "Connecting key modules and dependencies.",
+    "Checking risky files and complex flows.",
+    "Preparing guide material your team can read quickly.",
+    "Selecting evidence for the analysis report.",
+  ],
+};
+const VECTOR_PROGRESS_COPY = {
+  ko: [
+    "채팅이 코드 근거를 더 잘 찾도록 인덱스를 준비하고 있습니다.",
+    "분석 결과를 검색 가능한 컨텍스트로 정리하고 있습니다.",
+    "파일 근거를 답변에 연결할 준비를 하고 있습니다.",
+  ],
+  en: [
+    "Preparing the index so chat can find code evidence.",
+    "Organizing analysis results into searchable context.",
+    "Getting file evidence ready for answer references.",
+  ],
+};
 
 function clampChatPanelWidth(width: number) {
   return Math.min(CHAT_PANEL_MAX_WIDTH, Math.max(CHAT_PANEL_MIN_WIDTH, Math.round(width)));
@@ -90,6 +120,7 @@ function AnalyzeWorkspace() {
   const [workspaceScope, setWorkspaceScope] = useState<WorkspaceScope>("private");
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [selectedTeamName, setSelectedTeamName] = useState<string | null>(null);
+  const [progressCopyIndex, setProgressCopyIndex] = useState(0);
   const { confirm, ConfirmDialog } = useConfirm();
   const isRestoring = useAuthStore((state) => state.isRestoring);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
@@ -118,6 +149,18 @@ function AnalyzeWorkspace() {
   // 모바일 드로워: 닫기 애니메이션과 데이터 갱신 타이밍 분리 (#229)
   // ──────────────────────────────────────────────
   const mobileSelectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (status !== "running") return;
+
+    const intervalId = window.setInterval(() => {
+      setProgressCopyIndex((index) => index + 1);
+    }, 2200);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [status, jobId]);
   const codePanelResizeRef = useRef({
     startX: 0,
     startWidth: CODE_PANEL_DEFAULT_WIDTH,
@@ -247,6 +290,11 @@ function AnalyzeWorkspace() {
 
   const repoName = report?.repository.name || job?.repoName || "새 프로젝트";
   const progress = preview ? 100 : job?.progress || 0;
+  const isVectorizing = job?.status === "COMPLETED" && !job?.report?.rag_index?.status;
+  const progressCopyList = isVectorizing
+    ? VECTOR_PROGRESS_COPY[isKo ? "ko" : "en"]
+    : ANALYSIS_PROGRESS_COPY[isKo ? "ko" : "en"];
+  const progressCopy = progressCopyList[progressCopyIndex % progressCopyList.length];
   // RAG 인덱스 상태: 'ready' | 'failed' | 'skipped' | 'empty' | undefined
   const ragIndexStatus = job?.report?.rag_index?.status as string | undefined;
   const ragIndexBanner = getRagIndexBanner(ragIndexStatus, locale);
@@ -382,7 +430,16 @@ function AnalyzeWorkspace() {
           {status === "running" && (
             <div className="mx-auto flex min-h-full max-w-2xl items-center justify-center">
               <div className={`w-full rounded-2xl border p-6 shadow-xl ${isDark ? "border-zinc-800 bg-zinc-900/55" : "border-zinc-200 bg-white"}`}>
-                <div className="flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-xl bg-blue-500/10"><LoaderCircle className="size-5 animate-spin text-blue-400" /></div><div><h2 className="text-sm font-bold">{job?.status === "COMPLETED" && !job?.report?.rag_index?.status ? (isKo ? "코드 벡터화 진행 중..." : "Vectorizing code context...") : (job?.statusMessage || (isKo ? "저장소 분석 준비 중" : "Preparing analysis"))}</h2><p className="mt-1 text-[10px] text-zinc-500">{job?.status === "COMPLETED" && !job?.report?.rag_index?.status ? (isKo ? "효과적인 RAG 채팅을 위해 분석 결과를 벡터 스토어에 적재하고 있습니다." : "Indexing analysis results to vector store for effective RAG chat.") : (isKo ? "실제 저장소를 복제하고 구조적 근거를 수집하고 있습니다." : "Cloning repository and indexing context.")}</p></div><span className="ml-auto font-mono text-xs font-bold text-blue-400">{progress}%</span></div>
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-blue-500/10">
+                    <LoaderCircle className="size-5 animate-spin text-blue-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-sm font-bold">{isVectorizing ? (isKo ? "코드 벡터화 진행 중..." : "Vectorizing code context...") : (job?.statusMessage || (isKo ? "저장소 분석 준비 중" : "Preparing analysis"))}</h2>
+                    <p key={progressCopy} className="mt-1 text-[10px] text-zinc-500 transition-opacity duration-300">{progressCopy}</p>
+                  </div>
+                  <span className="ml-auto font-mono text-xs font-bold text-blue-400">{progress}%</span>
+                </div>
                 <div className={`mt-5 h-1.5 overflow-hidden rounded-full ${isDark ? "bg-zinc-800" : "bg-zinc-100"}`}><div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-500" style={{ width: `${Math.max(4, progress)}%` }} /></div>
                 <div className="mt-5 grid grid-cols-4 gap-2 text-center text-[9px] font-semibold text-zinc-500">{["Clone", "Code map", "Guide", "Report"].map((step, index) => <div key={step} className={progress >= [5, 28, 72, 95][index] ? "text-blue-400" : ""}>{step}</div>)}</div>
               </div>

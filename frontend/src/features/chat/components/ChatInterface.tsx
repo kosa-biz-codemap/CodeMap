@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, Download, Expand, LockKeyhole, MessageSquareText, Send, Trash2, X } from "lucide-react";
@@ -219,16 +220,18 @@ export function ChatInterface({
       id: generateId(), role: "user", content, timestamp: Date.now(), mode, contextFile: contextFile || undefined,
     };
     const assistantId = generateId();
-    setMessages((current) => [...current, userMessage, {
-      id: assistantId, role: "assistant", content: "", timestamp: Date.now(), mode,
-    }]);
+    flushSync(() => {
+      setMessages((current) => [...current, userMessage, {
+        id: assistantId, role: "assistant", content: "", timestamp: Date.now(), mode,
+      }]);
+      setInput("");
+      setIsStreaming(true);
+      setStreamPhase("searching");
+    });
     shouldAutoScrollRef.current = true;
     userScrollIntentRef.current = false;
     setUserPausedScroll(false);
     setShowScrollToLatest(false);
-    setInput("");
-    setIsStreaming(true);
-    setStreamPhase(null);
     if (inputRef.current) inputRef.current.style.height = "auto";
 
     const stream = preview
@@ -379,14 +382,25 @@ export function ChatInterface({
           className="h-full overflow-y-auto px-3.5 py-4"
         >
           <div className={`mx-auto flex flex-col gap-6 ${compact ? "max-w-xl" : "max-w-3xl"}`}>
-            <AnimatePresence mode="wait">
+            <AnimatePresence initial={false}>
               {empty ? (
-                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                  <div className="mb-5 rounded-xl border border-blue-500/15 bg-blue-500/5 p-3">
-                    <p className="text-[11px] font-semibold text-blue-300">분석과 같은 컨텍스트를 사용합니다</p>
-                    <p className="mt-1 text-[10px] leading-5 text-zinc-500">리포트의 파일·위험 신호·권장사항을 질문하면 실제 코드 출처와 함께 답합니다.</p>
-                  </div>
-                  <SuggestionChips onSelect={(question) => void handleSend(question)} />
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0, transition: { duration: 0 } }}
+                >
+                  {isStreaming ? (
+                    <StreamingStatus phase={streamPhase ?? "searching"} />
+                  ) : (
+                    <>
+                      <div className="mb-5 rounded-xl border border-blue-500/15 bg-blue-500/5 p-3">
+                        <p className="text-[11px] font-semibold text-blue-300">분석과 같은 컨텍스트를 사용합니다</p>
+                        <p className="mt-1 text-[10px] leading-5 text-zinc-500">리포트의 파일·위험 신호·권장사항을 질문하면 실제 코드 출처와 함께 답합니다.</p>
+                      </div>
+                      <SuggestionChips onSelect={(question) => void handleSend(question)} />
+                    </>
+                  )}
                 </motion.div>
               ) : (
                 <motion.div key="messages" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-6">
@@ -399,7 +413,12 @@ export function ChatInterface({
                       onSuggestionSelect={(question) => void handleSend(question)}
                     />
                   ))}
-                  {isStreaming && streamPhase && streamPhase !== "complete" && <div className="pl-10"><StreamingStatus phase={streamPhase} /></div>}
+                  {isStreaming && streamPhase !== "complete" && <div className="pl-10"><StreamingStatus phase={streamPhase ?? "searching"} /></div>}
+                  {!isStreaming && (
+                    <div className={`border-t pt-4 ${isDark ? "border-zinc-800" : "border-zinc-200"}`}>
+                      <SuggestionChips compact onSelect={(question) => void handleSend(question)} />
+                    </div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
