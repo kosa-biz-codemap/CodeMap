@@ -59,15 +59,35 @@ def master_report_to_markdown(
         technologies = stack.get("technologies") or []
         primary_lang = stack.get("primary_language", "")
         languages = stack.get("languages") or []
+        primary_lower = primary_lang.lower() if primary_lang else ""
         if technologies or primary_lang:
             lines.append("## 기술 스택\n")
             if primary_lang:
                 lines.append(f"**주 언어**: {primary_lang}\n")
             for tech in technologies:
-                lines.append(f"- {tech}")
+                tech_str = (
+                    tech.get("name", str(tech))
+                    if isinstance(tech, dict) else str(tech)
+                )
+                if tech_str.lower() != primary_lower:
+                    lines.append(f"- {tech_str}")
+            lang_set = {
+                (
+                    t.get("name", str(t))
+                    if isinstance(t, dict) else str(t)
+                ).lower()
+                for t in technologies
+            }
             for lang in languages:
-                if lang not in technologies:
-                    lines.append(f"- {lang}")
+                lang_str = (
+                    lang.get("name", str(lang))
+                    if isinstance(lang, dict) else str(lang)
+                )
+                if (
+                    lang_str.lower() not in lang_set
+                    and lang_str.lower() != primary_lower
+                ):
+                    lines.append(f"- {lang_str}")
             lines.append("")
     elif isinstance(stack, list) and stack:
         lines.append("## 기술 스택\n")

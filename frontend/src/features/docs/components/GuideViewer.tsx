@@ -6,7 +6,6 @@ import remarkGfm from "remark-gfm";
 import {
   AlertTriangle,
   BookOpen,
-  ChevronRight,
   FileSearch,
   Folder,
   GitBranch,
@@ -52,6 +51,28 @@ const TABS: Tab[] = [
   { id: "onboardingGuide", label: "온보딩 가이드",    icon: Navigation  },
 ];
 
+// ── 공통 마크다운 렌더러 ─────────────────────────────────────────
+
+function MdText({ text }: { text: string }) {
+  return (
+    <div
+      className={[
+        "prose prose-sm prose-invert max-w-none break-words",
+        "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "[&_p]:text-sm [&_p]:leading-7",
+        "[&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-1 [&_h1]:mt-3",
+        "[&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mb-1 [&_h2]:mt-3",
+        "[&_h3]:text-xs [&_h3]:font-semibold [&_h3]:mb-0.5 [&_h3]:mt-2",
+        "[&_li]:text-sm [&_li]:my-0.5 [&_li>p]:my-0",
+        "[&_code]:text-xs [&_pre]:text-xs",
+      ].join(" ")}
+      style={{ color: "var(--text-secondary)" }}
+    >
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
+    </div>
+  );
+}
+
 // ── 개별 패널 컴포넌트 ─────────────────────────────────────────
 
 function SummaryPanel({ text }: { text: string | null }) {
@@ -62,38 +83,115 @@ function SummaryPanel({ text }: { text: string | null }) {
       </p>
     );
   }
+  return <MdText text={text} />;
+}
+
+const KNOWN_LANGUAGES = new Set([
+  "python", "javascript", "typescript", "java", "go", "rust",
+  "c++", "c#", "c", "ruby", "php", "swift", "kotlin", "scala",
+  "dart", "elixir", "haskell", "lua", "r", "matlab", "julia",
+]);
+
+function StackChip({
+  name,
+  highlight,
+}: {
+  name: string;
+  highlight?: boolean;
+}) {
   return (
-    <p
-      className="whitespace-pre-wrap text-sm leading-7"
-      style={{ color: "var(--text-secondary)" }}
+    <span
+      className="rounded-full border px-3 py-1 text-xs font-medium"
+      style={
+        highlight
+          ? {
+              borderColor: "var(--accent-primary)",
+              color: "var(--accent-primary)",
+              background:
+                "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+            }
+          : {
+              borderColor: "var(--border-primary)",
+              color: "var(--text-secondary)",
+            }
+      }
     >
-      {text}
-    </p>
+      {name}
+    </span>
   );
 }
 
-function StackPanel({ items }: { items: string[] }) {
-  if (items.length === 0) {
+function StackPanel({
+  items,
+  primaryLanguage,
+}: {
+  items: string[];
+  primaryLanguage: string | null;
+}) {
+  const primary = primaryLanguage?.trim() || null;
+  const primaryLower = primary?.toLowerCase() ?? "";
+  const rest = items.filter((item) => item.toLowerCase() !== primaryLower);
+  const techItems = rest.filter(
+    (item) => !KNOWN_LANGUAGES.has(item.toLowerCase())
+  );
+  const otherLangs = rest.filter((item) =>
+    KNOWN_LANGUAGES.has(item.toLowerCase())
+  );
+  const hasAny = primary || rest.length > 0;
+
+  if (!hasAny) {
     return (
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>
         기술 스택 정보가 없습니다.
       </p>
     );
   }
+
   return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((name) => (
-        <span
-          key={name}
-          className="rounded-full border px-3 py-1 text-xs font-medium"
-          style={{
-            borderColor: "var(--border-primary)",
-            color: "var(--text-secondary)",
-          }}
-        >
-          {name}
-        </span>
-      ))}
+    <div className="space-y-5">
+      {primary && (
+        <section>
+          <h4
+            className="mb-2 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            주 언어
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            <StackChip name={primary} highlight />
+          </div>
+        </section>
+      )}
+      {techItems.length > 0 && (
+        <section>
+          <h4
+            className="mb-2 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            기술 스택
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {techItems.map((name) => (
+              <StackChip key={name} name={name} />
+            ))}
+          </div>
+        </section>
+      )}
+      {otherLangs.length > 0 && (
+        <section>
+          <h4
+            className="mb-2 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            기타 / 미분류
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {otherLangs.map((name) => (
+              <StackChip key={name} name={name} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -185,14 +283,7 @@ function CoreFlowPanel({ text }: { text: string | null }) {
       </p>
     );
   }
-  return (
-    <p
-      className="whitespace-pre-wrap text-sm leading-7"
-      style={{ color: "var(--text-secondary)" }}
-    >
-      {text}
-    </p>
-  );
+  return <MdText text={text} />;
 }
 
 function FolderSummariesPanel({
@@ -200,17 +291,6 @@ function FolderSummariesPanel({
 }: {
   items: DocGetJsonData["folderSummaries"];
 }) {
-  const [open, setOpen] = useState<Set<string>>(new Set());
-
-  const toggle = (path: string) => {
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
-    });
-  };
-
   if (items.length === 0) {
     return (
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -220,46 +300,38 @@ function FolderSummariesPanel({
   }
 
   return (
-    <ul className="space-y-1">
+    <ul className="space-y-3">
       {items.map(({ path, summary }) => (
-        <li key={path}>
-          <button
-            type="button"
-            onClick={() => toggle(path)}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition hover:opacity-80"
-            style={{
-              background:
-                "color-mix(in srgb, var(--border-primary) 30%, transparent)",
-            }}
-          >
-            <ChevronRight
-              className={`size-3.5 shrink-0 transition-transform ${
-                open.has(path) ? "rotate-90" : ""
-              }`}
-              style={{ color: "var(--text-muted)" }}
+        <li
+          key={path}
+          className="rounded-xl border p-4"
+          style={{ borderColor: "var(--border-primary)" }}
+        >
+          <div className="mb-1.5 flex items-center gap-2">
+            <Folder
+              className="size-3.5 shrink-0"
+              style={{ color: "var(--accent-primary)" }}
             />
             <span
-              className="truncate font-mono text-xs"
-              style={{ color: "var(--text-secondary)" }}
+              className="truncate font-mono text-xs font-semibold"
+              style={{ color: "var(--text-primary)" }}
             >
               {path}
             </span>
-          </button>
-          {open.has(path) && (
-            <p
-              className="px-8 pb-2 pt-1 text-xs leading-6"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {summary}
-            </p>
-          )}
+          </div>
+          <p
+            className="text-xs leading-5"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {summary || "설명이 없습니다."}
+          </p>
         </li>
       ))}
     </ul>
   );
 }
 
-// ── 다운로드 미리보기 전용 컴포넌트 ──────────────────────────────
+// ── 온보딩 가이드 미리보기 전용 ──────────────────────────────────
 
 function MarkdownPreviewPanel({
   content,
@@ -273,21 +345,26 @@ function MarkdownPreviewPanel({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <LoaderCircle className="size-6 animate-spin" style={{ color: "var(--text-muted)" }} />
-        <span className="ml-3 text-sm" style={{ color: "var(--text-muted)" }}>문서를 불러오는 중...</span>
+        <LoaderCircle
+          className="size-6 animate-spin"
+          style={{ color: "var(--text-muted)" }}
+        />
+        <span className="ml-3 text-sm" style={{ color: "var(--text-muted)" }}>
+          문서를 불러오는 중...
+        </span>
       </div>
     );
   }
 
   if (error || !content) {
-    return <p className="text-sm text-red-500">{error || "내용이 없습니다."}</p>;
+    return (
+      <p className="text-sm text-red-500">{error || "내용이 없습니다."}</p>
+    );
   }
 
   return (
     <div className="prose prose-sm prose-invert max-w-none break-words [&_li]:my-0.5 [&_li>p]:my-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-        {content}
-      </ReactMarkdown>
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   );
 }
@@ -376,7 +453,7 @@ export function GuideViewer({
 
   const panelContent: Record<TabId, React.ReactNode> = {
     summary:         <SummaryPanel text={data.summary} />,
-    stack:           <StackPanel items={data.stack} />,
+    stack:           <StackPanel items={data.stack} primaryLanguage={data.primaryLanguage} />,
     readingOrder:    <ReadingOrderPanel items={data.readingOrder} />,
     dangerFiles:     <DangerFilesPanel items={data.dangerFiles} />,
     coreFlow:        <CoreFlowPanel text={data.coreFlow} />,
@@ -395,67 +472,67 @@ export function GuideViewer({
     <>
       <article
         className="rounded-2xl border print:hidden"
-      style={{ borderColor: "var(--border-primary)" }}
-    >
-      {/* 탭 바 */}
-      <div
-        className="flex overflow-x-auto border-b"
         style={{ borderColor: "var(--border-primary)" }}
-        role="tablist"
-        aria-label="가이드북 섹션"
       >
-        {TABS.map(({ id, label, icon: Icon }) => {
-          const isActive = activeTab === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={`panel-${id}`}
-              onClick={() => setActiveTab(id)}
-              className="flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-3 text-xs font-medium transition-colors"
-              style={{
-                borderBottomColor: isActive
-                  ? "var(--accent-primary)"
-                  : "transparent",
-                color: isActive ? "var(--text-primary)" : "var(--text-muted)",
-              }}
-            >
-              <Icon className="size-3.5" />
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 탭 패널 */}
-      <div id={`panel-${activeTab}`} role="tabpanel" className="p-6">
-        {/* 메타 정보 */}
-        <div className="mb-4 flex items-center justify-between">
-          <p
-            className="text-[10px] font-semibold uppercase tracking-[0.18em]"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {TABS.find((t) => t.id === activeTab)?.label}
-          </p>
-          <span
-            className="rounded-full border px-2 py-0.5 text-[10px]"
-            style={{
-              borderColor: "var(--border-primary)",
-              color: "var(--text-muted)",
-            }}
-          >
-            v{data.version} ·{" "}
-            {new Date(data.generatedAt).toLocaleDateString("ko-KR")}
-          </span>
+        {/* 탭 바 */}
+        <div
+          className="flex overflow-x-auto border-b"
+          style={{ borderColor: "var(--border-primary)" }}
+          role="tablist"
+          aria-label="가이드북 섹션"
+        >
+          {TABS.map(({ id, label, icon: Icon }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`panel-${id}`}
+                onClick={() => setActiveTab(id)}
+                className="flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-3 text-xs font-medium transition-colors"
+                style={{
+                  borderBottomColor: isActive
+                    ? "var(--accent-primary)"
+                    : "transparent",
+                  color: isActive ? "var(--text-primary)" : "var(--text-muted)",
+                }}
+              >
+                <Icon className="size-3.5" />
+                {label}
+              </button>
+            );
+          })}
         </div>
 
-        {panelContent[activeTab]}
-      </div>
-    </article>
+        {/* 탭 패널 */}
+        <div id={`panel-${activeTab}`} role="tabpanel" className="p-6">
+          {/* 메타 정보 */}
+          <div className="mb-4 flex items-center justify-between">
+            <p
+              className="text-[10px] font-semibold uppercase tracking-[0.18em]"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {TABS.find((t) => t.id === activeTab)?.label}
+            </p>
+            <span
+              className="rounded-full border px-2 py-0.5 text-[10px]"
+              style={{
+                borderColor: "var(--border-primary)",
+                color: "var(--text-muted)",
+              }}
+            >
+              v{data.version} ·{" "}
+              {new Date(data.generatedAt).toLocaleDateString("ko-KR")}
+            </span>
+          </div>
 
-      {/* 인쇄용 컨테이너 (평소에는 숨김, 인쇄 시 전체 문서 레이아웃으로 활성화됨) */}
+          {panelContent[activeTab]}
+        </div>
+      </article>
+
+      {/* 인쇄용 컨테이너 */}
       <div className="hidden print:block w-full text-black bg-white">
         <MarkdownPreviewPanel
           content={markdownContent}

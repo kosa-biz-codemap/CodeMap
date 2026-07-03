@@ -42,7 +42,10 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_summary(summary: object) -> str | None:
-    """Convert master_report.summary to the DOCS_API_SPEC string contract."""
+    """Convert master_report.summary to the DOCS_API_SPEC string contract.
+
+    기술 스택/아키텍처 힌트 필드는 제외하고 프로젝트 설명 내용만 반환한다.
+    """
     if summary is None:
         return None
     if isinstance(summary, str):
@@ -50,18 +53,14 @@ def _normalize_summary(summary: object) -> str | None:
     if not isinstance(summary, dict):
         return str(summary)
 
-    preferred_keys = ("purpose", "overview", "summary", "description")
+    ## purpose → project_intro 순으로 우선 반환 (기술 컨텍스트 필드는 제외)
+    preferred_keys = ("purpose", "overview", "project_intro", "summary", "description")
     for key in preferred_keys:
         value = summary.get(key)
         if isinstance(value, str) and value.strip():
             return value
 
-    text_parts = [
-        value.strip()
-        for value in summary.values()
-        if isinstance(value, str) and value.strip()
-    ]
-    return "\n".join(text_parts) if text_parts else None
+    return None
 
 
 def _normalize_stack(stack: object) -> list[str]:
@@ -133,10 +132,19 @@ def _normalize_folder_summaries(file_map: object) -> list[DocFolderSummaryItem]:
         return []
 
     return [
-        DocFolderSummaryItem(path=str(path), description=str(description))
+        DocFolderSummaryItem(path=str(path), summary=str(description))
         for path, description in folder_map.items()
         if path
     ]
+
+
+def _normalize_primary_language(stack: object) -> str | None:
+    if not isinstance(stack, dict):
+        return None
+    lang = stack.get("primary_language")
+    if isinstance(lang, str) and lang.strip():
+        return lang.strip()
+    return None
 
 
 def _normalize_file_summaries(file_summaries: object) -> list[DocFileSummaryItem]:
@@ -288,11 +296,13 @@ async def get_onboarding_doc(
             "[DOCS-GEN-API-001] JSON 조회 완료 | repo_id=%s version=%d",
             repo_id, doc.version,
         )
+        stack_raw = report.get("stack")
         return DocGetJsonData(
             repoId=repo_id,
             repoName=getattr(analysis_job, "repo_name", "") or "",
             summary=_normalize_summary(summary_raw),
-            stack=_normalize_stack(report.get("stack")),
+            primaryLanguage=_normalize_primary_language(stack_raw),
+            stack=_normalize_stack(stack_raw),
             readingOrder=_normalize_reading_order(guide.get("reading_order")),
             dangerFiles=_normalize_danger_files(guide.get("risk_files")),
             coreFlow=core_flow,

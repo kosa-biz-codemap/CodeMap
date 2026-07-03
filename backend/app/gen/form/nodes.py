@@ -715,6 +715,7 @@ async def master_report_node(state: GenFormState) -> dict:
             "summary": summary,
             "stack": stack,
             "file_map": file_map,
+            "file_summaries": report.get("file_summaries", []),
             "recommendations": recommendations,
             "heatmap": heatmap,
             "durations": durations,
