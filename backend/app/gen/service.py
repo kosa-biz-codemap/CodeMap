@@ -51,7 +51,9 @@ def _normalize_summary(summary: object) -> str | None:
     if summary is None:
         return None
     if isinstance(summary, str):
-        return summary
+        from app.gen.markdown import _clean_purpose
+        cleaned = _clean_purpose(summary)
+        return cleaned if cleaned else None
     if not isinstance(summary, dict):
         return str(summary)
 

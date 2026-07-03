@@ -70,10 +70,16 @@ export function FileSummaryPanel({ docData }: FileSummaryPanelProps) {
         [files, docData.folderSummaries]
     );
 
+    // 읽기 순서 또는 위험 파일이 있는 폴더만 표시
+    const relevantGroups = useMemo(
+        () => groups.filter((g) => g.files.some((f) => f.priority != null || f.isDanger)),
+        [groups]
+    );
+
     const filteredGroups = useMemo(() => {
         const q = query.trim().toLowerCase();
-        if (!q) return groups;
-        return groups
+        if (!q) return relevantGroups;
+        return relevantGroups
             .map((g) => ({
                 ...g,
                 files: g.files.filter(
@@ -86,7 +92,7 @@ export function FileSummaryPanel({ docData }: FileSummaryPanelProps) {
                 (g) =>
                     g.files.length > 0 || g.path.toLowerCase().includes(q)
             );
-    }, [groups, query]);
+    }, [relevantGroups, query]);
 
     const toggleFolder = (path: string) => {
         setOpenFolders((prev) => {

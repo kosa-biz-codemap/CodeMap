@@ -215,8 +215,8 @@ function StackPanel({
 
 function normalizeEntrypoints(text: string): string {
   let result = text;
-  // 1. "## 핵심 실행 플로우" 헤딩 제거
-  result = result.replace(/^##[ \t]+핵심[ \t]*실행[ \t]*플로우[ \t]*\n?/m, "");
+  // 1. 첫 번째 ## 헤딩 제거 (레포마다 다른 제목 대응)
+  result = result.replace(/^##[ \t]+.+\n?/m, "");
   result = result.replace(/^\n+/, "");
   // 2. "진입점: a, b, c" → 번호 목록
   result = result.replace(
@@ -274,43 +274,7 @@ function CoreFlowPanel({ text }: { text: string | null }) {
 }
 
 
-// ── 첫 기여 추천 작업 카드 ─────────────────────────────────────────
-
-function FirstTasksSection({
-  tasks,
-}: {
-  tasks: { title: string; difficulty: string }[];
-}) {
-  if (!tasks.length) return null;
-  return (
-    <div className="mb-6 space-y-3">
-      <h3
-        className="text-[10px] font-semibold uppercase tracking-widest"
-        style={{ color: "var(--text-muted)" }}
-      >
-        첫 기여 추천 작업
-      </h3>
-      <div className="space-y-2">
-        {tasks.map((task, i) => (
-          <div
-            key={i}
-            className="rounded-lg border px-4 py-3"
-            style={{ borderColor: "var(--border-primary)" }}
-          >
-            <p className="text-sm" style={{ color: "var(--text-primary)" }}>
-              {task.title}
-            </p>
-            <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
-              난이도: {task.difficulty}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── 온보딩 가이드 미리보기 전용 ──────────────────────────────────
+// ── 온보딩 가이드 미리보기 전용 (인쇄 전용으로만 사용) ──────────────
 
 function MarkdownPreviewPanel({
   content,
@@ -344,6 +308,227 @@ function MarkdownPreviewPanel({
   return (
     <div className="prose prose-sm prose-invert max-w-none break-words [&_li]:my-0.5 [&_li>p]:my-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+    </div>
+  );
+}
+
+// ── 온보딩 가이드 구조화 패널 (JSON 기반 고정 포맷) ───────────────────
+
+function OnboardingGuidePanel({ data }: { data: DocGetJsonData }) {
+  const summaryMap = new Map(
+    data.fileSummaries.map((f) => [f.path, f.summary])
+  );
+
+  const sortedOrder = [...data.readingOrder].sort((a, b) => a.rank - b.rank);
+
+  const primaryLower = data.primaryLanguage?.toLowerCase() ?? "";
+  const otherStack = data.stack.filter(
+    (s) => s.toLowerCase() !== primaryLower
+  );
+
+  const hasSummary = !!data.summary;
+  const hasStack = !!(data.primaryLanguage || data.stack.length > 0);
+  const hasOrder = data.readingOrder.length > 0;
+  const hasDanger = data.dangerFiles.length > 0;
+  const hasTasks = data.firstTasks.length > 0;
+
+  return (
+    <div className="space-y-8">
+
+      {/* 1. 프로젝트 요약 */}
+      {hasSummary && (
+        <section>
+          <h3
+            className="mb-3 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            프로젝트 요약
+          </h3>
+          <MdText text={cleanSummaryText(data.summary!, data.repoName)} />
+        </section>
+      )}
+
+      {/* 2. 기술 스택 */}
+      {hasStack && (
+        <section>
+          <h3
+            className="mb-3 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            기술 스택
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {data.primaryLanguage && (
+              <span
+                className="rounded-full border px-3 py-1 text-xs font-medium"
+                style={{
+                  borderColor: "var(--accent-primary)",
+                  color: "var(--accent-primary)",
+                  background:
+                    "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+                }}
+              >
+                {data.primaryLanguage}
+              </span>
+            )}
+            {otherStack.map((s) => (
+              <span
+                key={s}
+                className="rounded-full border px-3 py-1 text-xs font-medium"
+                style={{
+                  borderColor: "var(--border-primary)",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 3a. 읽기 순서 */}
+      {hasOrder && (
+        <section>
+          <h3
+            className="mb-3 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            읽기 순서
+          </h3>
+          <ol className="space-y-3">
+            {sortedOrder.map((item) => {
+              const fileSummary = summaryMap.get(item.path) ?? null;
+              const fileName = item.path.split("/").pop() ?? item.path;
+              return (
+                <li
+                  key={item.path}
+                  className="rounded-lg border px-4 py-3"
+                  style={{ borderColor: "var(--border-primary)" }}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-yellow-400 ring-1 ring-yellow-500/40">
+                      {item.rank}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <p
+                        className="text-sm font-medium"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {fileName}
+                      </p>
+                      <p
+                        className="font-mono text-xs"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {item.path}
+                      </p>
+                      {item.reason && (
+                        <p
+                          className="text-xs leading-relaxed"
+                          style={{ color: "var(--text-secondary)" }}
+                        >
+                          {item.reason}
+                        </p>
+                      )}
+                      {fileSummary && (
+                        <p
+                          className="mt-1 text-xs leading-relaxed"
+                          style={{ color: "var(--text-secondary)" }}
+                        >
+                          {fileSummary}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      )}
+
+      {/* 3b. 위험 파일 */}
+      {hasDanger && (
+        <section>
+          <h3
+            className="mb-3 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            위험 파일
+          </h3>
+          <ul className="space-y-3">
+            {data.dangerFiles.map((df) => {
+              const fileSummary = summaryMap.get(df.path) ?? null;
+              const fileName = df.path.split("/").pop() ?? df.path;
+              return (
+                <li
+                  key={df.path}
+                  className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3"
+                >
+                  <div className="space-y-1">
+                    <p
+                      className="text-sm font-medium text-red-400"
+                    >
+                      {fileName}
+                    </p>
+                    <p className="font-mono text-xs text-red-400/60">
+                      {df.path}
+                    </p>
+                    {df.reason && (
+                      <p className="text-xs leading-relaxed text-red-300/80">
+                        위험 사유: {df.reason}
+                      </p>
+                    )}
+                    {fileSummary && (
+                      <p
+                        className="mt-1 text-xs leading-relaxed"
+                        style={{ color: "var(--text-secondary)" }}
+                      >
+                        {fileSummary}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {/* 4. 첫 기여 추천 과업 */}
+      {hasTasks && (
+        <section>
+          <h3
+            className="mb-3 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            첫 기여 추천 과업
+          </h3>
+          <div className="space-y-2">
+            {data.firstTasks.map((task, i) => (
+              <div
+                key={i}
+                className="rounded-lg border px-4 py-3"
+                style={{ borderColor: "var(--border-primary)" }}
+              >
+                <p className="text-sm" style={{ color: "var(--text-primary)" }}>
+                  {task.title}
+                </p>
+                <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+                  난이도: {task.difficulty}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!hasSummary && !hasStack && !hasOrder && !hasDanger && !hasTasks && (
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+          온보딩 가이드 정보가 없습니다.
+        </p>
+      )}
     </div>
   );
 }
@@ -435,16 +620,7 @@ export function GuideViewer({
     stack:           <StackPanel items={data.stack} primaryLanguage={data.primaryLanguage} />,
     coreFlow:        <CoreFlowPanel text={data.coreFlow} />,
     fileSummary:     <FileSummaryPanel docData={data} />,
-    onboardingGuide: (
-      <>
-        <FirstTasksSection tasks={data.firstTasks ?? []} />
-        <MarkdownPreviewPanel
-          content={markdownContent}
-          isLoading={isMarkdownLoading}
-          error={markdownError}
-        />
-      </>
-    ),
+    onboardingGuide: <OnboardingGuidePanel data={data} />,
   };
 
   return (
