@@ -510,6 +510,11 @@ export interface DocGetMarkdownData {
   version: number;
 }
 
+export interface DocFirstTaskItem {
+  title: string;
+  difficulty: string;
+}
+
 export interface DocGetJsonData {
   repoId: string;
   repoName: string;
@@ -521,6 +526,7 @@ export interface DocGetJsonData {
   coreFlow: string | null;
   folderSummaries: DocFolderSummary[];
   fileSummaries: DocFileSummaryRaw[];
+  firstTasks: DocFirstTaskItem[];
   generatedAt: string;
   version: number;
 }

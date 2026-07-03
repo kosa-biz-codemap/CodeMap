@@ -215,16 +215,23 @@ function StackPanel({
 
 function normalizeEntrypoints(text: string): string {
   let result = text;
+  // 1. "## 핵심 실행 플로우" 헤딩 제거
+  result = result.replace(/^##[ \t]+핵심[ \t]*실행[ \t]*플로우[ \t]*\n?/m, "");
+  result = result.replace(/^\n+/, "");
+  // 2. "진입점: a, b, c" → 번호 목록
   result = result.replace(
     /^진입점:\s*(.+)$/m,
     (_match, csv: string) => {
       const files = csv.split(",").map((s) => s.trim()).filter(Boolean);
       const list = files.map((f, i) => `${i + 1}. ${f}`).join("\n");
-      return `**진입점)**\n${list}`;
+      return `**진입점**\n\n${list}`;
     }
   );
-  result = result.replace(/^진입점\)$/m, "**진입점)**");
-  return result;
+  // 3. standalone "진입점)" → "**진입점**" (괄호 제거)
+  result = result.replace(/^진입점\)$/m, "**진입점**");
+  // 4. **진입점** 바로 다음 번호 목록 앞에 빈 줄 보장
+  result = result.replace(/(\*\*진입점\*\*)\n(\d+\.)/m, "$1\n\n$2");
+  return result.trim();
 }
 
 function CoreFlowPanel({ text }: { text: string | null }) {
@@ -266,6 +273,42 @@ function CoreFlowPanel({ text }: { text: string | null }) {
   );
 }
 
+
+// ── 첫 기여 추천 작업 카드 ─────────────────────────────────────────
+
+function FirstTasksSection({
+  tasks,
+}: {
+  tasks: { title: string; difficulty: string }[];
+}) {
+  if (!tasks.length) return null;
+  return (
+    <div className="mb-6 space-y-3">
+      <h3
+        className="text-[10px] font-semibold uppercase tracking-widest"
+        style={{ color: "var(--text-muted)" }}
+      >
+        첫 기여 추천 작업
+      </h3>
+      <div className="space-y-2">
+        {tasks.map((task, i) => (
+          <div
+            key={i}
+            className="rounded-lg border px-4 py-3"
+            style={{ borderColor: "var(--border-primary)" }}
+          >
+            <p className="text-sm" style={{ color: "var(--text-primary)" }}>
+              {task.title}
+            </p>
+            <p className="mt-1 text-xs" style={{ color: "var(--text-muted)" }}>
+              난이도: {task.difficulty}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ── 온보딩 가이드 미리보기 전용 ──────────────────────────────────
 
@@ -393,11 +436,14 @@ export function GuideViewer({
     coreFlow:        <CoreFlowPanel text={data.coreFlow} />,
     fileSummary:     <FileSummaryPanel docData={data} />,
     onboardingGuide: (
-      <MarkdownPreviewPanel
-        content={markdownContent}
-        isLoading={isMarkdownLoading}
-        error={markdownError}
-      />
+      <>
+        <FirstTasksSection tasks={data.firstTasks ?? []} />
+        <MarkdownPreviewPanel
+          content={markdownContent}
+          isLoading={isMarkdownLoading}
+          error={markdownError}
+        />
+      </>
     ),
   };
 

@@ -64,6 +64,7 @@ const jsonData: DocGetJsonData = {
   coreFlow:        "사용자 요청 → FastAPI 라우터 → 서비스 → DB",
   folderSummaries: [folderSummary],
   fileSummaries: [{ path: "src/app/page.tsx", summary: "페이지 진입점" }],
+  firstTasks:      [{ title: "README 보완", difficulty: "하" }],
   generatedAt:     "2026-06-27T00:00:00Z",
   version:         1,
 };
@@ -80,7 +81,8 @@ const jsonDataNullable: DocGetJsonData = {
   dangerFiles:     [],
   coreFlow:        null,
   folderSummaries: [],
-  fileSummaries: [],
+  fileSummaries:   [],
+  firstTasks:      [],
   generatedAt:     "2026-06-27T00:00:00Z",
   version:         2,
 };

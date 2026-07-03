@@ -9,6 +9,7 @@ DOCS-GEN 서비스 계층 (DOCS-GEN-B-301, DOCS-GEN-API-001~004)
 """
 
 import logging
+import re
 from uuid import UUID
 
 from fastapi import BackgroundTasks
@@ -67,7 +68,9 @@ def _normalize_summary(summary: object) -> str | None:
     features_text = ""
     if isinstance(key_features, list) and key_features:
         bullets = "\n".join(
-            f"- {f}" for f in key_features if isinstance(f, str) and f.strip()
+            f"- {re.sub(r'\\*+', '', f).strip()}"
+            for f in key_features
+            if isinstance(f, str) and f.strip()
         )
         if bullets:
             features_text = f"\n\n**핵심 기능**\n{bullets}"
@@ -321,6 +324,7 @@ async def get_onboarding_doc(
             coreFlow=core_flow,
             folderSummaries=_normalize_folder_summaries(report.get("file_map")),
             fileSummaries=_normalize_file_summaries(report.get("file_summaries")),
+            firstTasks=_normalize_first_tasks(guide.get("first_tasks")),
             generatedAt=doc.created_at,
             version=doc.version,
         )

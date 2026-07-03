@@ -321,18 +321,12 @@ function FileDetail({ item }: { item: DocFileSummaryItem }) {
 
             <div className="flex flex-wrap gap-2">
                 {item.priority != null && (
-                    <span
-                        className="rounded-full border px-2.5 py-0.5 text-xs"
-                        style={{
-                            borderColor: "var(--border-primary)",
-                            color: "var(--text-secondary)",
-                        }}
-                    >
+                    <span className="rounded-full border border-yellow-500/40 bg-yellow-500/10 px-2.5 py-0.5 text-xs text-yellow-400">
                         읽기 순서 #{item.priority}
                     </span>
                 )}
                 {item.isDanger && (
-                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs text-amber-300">
+                    <span className="rounded-full border border-red-500/40 bg-red-500/10 px-2.5 py-0.5 text-xs text-red-400">
                         ⚠ 위험 파일
                     </span>
                 )}

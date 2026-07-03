@@ -54,6 +54,7 @@ const jsonData: DocGetJsonData = {
     coreFlow: "진입점 → 분석 → 결과",
     folderSummaries: [folder],
     fileSummaries: [rawFileSummary],
+    firstTasks: [{ title: "테스트 작성", difficulty: "중" }],
     generatedAt: "2026-06-29T00:00:00Z",
     version: 1,
 };
@@ -71,6 +72,7 @@ const jsonDataNullable: DocGetJsonData = {
     coreFlow: null,
     folderSummaries: [],
     fileSummaries: [],
+    firstTasks: [],
     generatedAt: "2026-06-29T00:00:00Z",
     version: 0,
 };

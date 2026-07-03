@@ -7,7 +7,21 @@ GenFormSupervisor가 생성한 master_report dict를
 호출 경로: background.py → master_report_to_markdown()
 """
 
+import re
 from typing import Any
+
+
+def _clean_purpose(text: str) -> str:
+    lines = text.split("\n")
+    if lines and re.match(r'^#+\s+', lines[0]):
+        lines = lines[1:]
+        while lines and not lines[0].strip():
+            lines = lines[1:]
+    lines = [
+        ln for ln in lines
+        if not re.match(r'^기술\s*스택\s*:', ln.strip())
+    ]
+    return "\n".join(lines).strip()
 
 
 # ──────────────────────────────────────────────
@@ -37,17 +51,16 @@ def master_report_to_markdown(
     if isinstance(summary, dict):
         purpose = summary.get("purpose", "")
         if purpose:
-            lines.append("## 프로젝트 개요\n")
-            lines.append(f"{purpose}\n")
+            cleaned = _clean_purpose(purpose)
+            if cleaned:
+                lines.append("## 프로젝트 개요\n")
+                lines.append(f"{cleaned}\n")
         key_features = summary.get("key_features") or []
         if key_features:
             lines.append("### 핵심 기능\n")
             for feat in key_features:
                 lines.append(f"- {feat}")
             lines.append("")
-        tech_context = summary.get("tech_context", "")
-        if tech_context:
-            lines.append(f"**기술 컨텍스트**: {tech_context}\n")
     elif isinstance(summary, str) and summary:
         lines.append("## 프로젝트 개요\n")
         lines.append(f"{summary}\n")
