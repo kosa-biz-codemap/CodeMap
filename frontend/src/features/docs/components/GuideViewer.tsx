@@ -62,7 +62,36 @@ function MdText({ text }: { text: string }) {
 
 // ── 개별 패널 컴포넌트 ─────────────────────────────────────────
 
-function SummaryPanel({ text }: { text: string | null }) {
+function cleanSummaryText(text: string, repoName: string): string {
+  const lines = text.split("\n");
+  let startIdx = 0;
+
+  const firstLine = lines[0]?.trim() ?? "";
+  const normalized = firstLine
+    .replace(/^#+\s*/, "")
+    .replace(/^\*+|\*+$/g, "")
+    .trim();
+  if (normalized.toLowerCase() === repoName.toLowerCase()) {
+    startIdx = 1;
+    while (startIdx < lines.length && lines[startIdx].trim() === "") {
+      startIdx++;
+    }
+  }
+
+  return lines
+    .slice(startIdx)
+    .filter((line) => !/^기술\s*스택\s*:/.test(line.trim()))
+    .join("\n")
+    .trim();
+}
+
+function SummaryPanel({
+  text,
+  repoName,
+}: {
+  text: string | null;
+  repoName: string;
+}) {
   if (!text) {
     return (
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -70,7 +99,7 @@ function SummaryPanel({ text }: { text: string | null }) {
       </p>
     );
   }
-  return <MdText text={text} />;
+  return <MdText text={cleanSummaryText(text, repoName)} />;
 }
 
 const KNOWN_LANGUAGES = new Set([
@@ -185,14 +214,17 @@ function StackPanel({
 
 
 function normalizeEntrypoints(text: string): string {
-  return text.replace(
+  let result = text;
+  result = result.replace(
     /^진입점:\s*(.+)$/m,
     (_match, csv: string) => {
       const files = csv.split(",").map((s) => s.trim()).filter(Boolean);
       const list = files.map((f, i) => `${i + 1}. ${f}`).join("\n");
-      return `진입점)\n${list}`;
+      return `**진입점)**\n${list}`;
     }
   );
+  result = result.replace(/^진입점\)$/m, "**진입점)**");
+  return result;
 }
 
 function CoreFlowPanel({ text }: { text: string | null }) {
@@ -203,7 +235,35 @@ function CoreFlowPanel({ text }: { text: string | null }) {
       </p>
     );
   }
-  return <MdText text={normalizeEntrypoints(text)} />;
+  return (
+    <div
+      className={[
+        "prose prose-sm prose-invert max-w-none break-words",
+        "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
+        "[&_p]:text-sm [&_p]:leading-7",
+        "[&_h1]:text-sm [&_h1]:font-bold [&_h1]:mb-1 [&_h1]:mt-3",
+        "[&_h2]:text-sm [&_h2]:font-semibold [&_h2]:mb-1 [&_h2]:mt-3",
+        "[&_h3]:text-xs [&_h3]:font-semibold [&_h3]:mb-0.5 [&_h3]:mt-2",
+        "[&_li]:text-sm [&_li]:my-0.5 [&_li>p]:my-0",
+        "[&_code]:text-xs [&_pre]:text-xs",
+      ].join(" ")}
+      style={{ color: "var(--text-secondary)" }}
+    >
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          ol: ({ node: _node, ...props }) => (
+            <ol
+              {...props}
+              className="[&>li::marker]:font-bold [&>li::marker]:text-green-400"
+            />
+          ),
+        }}
+      >
+        {normalizeEntrypoints(text)}
+      </ReactMarkdown>
+    </div>
+  );
 }
 
 
@@ -328,7 +388,7 @@ export function GuideViewer({
   }
 
   const panelContent: Record<TabId, React.ReactNode> = {
-    summary:         <SummaryPanel text={data.summary} />,
+    summary:         <SummaryPanel text={data.summary} repoName={data.repoName} />,
     stack:           <StackPanel items={data.stack} primaryLanguage={data.primaryLanguage} />,
     coreFlow:        <CoreFlowPanel text={data.coreFlow} />,
     fileSummary:     <FileSummaryPanel docData={data} />,
