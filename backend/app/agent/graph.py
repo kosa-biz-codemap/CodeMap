@@ -18,12 +18,8 @@ from langgraph.graph import StateGraph, END
 
 from app.agent.state import CodeMapState
 from app.agent.nodes.planner_node import planner_node
-from app.agent.nodes.dispatcher_node import dispatcher_node, fanout_to_workers
+from app.agent.nodes.dispatcher_node import dispatcher_node
 from app.agent.nodes.evaluator_node import evaluator_node
-from app.agent.workers.search_worker import search_worker
-from app.agent.workers.dir_worker import dir_worker
-from app.agent.workers.grep_worker import grep_worker
-from app.agent.workers.read_worker import read_worker
 
 
 def route_after_evaluator(state: CodeMapState) -> str:
@@ -53,10 +49,6 @@ def build_graph() -> StateGraph:
     # ── 노드 등록 ──────────────────────────────────────
     builder.add_node("planner_node", planner_node)
     builder.add_node("dispatcher_node", dispatcher_node)
-    builder.add_node("search_worker", search_worker)
-    builder.add_node("dir_worker", dir_worker)
-    builder.add_node("grep_worker", grep_worker)
-    builder.add_node("read_worker", read_worker)
     builder.add_node("evaluator_node", evaluator_node)
 
     # ── 엣지 연결 ──────────────────────────────────────
@@ -64,20 +56,8 @@ def build_graph() -> StateGraph:
     builder.set_entry_point("planner_node")
     builder.add_edge("planner_node", "dispatcher_node")
 
-    # Dispatcher → Workers (Send API가 동적으로 처리 — conditional edge 사용)
-    # dispatcher_node가 반환한 dict를 통해 상태 업데이트 후 fanout_to_workers 실행
-    builder.add_conditional_edges(
-        "dispatcher_node",
-        fanout_to_workers,
-        ["search_worker", "dir_worker", "grep_worker", "read_worker", "evaluator_node"],
-    )
-
-    # Workers → Evaluator (fan-in)
-    # worker_results는 Annotated[list, operator.add]로 자동 병합됨
-    builder.add_edge("search_worker", "evaluator_node")
-    builder.add_edge("dir_worker", "evaluator_node")
-    builder.add_edge("grep_worker", "evaluator_node")
-    builder.add_edge("read_worker", "evaluator_node")
+    # Dispatcher → Evaluator (비동기 병렬 실행 완료 후 단선 연결)
+    builder.add_edge("dispatcher_node", "evaluator_node")
 
     # Evaluator → Planner 재계획 또는 END
     builder.add_conditional_edges(

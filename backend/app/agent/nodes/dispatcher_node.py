@@ -75,14 +75,20 @@ def _dedup_signature(tool: str, path: str | None, query: str | None) -> str:
     return f"{tool}:{target_str}"
 
 
-def dispatcher_node(state: CodeMapState) -> dict:
-    """Validate access_plan, drop duplicate searches, and store approved/rejected entries."""
+async def dispatcher_node(state: CodeMapState) -> dict:
+    """Validate access_plan, execute worker tasks concurrently, and return combined results."""
+    import asyncio
+    from uuid import uuid4
+    from app.agent.workers.search_worker import search_worker
+    from app.agent.workers.dir_worker import dir_worker
+    from app.agent.workers.grep_worker import grep_worker
+    from app.agent.workers.read_worker import read_worker
+
     plan: list[AccessPlanItem] = state.get("access_plan", [])
     approved: list[AccessPlanItem] = []
     rejected: list[AccessPlanItem] = []
 
     # 이전 반복(단계)에서 이미 수행한 (tool, target) 집합 을 누적 state에서 추출.
-    # 같은 path/query에 대한 탐색 시도는 결정론적으로 스킵합니다(프롬프트 soft 지시 보강).
     executed: set[str] = set(state.get("attempted_signatures") or [])
     for result in state.get("worker_results", []):
         meta = result.get("metadata") or {}
@@ -120,35 +126,52 @@ def dispatcher_node(state: CodeMapState) -> dict:
         "[Dispatcher] 검증 완료 — 승인=%d 거부=%d 중복스킵=%d",
         len(approved), len(rejected), duplicates,
     )
-    groups = [[item.get("tool", "search")] for item in approved]
+
+    # 승인된 계획에 맞춰 비동기 워커 직접 가동 (try-except 격리)
+    tasks = []
+    for item in approved:
+        tool = item.get("tool", "search")
+        worker_state = {**state, "_plan_item": item}
+        if tool == "search":
+            tasks.append(search_worker(worker_state))
+        elif tool == "dir":
+            tasks.append(dir_worker(worker_state))
+        elif tool == "grep":
+            tasks.append(grep_worker(worker_state))
+        elif tool == "read":
+            tasks.append(read_worker(worker_state))
+
+    # 병렬 워커들 실행 및 에러 방어
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    aggregated_results = []
+    aggregated_events = [{
+        "type": "route_validated",
+        "allowed": len(approved) > 0,
+        "parallelGroups": [[item.get("tool", "search")] for item in approved],
+        "dedupedCount": duplicates,
+    }]
+
+    for r in results:
+        if isinstance(r, Exception):
+            logger.error("[Dispatcher] 워커 비동기 병렬 실행 중 예외 검출: %s", r, exc_info=True)
+            aggregated_results.append({
+                "id": f"ev_failed_{uuid4().hex[:8]}",
+                "path": None,
+                "lineStart": None,
+                "lineEnd": None,
+                "score": None,
+                "snippet": f"도구 실행 예외: {str(r)}",
+                "metadata": {"worker": "dispatcher", "tool": "gather_exception"}
+            })
+        elif isinstance(r, dict):
+            aggregated_results.extend(r.get("worker_results") or [])
+            aggregated_events.extend(r.get("events") or [])
 
     return {
         "security_result": {"approved": approved, "rejected": rejected},
         "attempted_signatures": list(seen),
-        "events": [{
-            "type": "route_validated",
-            "allowed": len(approved) > 0,
-            "parallelGroups": groups,
-            "dedupedCount": duplicates,
-        }],
+        "worker_results": aggregated_results,
+        "events": aggregated_events,
     }
 
-
-def fanout_to_workers(state: CodeMapState) -> list[Send]:
-    """
-    Conditional edge function that sends approved plan items to worker nodes.
-    """
-    approved = state.get("security_result", {}).get("approved", [])
-    sends: list[Send] = []
-    for item in approved:
-        tool = item.get("tool", "search")
-        if tool not in _ALLOWED_WORKERS:
-            logger.warning("[Dispatcher] 미등록 도구 '%s' 차단", tool)
-            continue
-        sends.append(Send(f"{tool}_worker", {**state, "_plan_item": item}))
-
-    if not sends:
-        logger.warning("[Dispatcher] 승인된 plan 없음 — evaluator_node로 직행")
-        sends.append(Send("evaluator_node", state))
-
-    return sends
