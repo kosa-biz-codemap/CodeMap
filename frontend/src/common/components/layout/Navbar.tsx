@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Sun, Moon, LogOut } from "lucide-react";
+import { Sun, Moon, LogOut, Github } from "lucide-react";
 import { useApp } from "@/common/contexts/AppContext";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
 
@@ -69,6 +69,23 @@ export function Navbar() {
             <Moon className="w-3.5 h-3.5" />
           )}
         </button>
+
+        {/* Project repository */}
+        <a
+          href="https://github.com/kosa-bistelligence-2026-mini2-04/CodeMap"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={
+            "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ml-1 hidden sm:inline-flex " +
+            (isDark
+              ? "text-zinc-300 hover:text-white hover:bg-zinc-800"
+              : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100")
+          }
+          title="GitHub Repository"
+        >
+          <Github className="w-4 h-4" />
+          <span>{t.nav.github}</span>
+        </a>
 
         {/* Launch App CTA / User Menu */}
         {isLoggedIn ? (
@@ -188,13 +205,20 @@ export function Navbar() {
             href="https://github.com/kosa-bistelligence-2026-mini2-04/CodeMap"
             target="_blank"
             rel="noopener noreferrer"
-            className={`text-xs font-semibold ${linkHover} transition-colors ml-1 hidden sm:inline-block`}
+            className={
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ml-1 hidden sm:inline-flex " +
+              (isDark
+                ? "text-zinc-300 hover:text-white hover:bg-zinc-800"
+                : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100")
+            }
+            title="GitHub Repository"
           >
-            {t.nav.github}
+            <Github className="w-4 h-4" />
+            <span>{t.nav.github}</span>
           </a>
 
           {/* User Section */}
-          <div className="flex items-center gap-2 ml-2 pl-2 border-l border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center gap-2 ml-2 pl-2">
             {isLoggedIn ? (
             <button
               onClick={handleLogout}
