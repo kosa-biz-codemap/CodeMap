@@ -44,7 +44,8 @@ logger = logging.getLogger(__name__)
 def _normalize_summary(summary: object) -> str | None:
     """Convert master_report.summary to the DOCS_API_SPEC string contract.
 
-    기술 스택/아키텍처 힌트 필드는 제외하고 프로젝트 설명 내용만 반환한다.
+    purpose + key_features 조합으로 반환한다.
+    project_intro(README 전체)와 tech_context는 기술 스택 정보가 섞여 있어 제외.
     """
     if summary is None:
         return None
@@ -53,14 +54,26 @@ def _normalize_summary(summary: object) -> str | None:
     if not isinstance(summary, dict):
         return str(summary)
 
-    ## purpose → project_intro 순으로 우선 반환 (기술 컨텍스트 필드는 제외)
-    preferred_keys = ("purpose", "overview", "project_intro", "summary", "description")
-    for key in preferred_keys:
-        value = summary.get(key)
-        if isinstance(value, str) and value.strip():
-            return value
+    ## purpose / overview 중 존재하는 첫 번째 값을 본문으로 사용
+    purpose = ""
+    for key in ("purpose", "overview", "summary", "description"):
+        val = summary.get(key)
+        if isinstance(val, str) and val.strip():
+            purpose = val.strip()
+            break
 
-    return None
+    ## key_features 목록을 마크다운 bullet 로 추가
+    key_features = summary.get("key_features")
+    features_text = ""
+    if isinstance(key_features, list) and key_features:
+        bullets = "\n".join(
+            f"- {f}" for f in key_features if isinstance(f, str) and f.strip()
+        )
+        if bullets:
+            features_text = f"\n\n**핵심 기능**\n{bullets}"
+
+    result = (purpose + features_text).strip()
+    return result if result else None
 
 
 def _normalize_stack(stack: object) -> list[str]:

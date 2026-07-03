@@ -7,19 +7,12 @@ import {
   AlertTriangle,
   BookOpen,
   FileSearch,
-  Folder,
   GitBranch,
   Layers,
-  List,
   LoaderCircle,
   Navigation,
-  ShieldAlert,
 } from "lucide-react";
-import type {
-  DocGetJsonData,
-  DocReadingOrderItem,
-  DocDangerFileItem,
-} from "@/common/types/contracts";
+import type { DocGetJsonData } from "@/common/types/contracts";
 import { FileSummaryPanel } from "./FileSummaryPanel";
 
 // ── 탭 정의 ────────────────────────────────────────────────────
@@ -27,10 +20,7 @@ import { FileSummaryPanel } from "./FileSummaryPanel";
 type TabId =
   | "summary"
   | "stack"
-  | "readingOrder"
-  | "dangerFiles"
   | "coreFlow"
-  | "folderSummaries"
   | "fileSummary"
   | "onboardingGuide";
 
@@ -43,10 +33,7 @@ interface Tab {
 const TABS: Tab[] = [
   { id: "summary",         label: "프로젝트 요약",   icon: BookOpen    },
   { id: "stack",           label: "기술 스택",        icon: Layers      },
-  { id: "readingOrder",    label: "읽기 순서",        icon: List        },
-  { id: "dangerFiles",     label: "위험 파일",        icon: ShieldAlert },
   { id: "coreFlow",        label: "핵심 플로우",      icon: GitBranch   },
-  { id: "folderSummaries", label: "폴더 요약",        icon: Folder      },
   { id: "fileSummary",     label: "파일 단위 요약",   icon: FileSearch  },
   { id: "onboardingGuide", label: "온보딩 가이드",    icon: Navigation  },
 ];
@@ -196,82 +183,15 @@ function StackPanel({
   );
 }
 
-function ReadingOrderPanel({ items }: { items: DocReadingOrderItem[] }) {
-  if (items.length === 0) {
-    return (
-      <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-        읽기 순서 정보가 없습니다.
-      </p>
-    );
-  }
-  return (
-    <ol className="space-y-3">
-      {items.map((item) => (
-        <li key={item.path} className="flex items-start gap-3">
-          <span
-            className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-            style={{
-              background:
-                "color-mix(in srgb, var(--accent-primary) 15%, transparent)",
-              color: "var(--accent-primary)",
-            }}
-          >
-            {item.rank}
-          </span>
-          <div className="min-w-0">
-            <span
-              className="break-all font-mono text-xs leading-5"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              {item.path}
-            </span>
-            {item.reason && (
-              <p
-                className="mt-0.5 text-[11px] leading-5"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {item.reason}
-              </p>
-            )}
-          </div>
-        </li>
-      ))}
-    </ol>
-  );
-}
 
-function DangerFilesPanel({ items }: { items: DocDangerFileItem[] }) {
-  if (items.length === 0) {
-    return (
-      <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-        위험 파일이 감지되지 않았습니다.
-      </p>
-    );
-  }
-  return (
-    <ul className="space-y-2">
-      {items.map((item) => (
-        <li key={item.path} className="flex items-start gap-2">
-          <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-400" />
-          <div className="min-w-0">
-            <span
-              className="break-all font-mono text-xs leading-5"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              {item.path}
-            </span>
-            {item.reason && (
-              <p
-                className="mt-0.5 text-[11px] leading-5"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {item.reason}
-              </p>
-            )}
-          </div>
-        </li>
-      ))}
-    </ul>
+function normalizeEntrypoints(text: string): string {
+  return text.replace(
+    /^진입점:\s*(.+)$/m,
+    (_match, csv: string) => {
+      const files = csv.split(",").map((s) => s.trim()).filter(Boolean);
+      const list = files.map((f, i) => `${i + 1}. ${f}`).join("\n");
+      return `진입점)\n${list}`;
+    }
   );
 }
 
@@ -283,53 +203,9 @@ function CoreFlowPanel({ text }: { text: string | null }) {
       </p>
     );
   }
-  return <MdText text={text} />;
+  return <MdText text={normalizeEntrypoints(text)} />;
 }
 
-function FolderSummariesPanel({
-  items,
-}: {
-  items: DocGetJsonData["folderSummaries"];
-}) {
-  if (items.length === 0) {
-    return (
-      <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-        폴더 요약 정보가 없습니다.
-      </p>
-    );
-  }
-
-  return (
-    <ul className="space-y-3">
-      {items.map(({ path, summary }) => (
-        <li
-          key={path}
-          className="rounded-xl border p-4"
-          style={{ borderColor: "var(--border-primary)" }}
-        >
-          <div className="mb-1.5 flex items-center gap-2">
-            <Folder
-              className="size-3.5 shrink-0"
-              style={{ color: "var(--accent-primary)" }}
-            />
-            <span
-              className="truncate font-mono text-xs font-semibold"
-              style={{ color: "var(--text-primary)" }}
-            >
-              {path}
-            </span>
-          </div>
-          <p
-            className="text-xs leading-5"
-            style={{ color: "var(--text-muted)" }}
-          >
-            {summary || "설명이 없습니다."}
-          </p>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 // ── 온보딩 가이드 미리보기 전용 ──────────────────────────────────
 
@@ -454,10 +330,7 @@ export function GuideViewer({
   const panelContent: Record<TabId, React.ReactNode> = {
     summary:         <SummaryPanel text={data.summary} />,
     stack:           <StackPanel items={data.stack} primaryLanguage={data.primaryLanguage} />,
-    readingOrder:    <ReadingOrderPanel items={data.readingOrder} />,
-    dangerFiles:     <DangerFilesPanel items={data.dangerFiles} />,
     coreFlow:        <CoreFlowPanel text={data.coreFlow} />,
-    folderSummaries: <FolderSummariesPanel items={data.folderSummaries} />,
     fileSummary:     <FileSummaryPanel docData={data} />,
     onboardingGuide: (
       <MarkdownPreviewPanel
@@ -508,14 +381,8 @@ export function GuideViewer({
 
         {/* 탭 패널 */}
         <div id={`panel-${activeTab}`} role="tabpanel" className="p-6">
-          {/* 메타 정보 */}
-          <div className="mb-4 flex items-center justify-between">
-            <p
-              className="text-[10px] font-semibold uppercase tracking-[0.18em]"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {TABS.find((t) => t.id === activeTab)?.label}
-            </p>
+          {/* 버전 / 생성일 배지 */}
+          <div className="mb-4 flex justify-end">
             <span
               className="rounded-full border px-2 py-0.5 text-[10px]"
               style={{
