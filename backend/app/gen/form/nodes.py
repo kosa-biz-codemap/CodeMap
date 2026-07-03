@@ -500,10 +500,13 @@ async def flow_explain_node(state: GenFormState) -> dict:
                 f"### 주요 호출 체인\n{flow_obj.key_call_chain}"
             )
         else:
-            entry_str = ", ".join(entrypoints[:5]) or "미탐지"
+            entry_list = "\n".join(
+                f"{i + 1}. {ep}"
+                for i, ep in enumerate(entrypoints[:5])
+            ) or "미탐지"
             flow_explanation = (
                 f"## 핵심 실행 플로우\n\n"
-                f"진입점: {entry_str}\n\n"
+                f"진입점)\n{entry_list}\n\n"
                 f"상세 플로우 분석을 위해 LLM API 키 설정이 필요합니다."
             )
 
@@ -715,6 +718,7 @@ async def master_report_node(state: GenFormState) -> dict:
             "summary": summary,
             "stack": stack,
             "file_map": file_map,
+            "file_summaries": report.get("file_summaries", []),
             "recommendations": recommendations,
             "heatmap": heatmap,
             "durations": durations,

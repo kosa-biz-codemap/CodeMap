@@ -129,7 +129,7 @@ class DocFolderSummaryItem(BaseModel):
     """DOCS_API_SPEC folderSummaries item."""
 
     path: str = Field(description="Folder path")
-    description: str = Field(default="", description="Folder description")
+    summary: str = Field(default="", description="Folder description")
 
 
 class DocFileSummaryItem(BaseModel):
@@ -137,6 +137,16 @@ class DocFileSummaryItem(BaseModel):
 
     path: str = Field(description="File path")
     summary: str = Field(default="", description="File summary")
+
+
+class DocTaskItem(BaseModel):
+    '''단일 추천 작업 항목 (B-208 first_tasks 정규화 결과)'''
+
+    title: str = Field(description="작업 설명")
+    difficulty: str = Field(
+        default="미분류",
+        description="난이도 (상 / 중 / 하 / 미분류)",
+    )
 
 
 class DocGetJsonData(BaseModel):
@@ -147,6 +157,9 @@ class DocGetJsonData(BaseModel):
     repo_id: UUID = Field(alias="repoId", description="저장소 ID")
     repo_name: str = Field(alias="repoName", description="저장소 이름")
     summary: str | None = Field(default=None, description="프로젝트 요약 정보")
+    primary_language: str | None = Field(
+        alias="primaryLanguage", default=None, description="주 언어"
+    )
     stack: list[str] = Field(default_factory=list, description="기술 스택 목록")
     reading_order: list[DocReadingOrderItem] = Field(
         alias="readingOrder", default_factory=list, description="추천 파일 읽기 순서"
@@ -160,6 +173,9 @@ class DocGetJsonData(BaseModel):
     )
     file_summaries: list[DocFileSummaryItem] = Field(
         alias="fileSummaries", default_factory=list, description="파일 단위 요약"
+    )
+    first_tasks: list[DocTaskItem] = Field(
+        alias="firstTasks", default_factory=list, description="첫 기여 추천 작업 목록"
     )
     generated_at: datetime = Field(
         alias="generatedAt", description="가이드북 생성 시각"
@@ -225,16 +241,6 @@ class DocRebuildResponse(BaseModel):
 # ──────────────────────────────────────────────
 # DOCS-GEN-API-006: 추천 작업 조회 응답
 # ──────────────────────────────────────────────
-class DocTaskItem(BaseModel):
-    '''단일 추천 작업 항목 (B-208 first_tasks 정규화 결과)'''
-
-    title: str = Field(description="작업 설명")
-    difficulty: str = Field(
-        default="미분류",
-        description="난이도 (상 / 중 / 하 / 미분류)",
-    )
-
-
 class DocTaskData(BaseModel):
     '''GET /api/gen/docs/{repo_id}/tasks 성공 응답 data 필드'''
 

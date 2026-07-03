@@ -20,6 +20,17 @@ function authHeader(): Record<string, string> {
 export async function fetchOnboardingDocMarkdown(
   repoId: string,
 ): Promise<DocGetMarkdownResponse> {
+  if (typeof window !== "undefined") {
+    const cached = window.sessionStorage.getItem(`codemap:docs:md:${repoId}`);
+    if (cached) {
+      try {
+        return JSON.parse(cached) as DocGetMarkdownResponse;
+      } catch (_) {
+        // ignore JSON parse error
+      }
+    }
+  }
+
   const resp = await fetch(
     apiPath(`/gen/docs/${repoId}?format=markdown`),
     { headers: authHeader() },
@@ -27,7 +38,12 @@ export async function fetchOnboardingDocMarkdown(
   if (!resp.ok) {
     throw await parseApiError(resp);
   }
-  return resp.json() as Promise<DocGetMarkdownResponse>;
+
+  const data = (await resp.json()) as DocGetMarkdownResponse;
+  if (typeof window !== "undefined") {
+    window.sessionStorage.setItem(`codemap:docs:md:${repoId}`, JSON.stringify(data));
+  }
+  return data;
 }
 
 /**
@@ -37,6 +53,17 @@ export async function fetchOnboardingDocMarkdown(
 export async function fetchOnboardingDocJson(
   repoId: string,
 ): Promise<DocGetJsonResponse> {
+  if (typeof window !== "undefined") {
+    const cached = window.sessionStorage.getItem(`codemap:docs:json:${repoId}`);
+    if (cached) {
+      try {
+        return JSON.parse(cached) as DocGetJsonResponse;
+      } catch (_) {
+        // ignore JSON parse error
+      }
+    }
+  }
+
   const resp = await fetch(
     apiPath(`/gen/docs/${repoId}?format=json`),
     { headers: authHeader() },
@@ -44,7 +71,12 @@ export async function fetchOnboardingDocJson(
   if (!resp.ok) {
     throw await parseApiError(resp);
   }
-  return resp.json() as Promise<DocGetJsonResponse>;
+
+  const data = (await resp.json()) as DocGetJsonResponse;
+  if (typeof window !== "undefined") {
+    window.sessionStorage.setItem(`codemap:docs:json:${repoId}`, JSON.stringify(data));
+  }
+  return data;
 }
 
 /**

@@ -510,16 +510,23 @@ export interface DocGetMarkdownData {
   version: number;
 }
 
+export interface DocFirstTaskItem {
+  title: string;
+  difficulty: string;
+}
+
 export interface DocGetJsonData {
   repoId: string;
   repoName: string;
   summary: string | null;
+  primaryLanguage: string | null;
   stack: string[];
   readingOrder: DocReadingOrderItem[];
   dangerFiles: DocDangerFileItem[];
   coreFlow: string | null;
   folderSummaries: DocFolderSummary[];
   fileSummaries: DocFileSummaryRaw[];
+  firstTasks: DocFirstTaskItem[];
   generatedAt: string;
   version: number;
 }

@@ -29,6 +29,7 @@ import { WorkspaceSelector, type WorkspaceScope } from "@/features/team/componen
 import { useConfirm } from "@/common/hooks/useConfirm";
 import { useApp } from "@/common/contexts/AppContext";
 import { useAuthStore } from "@/features/auth/store/useAuthStore";
+import { triggerOnboardingDocGeneration } from "@/features/docs/api/docsApi";
 
 // 모바일 드로워 닫기 모션이 끝난 뒤 데이터 갱신을 트리거하기까지의 디바운스(ms)
 const MOBILE_DRAWER_CLOSE_MS = 180;
@@ -149,6 +150,20 @@ function AnalyzeWorkspace() {
   // 모바일 드로워: 닫기 애니메이션과 데이터 갱신 타이밍 분리 (#229)
   // ──────────────────────────────────────────────
   const mobileSelectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ──────────────────────────────────────────────
+  // 분석 완료 후 온보딩 가이드북 백그라운드 자동 생성 (#337 추가 수정)
+  // ──────────────────────────────────────────────
+  const triggeredDocsForJob = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (status === "completed" && jobId && triggeredDocsForJob.current !== jobId && !preview) {
+      triggeredDocsForJob.current = jobId;
+      triggerOnboardingDocGeneration(jobId).catch(() => {
+        // 이미 생성 중이거나 완료되었어도 백그라운드이므로 에러 무시
+      });
+    }
+  }, [status, jobId, preview]);
 
   useEffect(() => {
     if (status !== "running") return;

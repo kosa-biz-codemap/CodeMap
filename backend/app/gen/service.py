@@ -9,6 +9,7 @@ DOCS-GEN 서비스 계층 (DOCS-GEN-B-301, DOCS-GEN-API-001~004)
 """
 
 import logging
+import re
 from uuid import UUID
 
 from fastapi import BackgroundTasks
@@ -42,26 +43,42 @@ logger = logging.getLogger(__name__)
 
 
 def _normalize_summary(summary: object) -> str | None:
-    """Convert master_report.summary to the DOCS_API_SPEC string contract."""
+    """Convert master_report.summary to the DOCS_API_SPEC string contract.
+
+    purpose + key_features 조합으로 반환한다.
+    project_intro(README 전체)와 tech_context는 기술 스택 정보가 섞여 있어 제외.
+    """
     if summary is None:
         return None
     if isinstance(summary, str):
-        return summary
+        from app.gen.markdown import _clean_purpose
+        cleaned = _clean_purpose(summary)
+        return cleaned if cleaned else None
     if not isinstance(summary, dict):
         return str(summary)
 
-    preferred_keys = ("purpose", "overview", "summary", "description")
-    for key in preferred_keys:
-        value = summary.get(key)
-        if isinstance(value, str) and value.strip():
-            return value
+    ## purpose / overview 중 존재하는 첫 번째 값을 본문으로 사용
+    purpose = ""
+    for key in ("purpose", "overview", "summary", "description"):
+        val = summary.get(key)
+        if isinstance(val, str) and val.strip():
+            purpose = val.strip()
+            break
 
-    text_parts = [
-        value.strip()
-        for value in summary.values()
-        if isinstance(value, str) and value.strip()
-    ]
-    return "\n".join(text_parts) if text_parts else None
+    ## key_features 목록을 마크다운 bullet 로 추가
+    key_features = summary.get("key_features")
+    features_text = ""
+    if isinstance(key_features, list) and key_features:
+        bullets = "\n".join(
+            f"- {re.sub(r'\\*+', '', f).strip()}"
+            for f in key_features
+            if isinstance(f, str) and f.strip()
+        )
+        if bullets:
+            features_text = f"\n\n**핵심 기능**\n{bullets}"
+
+    result = (purpose + features_text).strip()
+    return result if result else None
 
 
 def _normalize_stack(stack: object) -> list[str]:
@@ -133,10 +150,19 @@ def _normalize_folder_summaries(file_map: object) -> list[DocFolderSummaryItem]:
         return []
 
     return [
-        DocFolderSummaryItem(path=str(path), description=str(description))
+        DocFolderSummaryItem(path=str(path), summary=str(description))
         for path, description in folder_map.items()
         if path
     ]
+
+
+def _normalize_primary_language(stack: object) -> str | None:
+    if not isinstance(stack, dict):
+        return None
+    lang = stack.get("primary_language")
+    if isinstance(lang, str) and lang.strip():
+        return lang.strip()
+    return None
 
 
 def _normalize_file_summaries(file_summaries: object) -> list[DocFileSummaryItem]:
@@ -288,16 +314,19 @@ async def get_onboarding_doc(
             "[DOCS-GEN-API-001] JSON 조회 완료 | repo_id=%s version=%d",
             repo_id, doc.version,
         )
+        stack_raw = report.get("stack")
         return DocGetJsonData(
             repoId=repo_id,
             repoName=getattr(analysis_job, "repo_name", "") or "",
             summary=_normalize_summary(summary_raw),
-            stack=_normalize_stack(report.get("stack")),
+            primaryLanguage=_normalize_primary_language(stack_raw),
+            stack=_normalize_stack(stack_raw),
             readingOrder=_normalize_reading_order(guide.get("reading_order")),
             dangerFiles=_normalize_danger_files(guide.get("risk_files")),
             coreFlow=core_flow,
             folderSummaries=_normalize_folder_summaries(report.get("file_map")),
             fileSummaries=_normalize_file_summaries(report.get("file_summaries")),
+            firstTasks=_normalize_first_tasks(guide.get("first_tasks")),
             generatedAt=doc.created_at,
             version=doc.version,
         )
