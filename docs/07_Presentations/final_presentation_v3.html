@@ -725,6 +725,56 @@
       min-height: 0;
     }
 
+    .chat-demo-frame {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 24px;
+      background: #fff;
+      box-shadow: 0 12px 32px rgba(31,42,68,0.12);
+    }
+
+    .chat-demo-viewport {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      background: #f8fafc;
+      isolation: isolate;
+    }
+
+    .chat-demo-media {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+      transform-origin: center center;
+      will-change: transform;
+      animation: chatCameraMove 15s infinite both;
+    }
+
+    @keyframes chatCameraMove {
+      0%, 6.6% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      9%, 36.6% {
+        transform: translate3d(0, 0, 0) scale(1.4);
+      }
+      40% {
+        transform: translate3d(-20%, 16%, 0) scale(1.8);
+      }
+      80% {
+        transform: translate3d(-20%, -18%, 0) scale(1.8);
+      }
+      86.6% {
+        transform: translate3d(-20%, -18%, 0) scale(1.8);
+      }
+      100% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+    }
+
     .quote {
       border-left: 5px solid var(--blue);
       padding: 8px 0 8px 18px;
@@ -977,6 +1027,10 @@
         animation-iteration-count: 1 !important;
         scroll-behavior: auto !important;
         transition-duration: .01ms !important;
+      }
+
+      .chat-demo-media {
+        animation: chatCameraMove 15s infinite both !important;
       }
 
       .card:hover,
@@ -1383,21 +1437,12 @@
         <div class="content">
           <span class="kicker">Feature 2</span>
           <h2>지능형 채팅 UX 및 독립 세션 복원</h2>
-          <style>
-            @keyframes continuousZoom {
-              0% { transform: scale(1); }
-              90% { transform: scale(1.15); }
-              100% { transform: scale(1); }
-            }
-            .zoom-in-loop {
-              animation: continuousZoom 15s infinite ease-in-out;
-              transform-origin: center center;
-            }
-          </style>
           <div class="split-heavy">
             <div style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-              <div style="display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 24px; box-shadow: 0 12px 32px rgba(31,42,68,0.12); overflow: hidden;">
-                <video src="assets/live-ai-chat-ko-light.mov" autoplay loop muted playsinline class="zoom-in-loop" style="width: 100%; height: auto; display: block;"></video>
+              <div class="chat-demo-frame">
+                <div class="chat-demo-viewport">
+                  <video class="chat-demo-media" src="assets/live-ai-chat-ko-light.mov" autoplay loop muted playsinline></video>
+                </div>
               </div>
               <article class="card compact" style="margin-top: 16px; transform: scale(0.85); transform-origin: left bottom; width: 117.64%;">
                 <span class="label">AI 채팅 데이터 흐름</span>
