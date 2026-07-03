@@ -108,7 +108,7 @@ function DocsWorkspace() {
           try {
             if (!triggerRequested) {
               triggerRequested = true;
-              setGenerationNotice("온보딩 가이드북이 없어 자동 생성 중입니다. 완료되면 화면이 갱신됩니다.");
+              setGenerationNotice("분석 결과를 바탕으로 가이드북을 자동 생성 중입니다. 완료되면 화면이 갱신됩니다.");
               await triggerOnboardingDocGeneration(repoId);
             } else {
               setGenerationNotice("온보딩 가이드북을 생성 중입니다. 완료되면 화면이 갱신됩니다.");
