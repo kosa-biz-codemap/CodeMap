@@ -27,7 +27,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./backend
           push: true
@@ -40,13 +40,20 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - name: Execute remote SSH commands to deploy
-        uses: appleboy/ssh-action@v1.0.3
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
         with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USERNAME }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          script: |
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Execute remote SSH commands to deploy
+        uses: 'google-github-actions/ssh-compute@v1'
+        with:
+          instance_name: 'codemap-backend-vm'
+          zone: 'asia-northeast3-a' # GCP 존이 다르다면 알맞게 수정해주세요.
+          command: |
+            cd ~/CodeMap/backend
+
             echo "1. 새 이미지를 도커 허브에서 다운로드합니다."
             sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest
 
