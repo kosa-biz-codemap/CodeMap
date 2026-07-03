@@ -259,7 +259,7 @@ function CoreFlowPanel({ text }: { text: string | null }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          ol: ({ node: _node, ...props }) => (
+          ol: (props) => (
             <ol
               {...props}
               className="[&>li::marker]:font-bold [&>li::marker]:text-green-400"
