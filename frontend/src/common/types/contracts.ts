@@ -514,6 +514,7 @@ export interface DocGetJsonData {
   repoId: string;
   repoName: string;
   summary: string | null;
+  primaryLanguage: string | null;
   stack: string[];
   readingOrder: DocReadingOrderItem[];
   dangerFiles: DocDangerFileItem[];

@@ -6,7 +6,6 @@ import remarkGfm from "remark-gfm";
 import {
   AlertTriangle,
   BookOpen,
-  ChevronRight,
   FileSearch,
   Folder,
   GitBranch,
@@ -72,28 +71,117 @@ function SummaryPanel({ text }: { text: string | null }) {
   );
 }
 
-function StackPanel({ items }: { items: string[] }) {
-  if (items.length === 0) {
+const KNOWN_LANGUAGES = new Set([
+  "python", "javascript", "typescript", "java", "go", "rust",
+  "c++", "c#", "c", "ruby", "php", "swift", "kotlin", "scala",
+  "dart", "elixir", "haskell", "lua", "r", "matlab", "julia",
+]);
+
+function StackChip({
+  name,
+  highlight,
+}: {
+  name: string;
+  highlight?: boolean;
+}) {
+  return (
+    <span
+      className="rounded-full border px-3 py-1 text-xs font-medium"
+      style={
+        highlight
+          ? {
+              borderColor: "var(--accent-primary)",
+              color: "var(--accent-primary)",
+              background:
+                "color-mix(in srgb, var(--accent-primary) 12%, transparent)",
+            }
+          : {
+              borderColor: "var(--border-primary)",
+              color: "var(--text-secondary)",
+            }
+      }
+    >
+      {name}
+    </span>
+  );
+}
+
+function StackPanel({
+  items,
+  primaryLanguage,
+}: {
+  items: string[];
+  primaryLanguage: string | null;
+}) {
+  const primary = primaryLanguage?.trim() || null;
+  const primaryLower = primary?.toLowerCase() ?? "";
+
+  const rest = items.filter(
+    (item) => item.toLowerCase() !== primaryLower
+  );
+
+  const others = rest.filter((item) =>
+    KNOWN_LANGUAGES.has(item.toLowerCase())
+  );
+  const technologies = rest.filter(
+    (item) => !KNOWN_LANGUAGES.has(item.toLowerCase())
+  );
+
+  const hasAny = primary || rest.length > 0;
+
+  if (!hasAny) {
     return (
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>
         기술 스택 정보가 없습니다.
       </p>
     );
   }
+
   return (
-    <div className="flex flex-wrap gap-2">
-      {items.map((name) => (
-        <span
-          key={name}
-          className="rounded-full border px-3 py-1 text-xs font-medium"
-          style={{
-            borderColor: "var(--border-primary)",
-            color: "var(--text-secondary)",
-          }}
-        >
-          {name}
-        </span>
-      ))}
+    <div className="space-y-5">
+      {primary && (
+        <section>
+          <h4
+            className="mb-2 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            주 언어
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            <StackChip name={primary} highlight />
+          </div>
+        </section>
+      )}
+      {technologies.length > 0 && (
+        <section>
+          <h4
+            className="mb-2 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            기술 스택
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {technologies.map((name) => (
+              <StackChip key={name} name={name} />
+            ))}
+          </div>
+        </section>
+      )}
+      {others.length > 0 && (
+        <section>
+          <h4
+            className="mb-2 text-[10px] font-semibold uppercase tracking-widest"
+            style={{ color: "var(--text-muted)" }}
+          >
+            기타 / 미분류
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {others.map((name) => (
+              <StackChip key={name} name={name} />
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -200,17 +288,6 @@ function FolderSummariesPanel({
 }: {
   items: DocGetJsonData["folderSummaries"];
 }) {
-  const [open, setOpen] = useState<Set<string>>(new Set());
-
-  const toggle = (path: string) => {
-    setOpen((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
-    });
-  };
-
   if (items.length === 0) {
     return (
       <p className="text-sm" style={{ color: "var(--text-muted)" }}>
@@ -220,39 +297,31 @@ function FolderSummariesPanel({
   }
 
   return (
-    <ul className="space-y-1">
+    <ul className="space-y-3">
       {items.map(({ path, summary }) => (
-        <li key={path}>
-          <button
-            type="button"
-            onClick={() => toggle(path)}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition hover:opacity-80"
-            style={{
-              background:
-                "color-mix(in srgb, var(--border-primary) 30%, transparent)",
-            }}
-          >
-            <ChevronRight
-              className={`size-3.5 shrink-0 transition-transform ${
-                open.has(path) ? "rotate-90" : ""
-              }`}
-              style={{ color: "var(--text-muted)" }}
+        <li
+          key={path}
+          className="rounded-xl border p-4"
+          style={{ borderColor: "var(--border-primary)" }}
+        >
+          <div className="mb-1.5 flex items-center gap-2">
+            <Folder
+              className="size-3.5 shrink-0"
+              style={{ color: "var(--accent-primary)" }}
             />
             <span
-              className="truncate font-mono text-xs"
-              style={{ color: "var(--text-secondary)" }}
+              className="truncate font-mono text-xs font-semibold"
+              style={{ color: "var(--text-primary)" }}
             >
               {path}
             </span>
-          </button>
-          {open.has(path) && (
-            <p
-              className="px-8 pb-2 pt-1 text-xs leading-6"
-              style={{ color: "var(--text-muted)" }}
-            >
-              {summary}
-            </p>
-          )}
+          </div>
+          <p
+            className="text-xs leading-5"
+            style={{ color: "var(--text-muted)" }}
+          >
+            {summary || "설명이 없습니다."}
+          </p>
         </li>
       ))}
     </ul>
@@ -376,7 +445,7 @@ export function GuideViewer({
 
   const panelContent: Record<TabId, React.ReactNode> = {
     summary:         <SummaryPanel text={data.summary} />,
-    stack:           <StackPanel items={data.stack} />,
+    stack:           <StackPanel items={data.stack} primaryLanguage={data.primaryLanguage} />,
     readingOrder:    <ReadingOrderPanel items={data.readingOrder} />,
     dangerFiles:     <DangerFilesPanel items={data.dangerFiles} />,
     coreFlow:        <CoreFlowPanel text={data.coreFlow} />,

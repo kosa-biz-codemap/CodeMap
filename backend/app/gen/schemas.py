@@ -129,7 +129,7 @@ class DocFolderSummaryItem(BaseModel):
     """DOCS_API_SPEC folderSummaries item."""
 
     path: str = Field(description="Folder path")
-    description: str = Field(default="", description="Folder description")
+    summary: str = Field(default="", description="Folder description")
 
 
 class DocFileSummaryItem(BaseModel):
@@ -147,6 +147,11 @@ class DocGetJsonData(BaseModel):
     repo_id: UUID = Field(alias="repoId", description="저장소 ID")
     repo_name: str = Field(alias="repoName", description="저장소 이름")
     summary: str | None = Field(default=None, description="프로젝트 요약 정보")
+    primary_language: str | None = Field(
+        alias="primaryLanguage",
+        default=None,
+        description="주 언어 (primary_language)",
+    )
     stack: list[str] = Field(default_factory=list, description="기술 스택 목록")
     reading_order: list[DocReadingOrderItem] = Field(
         alias="readingOrder", default_factory=list, description="추천 파일 읽기 순서"

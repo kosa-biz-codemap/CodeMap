@@ -72,6 +72,15 @@ def _normalize_stack(stack: object) -> list[str]:
     return [str(item) for item in stack if item]
 
 
+def _normalize_primary_language(stack: object) -> str | None:
+    if not isinstance(stack, dict):
+        return None
+    lang = stack.get("primary_language")
+    if isinstance(lang, str) and lang.strip():
+        return lang.strip()
+    return None
+
+
 def _normalize_reading_order(reading_order: object) -> list[DocReadingOrderItem]:
     if not isinstance(reading_order, list):
         return []
@@ -133,7 +142,7 @@ def _normalize_folder_summaries(file_map: object) -> list[DocFolderSummaryItem]:
         return []
 
     return [
-        DocFolderSummaryItem(path=str(path), description=str(description))
+        DocFolderSummaryItem(path=str(path), summary=str(description))
         for path, description in folder_map.items()
         if path
     ]
@@ -288,11 +297,13 @@ async def get_onboarding_doc(
             "[DOCS-GEN-API-001] JSON 조회 완료 | repo_id=%s version=%d",
             repo_id, doc.version,
         )
+        stack_raw = report.get("stack")
         return DocGetJsonData(
             repoId=repo_id,
             repoName=getattr(analysis_job, "repo_name", "") or "",
             summary=_normalize_summary(summary_raw),
-            stack=_normalize_stack(report.get("stack")),
+            primaryLanguage=_normalize_primary_language(stack_raw),
+            stack=_normalize_stack(stack_raw),
             readingOrder=_normalize_reading_order(guide.get("reading_order")),
             dangerFiles=_normalize_danger_files(guide.get("risk_files")),
             coreFlow=core_flow,
