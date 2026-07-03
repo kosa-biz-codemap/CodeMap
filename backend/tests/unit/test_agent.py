@@ -716,7 +716,26 @@ class TestAgentServiceSessionMemory(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(state["session_id"], str(session_id))
         self.assertEqual(state["memory_context"]["messages"][0]["content"], "이전 질문")
-        self.assertEqual(service._graph_config(session_id=session_id, run_id="run1")["configurable"]["thread_id"], str(session_id))
+        self.assertEqual(
+            service._graph_config(session_id=session_id, run_id="run1")["configurable"]["thread_id"],
+            "run1",
+        )
+
+    async def test_graph_config_is_run_scoped_even_with_same_session(self):
+        from app.agent.service import CodeMapAgentService
+
+        service = CodeMapAgentService(MagicMock())
+        session_id = UUID("00000000-0000-0000-0000-000000000222")
+
+        first = service._graph_config(session_id=session_id, run_id="run-a")
+        second = service._graph_config(session_id=session_id, run_id="run-b")
+
+        self.assertEqual(first["configurable"]["thread_id"], "run-a")
+        self.assertEqual(second["configurable"]["thread_id"], "run-b")
+        self.assertNotEqual(
+            first["configurable"]["thread_id"],
+            second["configurable"]["thread_id"],
+        )
 
 
 

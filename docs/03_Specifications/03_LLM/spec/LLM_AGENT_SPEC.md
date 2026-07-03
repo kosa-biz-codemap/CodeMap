@@ -130,19 +130,22 @@
 
 ---
 
-## LLM-AGENT-B-301: LangGraph thread_id 기반 멀티턴 상태 영속 (Phase 2)
+## LLM-AGENT-B-301: DB memory_context 기반 멀티턴 맥락 복원 (Phase 2)
 
 ### 1. 설명
-동일 세션 내 연속 대화에서 이전 탐색 맥락을 LangGraph 실행 입력과 `thread_id`에 연결한다.
+동일 세션 내 연속 대화에서 이전 질문/답변 맥락을 DB에서 복원해
+Planner 입력에 주입한다. LangGraph checkpoint `thread_id`는 run 단위로
+격리하여 `worker_results`, `events`, `attempted_signatures` 같은 reducer
+채널이 같은 chat session의 다음 run으로 누적되지 않도록 한다.
 
 ### 2. 현황 및 입/출력 규격
 - **현재 구현**: Chat 도메인 DB(`Conversation`/`ChatMessage`, `sessionId` 기준 — `chat/repository.py`)에서 최근 메시지를 복원해 `CodeMapState.memory_context`에 주입한다.
-- **LangGraph 실행 config**: 사용자 `sessionId`를 `configurable.thread_id`로 전달한다. `sessionId`가 없으면 `run_id`를 thread_id로 사용한다.
+- **LangGraph 실행 config**: `run_id`를 `configurable.thread_id`로 전달한다. 사용자 `sessionId`는 checkpoint key가 아니라 DB conversation memory 조회 키로만 사용한다.
 - **Planner 입력**: `planner_node`는 `memory_context`를 LLM 입력 payload의 `sessionMemory`로 받아 후속 질문의 생략된 맥락을 보정한다.
 
 ### 3. 완료 조건
 - 동일 `sessionId`로 새 run을 만들면 DB에 저장된 이전 user/assistant 메시지 요약이 agent state에 복원되어야 한다.
-- LangGraph 실행 config의 `thread_id`가 동일 `sessionId`로 고정되어야 한다.
+- LangGraph 실행 config의 `thread_id`는 각 run의 `run_id`로 고정되어야 하며, 같은 `sessionId`의 여러 run이 같은 checkpoint state를 재사용하면 안 된다.
 
 ---
 

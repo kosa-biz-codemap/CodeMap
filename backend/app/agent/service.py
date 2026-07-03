@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 from typing import AsyncIterator
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -61,17 +61,18 @@ class CodeMapAgentService:
         LangGraph 워크플로우를 실행하고 최종 compact_context 및 worker_results를 반환합니다.
         '''
         try:
+            run_id = f"direct-{uuid4()}"
             initial_state = await self._build_initial_state(
                 repo_id=repo_id,
                 user_query=user_query,
                 clone_path=clone_path,
-                run_id="",
+                run_id=run_id,
                 session_id=session_id,
                 target_file=target_file,
             )
             final_state = await get_compiled_graph().ainvoke(
                 initial_state,
-                config=self._graph_config(session_id=session_id, run_id=""),
+                config=self._graph_config(session_id=session_id, run_id=run_id),
             )
             logger.info(
                 "[AgentService] 실행 완료 — worker_results=%d",
@@ -154,7 +155,11 @@ class CodeMapAgentService:
         }
 
     def _graph_config(self, *, session_id: UUID | None, run_id: str) -> RunnableConfig | None:
-        thread_id = str(session_id) if session_id else run_id
+        # Keep LangGraph checkpoints scoped to a single run. Conversation memory
+        # still comes from ChatRepository via session_id, but reducer channels
+        # such as worker_results/events/attempted_signatures must not accumulate
+        # across multiple chat runs in the same session.
+        thread_id = run_id
         return RunnableConfig(configurable={"thread_id": thread_id}) if thread_id else None
 
     # ──────────────────────────────────────────────

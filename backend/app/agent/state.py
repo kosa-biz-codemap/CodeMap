@@ -59,7 +59,7 @@ class CodeMapState(TypedDict):
     repo_id: str                      # 분석 대상 저장소 ID
     clone_path: str                   # 로컬 clone 경로
     run_id: str                       # Agent Run ID
-    session_id: str | None            # Chat session / LangGraph thread_id 매핑값
+    session_id: str | None            # Chat DB memory 조회용 session ID
     target_file: str | None           # 사용자가 지정한 타겟 파일 경로
     memory_context: dict[str, Any]              # DB에서 복원한 최근 대화 맥락
 
