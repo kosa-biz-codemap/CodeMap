@@ -1059,7 +1059,7 @@
   <main id="deck">
     <section class="slide active">
       <div class="slide-inner">
-        <span class="page-no">Page 01 / 10</span>
+        <span class="page-no">Page 01 / 11</span>
         <div class="demo-badge">
           <img src="https://api.qrserver.com/v1/create-qr-code/?size=56x56&data=https%3A%2F%2Fcodemap-web.vercel.app%2F&bgcolor=f7f8fb" alt="QR Code" width="56" height="56">
           <div>
@@ -1142,7 +1142,7 @@
 
     <section class="slide">
       <div class="slide-inner">
-        <span class="page-no">Page 02 / 10</span>
+        <span class="page-no">Page 02 / 11</span>
         <div class="content">
           <span class="kicker">Team & Environment</span>
           <h2>개발 환경 및 팀 구성</h2>
@@ -1223,7 +1223,7 @@
 
     <section class="slide">
       <div class="slide-inner">
-        <span class="page-no">Page 03 / 10</span>
+        <span class="page-no">Page 03 / 11</span>
         <div class="content">
           <span class="kicker">Requirements & Flow</span>
           <h2>요구사항 정의 및 사용자 프로세스</h2>
@@ -1284,7 +1284,7 @@
 
     <section class="slide">
       <div class="slide-inner">
-        <span class="page-no">Page 04 / 10</span>
+        <span class="page-no">Page 04 / 11</span>
         <div class="content">
           <span class="kicker">System Architecture</span>
           <h2>Agent Core Pipeline과 Session Memory</h2>
@@ -1324,7 +1324,7 @@
 
     <section class="slide">
       <div class="slide-inner">
-        <span class="page-no">Page 05 / 10</span>
+        <span class="page-no">Page 05 / 11</span>
         <div class="content">
           <span class="kicker">Database Modeling</span>
           <h2>DB 모델링: 분석 작업, 코드 지식, 대화 기억</h2>
@@ -1362,7 +1362,7 @@
 
     <section class="slide">
       <div class="slide-inner">
-        <span class="page-no">Page 06 / 10</span>
+        <span class="page-no">Page 06 / 11</span>
         <div class="content">
           <span class="kicker">Feature 1</span>
           <h2>랜딩 페이지 렌더링 & 마이크로 인터랙션</h2>
@@ -1435,7 +1435,7 @@
 
     <section class="slide">
       <div class="slide-inner">
-        <span class="page-no">Page 07 / 10</span>
+        <span class="page-no">Page 07 / 11</span>
         <div class="content">
           <span class="kicker">Feature 2</span>
           <h2>지능형 채팅 UX 및 독립 세션 복원</h2>
@@ -1488,7 +1488,7 @@
 
     <section class="slide">
       <div class="slide-inner">
-        <span class="page-no">Page 08 / 10</span>
+        <span class="page-no">Page 08 / 11</span>
         <div class="content">
           <span class="kicker">Feature 3</span>
           <h2>코드 탐색 에디터: 근거 클릭에서 라인 하이라이트까지</h2>
@@ -1543,9 +1543,61 @@
 
     <section class="slide">
       <div class="slide-inner">
-        <span class="page-no">Page 09 / 10</span>
-        <div class="content">
+        <span class="page-no">Page 09 / 11</span>
+        <div class="content" style="gap: 20px;">
           <span class="kicker">Feature 4</span>
+          <h2>DOCS-GEN: 온보딩 가이드북 생성</h2>
+          <article class="card compact">
+            <span class="label">가이드북 생성 플로우</span>
+            <div class="diagram">
+              <div class="node" style="padding: 12px 8px;">분석 완료<br>report_json 저장</div>
+              <div class="arrow">→</div>
+              <div class="node" style="padding: 12px 8px;">가이드북 버튼<br>docs 조회</div>
+              <div class="arrow">→</div>
+              <div class="node" style="padding: 12px 8px;">없을 경우, 생성<br>202 + Background</div>
+              <div class="arrow">→</div>
+              <div class="node" style="padding: 12px 8px;">LangGraph<br>6개 노드 실행</div>
+              <div class="arrow">→</div>
+              <div class="node" style="padding: 12px 8px;">docs 저장<br>렌더링·다운로드</div>
+            </div>
+          </article>
+          <div class="grid-2">
+            <article class="card">
+              <span class="label">조회 · 생성 분기</span>
+              <ul style="margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.6; font-weight: 500;">
+                <li><b>분석 리포트 저장:</b> 분석 완료 시 <code>analysis_jobs.report_json</code>에 결과 리포트 저장</li>
+                <li><b>기존 문서 우선 조회:</b> 가이드북 버튼 클릭 시 <code>docs</code> 테이블 조회, 있을 경우 GuideViewer 렌더링</li>
+                <li><b>자동 생성 트리거:</b> <code>DOCS_NOT_FOUND</code> 응답 시 <code>POST</code> 생성 시작 — repo 존재·분석 완료·중복 생성 여부 사전 검증</li>
+                <li><b>중복 생성 방지:</b> <code>repo_id</code> 단위 Redis/InMemory Lock + <code>202 Accepted</code> 반환 후 <code>BackgroundTasks</code> 비동기 실행</li>
+                <li><b>완료 감지:</b> 3초 간격 재조회(Polling)로 완료 시 자동 렌더링 전환</li>
+              </ul>
+            </article>
+            <article class="card violet">
+              <span class="label">LangGraph 6개 노드 순차 실행</span>
+              <ul style="margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 14px; line-height: 1.6; font-weight: 500;">
+                <li><code>readme_intro</code> — README 기반 프로젝트 소개</li>
+                <li><code>doc_summary</code> — 목적·핵심 기능·기술 컨텍스트 요약</li>
+                <li><code>folder_summary</code> — 폴더별 책임 영역 요약</li>
+                <li><code>flow_explain</code> — 핵심 실행 플로우 설명</li>
+                <li><code>onboarding_guide</code> — 읽기 순서·위험 파일·첫 기여 추천</li>
+                <li><code>master_report</code> — 최종 리포트 통합 후 Markdown 변환</li>
+              </ul>
+            </article>
+          </div>
+          <div class="grid-3">
+            <article class="card compact blue"><h3>상태 기반 생성</h3><p class="body"><code>analysis_report</code> + <code>clone_path</code>로 GenFormState 구성, GenFormSupervisor가 노드 실행 오케스트레이션</p></article>
+            <article class="card compact green"><h3>저장 구조</h3><p class="body">생성 결과는 <code>docs.content</code>(Markdown)와 <code>docs.report_json</code>에 저장되어 재조회 시 즉시 로드</p></article>
+            <article class="card compact orange"><h3>산출물 활용</h3><p class="body">탭 UI로 섹션별 가이드북 렌더링, Markdown/PDF 다운로드로 온보딩 문서 공유 지원</p></article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <div class="slide-inner">
+        <span class="page-no">Page 10 / 11</span>
+        <div class="content">
+          <span class="kicker">Feature 5</span>
           <h2>Agent 방어 로직 및 파이프라인 확장</h2>
           <div class="grid-2">
             <article class="card">
@@ -1587,7 +1639,7 @@
 
     <section class="slide">
       <div class="slide-inner">
-        <span class="page-no">Page 10 / 10</span>
+        <span class="page-no">Page 11 / 11</span>
         <div class="content">
           <span class="kicker">Retrospective</span>
           <h2>KPT 회고 및 결론</h2>
@@ -1636,7 +1688,7 @@
 
   <nav id="nav" aria-label="슬라이드 이동">
     <button type="button" id="prev" aria-label="이전 슬라이드">‹</button>
-    <span id="counter">1 / 10</span>
+    <span id="counter">1 / 11</span>
     <button type="button" id="next" aria-label="다음 슬라이드">›</button>
   </nav>
   <div class="progress"><span id="progress"></span></div>
