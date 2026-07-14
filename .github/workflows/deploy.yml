@@ -40,9 +40,6 @@ jobs:
   deploy-to-gcp:
     needs: build-and-push
     runs-on: ubuntu-latest
-    # 이 job이 실패해도 워크플로우 전체를 즉시 실패 처리하지 않고,
-    # 다음 SSH 폴백 job이 실행되도록 함
-    continue-on-error: true
     steps:
       - id: auth
         name: Authenticate to Google Cloud
@@ -73,7 +70,7 @@ jobs:
   # 2차 폴백: GCP 배포가 실패했을 때만 일반 SSH로 재시도
   deploy-via-ssh-fallback:
     needs: [build-and-push, deploy-to-gcp]
-    if: needs.deploy-to-gcp.result == 'failure'
+    if: always() && needs.deploy-to-gcp.result == 'failure'
     runs-on: ubuntu-latest
     env:
       SSH_HOST: ${{ secrets.SSH_HOST }}

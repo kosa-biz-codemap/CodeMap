@@ -67,12 +67,32 @@ function Extract-DatabaseUrlHost {
     return ""
 }
 
+# ──────────────────────────────────────────────
+# Resolve-ClonePath
+# ──────────────────────────────────────────────
+function Resolve-ClonePath {
+    $clonePath = Read-EnvValue "CLONE_BASE_DIR"
+    if (-not $clonePath) {
+        $clonePath = Read-EnvValue "CLONE_BASE_DIR_WINDOWS"
+    }
+    if (-not $clonePath) {
+        $clonePath = "C:/temp/codemap/jobs"
+    }
+    return $clonePath
+}
+
 $DbHostValue = Read-EnvValue "DB_HOST"
 $DatabaseUrlValue = Read-EnvValue "DATABASE_URL"
 $DatabaseUrlHost = Extract-DatabaseUrlHost $DatabaseUrlValue
 $DbTarget = if ($DbHostValue) { $DbHostValue } else { $DatabaseUrlHost }
+$ClonePath = Resolve-ClonePath
 
 Write-Host "Using backend image: $ImageName"
+Write-Host "Clone volume path: $ClonePath"
+
+if (-not (Test-Path $ClonePath)) {
+    New-Item -ItemType Directory -Force -Path $ClonePath | Out-Null
+}
 
 docker network create $DockerNetwork 2>$null | Out-Null
 
@@ -102,6 +122,7 @@ Write-Host "Replacing backend container."
 docker rm -f $ContainerName 2>$null | Out-Null
 docker run -d `
     -p "${AppPort}:8000" `
+    -v "${ClonePath}:${ClonePath}" `
     --name $ContainerName `
     --env-file $EnvFile `
     @DockerDbArgs `
