@@ -1,23 +1,23 @@
 services:
   db:
-    container_name: postgresql-17
+    container_name: codemap-db
     image: pgvector/pgvector:pg17
     restart: always
     environment:
-      POSTGRES_USER: codemap
-      POSTGRES_PASSWORD: codemap
-      POSTGRES_DB: codemap
+      POSTGRES_USER: ${DB_USER:-codemap}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-codemap}
+      POSTGRES_DB: ${DB_NAME:-codemap}
       TZ: Asia/Seoul
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
-      - postgresql-17-volume:/var/lib/postgresql-17/data
+      - codemap-db-volume:/var/lib/postgresql/data
     command: postgres -c max_connections=500
     networks:
       - codemap-net
 
 volumes:
-  postgresql-17-volume:
+  codemap-db-volume:
 
 networks:
   codemap-net:

@@ -33,20 +33,31 @@ if (-not (Test-Path $EnvFile)) {
 function Read-EnvValue {
     param([string]$Key, [string]$File = $EnvFile)
     if (-not (Test-Path $File)) { return "" }
-    $line = Get-Content $File | Where-Object { $_ -match "^\s*$Key\s*=" } | Select-Object -Last 1
-    if (-not $line) { return "" }
-    return ($line -split '=', 2)[1].Trim()
+    $val = ""
+    Get-Content $File | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith('#')) {
+            if ($line -match '^\s*([^=]+)\s*=\s*(.*)$') {
+                $k = $Matches[1].Trim()
+                if ($k -eq $Key) {
+                    $val = ($Matches[2] -split '#')[0].Trim().Trim("'").Trim('"')
+                }
+            }
+        }
+    }
+    return $val
 }
 
 function Is-LocalDbTarget {
     param([string]$Target)
-    switch ($Target.ToLower()) {
+    switch (("$Target").ToLower()) {
         "" { return $true }
         "localhost" { return $true }
         "127.0.0.1" { return $true }
         "::1" { return $true }
         "db" { return $true }
         "postgresql-17" { return $true }
+        "codemap-db" { return $true }
         default { return $false }
     }
 }
@@ -99,13 +110,26 @@ docker network create $DockerNetwork 2>$null | Out-Null
 $DockerDbArgs = @()
 if (Is-LocalDbTarget $DbTarget) {
     Write-Host "Local DB target detected ($DbTarget). Preparing PostgreSQL container."
-    docker compose -f $ComposeFile up -d db
-    docker network connect $DockerNetwork postgresql-17 2>$null | Out-Null
+    docker compose -f $ComposeFile --env-file $EnvFile up -d db
+    
+    $containerId = docker compose -f $ComposeFile --env-file $EnvFile ps -q db
+    if ($LASTEXITCODE -ne 0 -or -not $containerId -or $containerId -match 'error' -or $containerId -match 'failed') {
+        $containerId = $null
+    } else {
+        $containerId = $containerId.Trim()
+    }
+    
+    if (-not $containerId) {
+        Write-Host "Local database container (db) was not created successfully."
+        exit 1
+    }
+    
+    docker network connect $DockerNetwork "$containerId" 2>$null | Out-Null
     & $InitDbScript
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    $DockerDbArgs = @("--network", $DockerNetwork, "-e", "DB_HOST=postgresql-17")
+    $DockerDbArgs = @("--network", $DockerNetwork, "-e", "DB_HOST=codemap-db")
     if ($DatabaseUrlValue) {
-        $LocalDatabaseUrl = $DatabaseUrlValue -replace '(@)[^/:?]+', '${1}postgresql-17'
+        $LocalDatabaseUrl = $DatabaseUrlValue -replace '(@)[^/:?]+', '${1}codemap-db'
         $DockerDbArgs += @("-e", "DATABASE_URL=$LocalDatabaseUrl")
     }
 } else {

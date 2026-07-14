@@ -93,7 +93,7 @@ replace_database_url_host() {
 
 is_local_db_target() {
   case "$1" in
-    ""|"localhost"|"127.0.0.1"|"::1"|"db"|"postgresql-17")
+    ""|"localhost"|"127.0.0.1"|"::1"|"db"|"postgresql-17"|"codemap-db")
       return 0
       ;;
     *)
@@ -104,9 +104,9 @@ is_local_db_target() {
 
 run_compose() {
   if docker compose version >/dev/null 2>&1; then
-    docker compose -f "$COMPOSE_FILE" "$@"
+    docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
   elif command -v docker-compose >/dev/null 2>&1; then
-    docker-compose -f "$COMPOSE_FILE" "$@"
+    docker-compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" "$@"
   else
     echo "Docker Compose is required for local DB setup."
     exit 1
@@ -336,11 +336,18 @@ DOCKER_DB_ARGS=()
 if is_local_db_target "$DB_TARGET_LOWER"; then
   echo "Local DB target detected (${DB_TARGET:-empty}). Preparing PostgreSQL container."
   run_compose up -d db
-  docker network connect "$DOCKER_NETWORK" postgresql-17 >/dev/null 2>&1 || true
+  
+  CONTAINER_ID="$(run_compose ps -q db | tr -d '\r')"
+  if [ -z "$CONTAINER_ID" ]; then
+    echo "Local database container (db) was not created successfully."
+    exit 1
+  fi
+  
+  docker network connect "$DOCKER_NETWORK" "$CONTAINER_ID" >/dev/null 2>&1 || true
   "$INIT_DB_SCRIPT"
-  DOCKER_DB_ARGS=(--network "$DOCKER_NETWORK" -e DB_HOST=postgresql-17)
+  DOCKER_DB_ARGS=(--network "$DOCKER_NETWORK" -e DB_HOST=codemap-db)
   if [ -n "$DATABASE_URL_VALUE" ]; then
-    LOCAL_DATABASE_URL="$(replace_database_url_host "$DATABASE_URL_VALUE" postgresql-17)"
+    LOCAL_DATABASE_URL="$(replace_database_url_host "$DATABASE_URL_VALUE" codemap-db)"
     DOCKER_DB_ARGS+=(-e "DATABASE_URL=$LOCAL_DATABASE_URL")
   fi
 else
