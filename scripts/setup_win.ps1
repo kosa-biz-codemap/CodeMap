@@ -101,13 +101,179 @@ Push-Location $frontendDir
 Pop-Location
 Write-Host ">> 프론트엔드 의존성(node_modules) 설치가 완료되었습니다." -ForegroundColor Green
 
-# 9. 완료 안내 화면 출력
+# 9. 데이터베이스 연결 확인 및 로컬 Docker 구성 자동화
+Write-Host "[Step 5/5] Checking Database & local Docker setup..." -ForegroundColor Cyan
+
+# ──────────────────────────────────────────────
+# Get-EnvDBConfig
+# ──────────────────────────────────────────────
+function Get-EnvDBConfig {
+    $envFile = "$rootPath\backend\.env"
+    $config = @{
+        Host = "localhost"
+        Port = 5432
+        User = "codemap_service"
+        Password = "codemap"
+        DbName = "codemap"
+    }
+    if (Test-Path $envFile) {
+        $lines = Get-Content $envFile
+        foreach ($line in $lines) {
+            if ($line -match "^\s*DB_HOST\s*=\s*(.+)") {
+                $config.Host = $Matches[1].Trim()
+            }
+            if ($line -match "^\s*DB_PORT\s*=\s*(.+)") {
+                $config.Port = [int]$Matches[1].Trim()
+            }
+            if ($line -match "^\s*DB_USER\s*=\s*(.+)") {
+                $config.User = $Matches[1].Trim()
+            }
+            if ($line -match "^\s*DB_PASSWORD\s*=\s*(.+)") {
+                $config.Password = $Matches[1].Trim()
+            }
+            if ($line -match "^\s*DB_NAME\s*=\s*(.+)") {
+                $config.DbName = $Matches[1].Trim()
+            }
+        }
+    }
+    return $config
+}
+
+# ──────────────────────────────────────────────
+# Test-PortConnection
+# ──────────────────────────────────────────────
+function Test-PortConnection {
+    param(
+        [string]$HostName,
+        [int]$Port
+    )
+    $tcpClient = New-Object System.Net.Sockets.TcpClient
+    try {
+        $ar = $tcpClient.BeginConnect($HostName, $Port, $null, $null)
+        $wait = $ar.AsyncWaitHandle.WaitOne(2000)
+        if ($wait -and $tcpClient.Connected) {
+            $tcpClient.EndConnect($ar)
+            $tcpClient.Close()
+            return $true
+        }
+    } catch {}
+    if ($tcpClient) { $tcpClient.Close() }
+    return $false
+}
+
+# ──────────────────────────────────────────────
+# Test-PostgresConnection
+# ──────────────────────────────────────────────
+function Test-PostgresConnection {
+    param(
+        [string]$HostName,
+        [int]$Port,
+        [string]$User,
+        [string]$Password,
+        [string]$DbName
+    )
+    
+    # 1차 포트 연결 확인
+    if (-not (Test-PortConnection -HostName $HostName -Port $Port)) {
+        return $false
+    }
+    
+    # 2차 venv 파이썬 내 psycopg를 사용한 실접속/로그인 테스트
+    $pythonExe = "$rootPath\backend\venv\Scripts\python.exe"
+    if (Test-Path $pythonExe) {
+        $pyCode = @"
+import psycopg
+import sys
+try:
+    conn = psycopg.connect(
+        host='$HostName',
+        port=$Port,
+        user='$User',
+        password='$Password',
+        dbname='$DbName',
+        connect_timeout=3
+    )
+    conn.close()
+    sys.exit(0)
+except Exception as e:
+    sys.exit(1)
+"@
+        $tempPyFile = [System.IO.Path]::GetTempFileName() + ".py"
+        Set-Content -Path $tempPyFile -Value $pyCode
+        & $pythonExe $tempPyFile 2>$null | Out-Null
+        $exitCode = $LASTEXITCODE
+        Remove-Item -Path $tempPyFile -ErrorAction SilentlyContinue
+        return ($exitCode -eq 0)
+    }
+    
+    # 파이썬 venv가 준비되지 않은 경우 포트 응답성만을 기준으로 예비 통과
+    return $true
+}
+
+$dbConfig = Get-EnvDBConfig
+Write-Host "[Info] Checking PostgreSQL availability at $($dbConfig.Host):$($dbConfig.Port)..." -ForegroundColor Yellow
+
+if (Test-PostgresConnection -HostName $dbConfig.Host -Port $dbConfig.Port -User $dbConfig.User -Password $dbConfig.Password -DbName $dbConfig.DbName) {
+    Write-Host "[Pass] PostgreSQL 데이터베이스 접속이 가능합니다. Docker 기동 검사를 생략합니다." -ForegroundColor Green
+} else {
+    Write-Host "[Info] 데이터베이스 포트에 접속할 수 없습니다. 로컬 Docker 구성을 확인합니다..." -ForegroundColor Yellow
+    
+    if (-not (Get-Command "docker" -ErrorAction SilentlyContinue)) {
+        Write-Host "[Info] Docker가 설치되어 있지 않습니다. winget을 통해 Docker Desktop 설치를 시작합니다..." -ForegroundColor Yellow
+        try {
+            winget install Docker.DockerDesktop --silent --accept-package-agreements --accept-source-agreements
+            Write-Host ">> Docker Desktop 설치가 성공적으로 완료되었습니다." -ForegroundColor Green
+            Write-Host "⚠️ Docker 환경 변수 반영 및 서비스 가동을 위해 컴퓨터를 재부팅해 주시기 바랍니다." -ForegroundColor Red
+            Write-Host "재부팅 후 이 스크립트(setup_win.ps1)를 다시 실행하면 로컬 DB 컨테이너를 자동으로 구성하고 실행합니다." -ForegroundColor Yellow
+            Exit 0
+        } catch {
+            Write-Host "[Error] Docker Desktop 자동 설치 중 오류가 발생했습니다. 수동 설치를 완료해 주세요." -ForegroundColor Red
+            Exit 1
+        }
+    } else {
+        Write-Host "[Pass] Docker가 이미 설치되어 있습니다." -ForegroundColor Green
+        
+        $dockerReady = $false
+        try {
+            docker info --format '{{.ID}}' | Out-Null
+            if ($LASTEXITCODE -eq 0) { $dockerReady = $true }
+        } catch {}
+
+        if (-not $dockerReady) {
+            Write-Host "[Info] Docker 데몬이 실행 중이지 않습니다. Docker Desktop 서비스를 시작합니다..." -ForegroundColor Yellow
+            Start-Process -FilePath "C:\Program Files\Docker\Docker\Docker Desktop.exe" -ArgumentList "--quit-after-start" -WindowStyle Hidden
+            
+            for ($i = 0; $i -lt 30; $i++) {
+                Start-Sleep -Seconds 2
+                try {
+                    docker info --format '{{.ID}}' | Out-Null
+                    if ($LASTEXITCODE -eq 0) { $dockerReady = $true; break }
+                } catch {}
+            }
+        }
+
+        if ($dockerReady) {
+            Write-Host "[Pass] Docker 데몬이 정상 작동 중입니다." -ForegroundColor Green
+            Write-Host "[Info] 로컬 PostgreSQL 컨테이너를 구동합니다..." -ForegroundColor Yellow
+            docker compose -f "$rootPath\scripts\docker-compose.yml" up -d db
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host ">> 로컬 데이터베이스 컨테이너 구성이 정상적으로 완료되었습니다!" -ForegroundColor Green
+            } else {
+                Write-Host "[Warning] 로컬 데이터베이스 컨테이너 구동에 실패했습니다. docker-compose.yml 구성을 확인해 주세요." -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "[Warning] Docker Desktop을 백그라운드에서 구동하지 못했습니다. Docker Desktop을 수동으로 실행한 뒤 스크립트를 재실행해 주세요." -ForegroundColor Yellow
+        }
+    }
+}
+
+# 10. 완료 안내 화면 출력
 Write-Host "=========================================================================" -ForegroundColor Green
 Write-Host "🎉 CodeMap 로컬 개발 환경 기본 세팅이 성공적으로 완료되었습니다! 🎉" -ForegroundColor Green
 Write-Host "=========================================================================" -ForegroundColor Green
 Write-Host "성공적으로 구동하기 위해 아래 가이드에 따라 수동 설정을 진행해 주십시오:" -ForegroundColor White
 Write-Host "" -ForegroundColor White
-Write-Host "1. [중요] Docker Desktop을 구동하고 PostgreSQL 컨테이너가 정상 기동 중인지 확인해 주세요." -ForegroundColor Yellow
+Write-Host "1. Docker Desktop이 정상 구동되어 있고 데이터베이스(PostgreSQL) 접속이 원활한지 확인해 주세요." -ForegroundColor Yellow
 Write-Host "2. 'backend/.env' 파일을 열어 아래 필수 보안 환경 변수를 기입해 주세요." -ForegroundColor Yellow
 Write-Host "   - DB_PASSWORD='<로컬DB비밀번호>'" -ForegroundColor Yellow
 Write-Host "   - OPENAI_API_KEY='<OpenAI API 키>'" -ForegroundColor Yellow
