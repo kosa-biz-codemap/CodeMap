@@ -363,7 +363,7 @@ END
 $$;
 
 -- 데이터베이스 및 스키마 권한 부여
-GRANT CONNECT ON DATABASE codemap_db TO codemap_service;
+GRANT CONNECT ON DATABASE codemap TO codemap_service;
 GRANT USAGE ON SCHEMA public TO codemap_service;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO codemap_service;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO codemap_service;
