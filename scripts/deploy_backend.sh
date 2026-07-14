@@ -336,13 +336,13 @@ DOCKER_DB_ARGS=()
 if is_local_db_target "$DB_TARGET_LOWER"; then
   echo "Local DB target detected (${DB_TARGET:-empty}). Preparing PostgreSQL container."
   run_compose up -d db
-  
+
   CONTAINER_ID="$(run_compose ps -q db | tr -d '\r')"
   if [ -z "$CONTAINER_ID" ]; then
     echo "Local database container (db) was not created successfully."
     exit 1
   fi
-  
+
   docker network connect "$DOCKER_NETWORK" "$CONTAINER_ID" >/dev/null 2>&1 || true
   "$INIT_DB_SCRIPT"
   DOCKER_DB_ARGS=(--network "$DOCKER_NETWORK" -e DB_HOST=codemap-db)

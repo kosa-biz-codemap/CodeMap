@@ -111,19 +111,19 @@ $DockerDbArgs = @()
 if (Is-LocalDbTarget $DbTarget) {
     Write-Host "Local DB target detected ($DbTarget). Preparing PostgreSQL container."
     docker compose -f $ComposeFile --env-file $EnvFile up -d db
-    
+
     $containerId = docker compose -f $ComposeFile --env-file $EnvFile ps -q db
     if ($LASTEXITCODE -ne 0 -or -not $containerId -or $containerId -match 'error' -or $containerId -match 'failed') {
         $containerId = $null
     } else {
         $containerId = $containerId.Trim()
     }
-    
+
     if (-not $containerId) {
         Write-Host "Local database container (db) was not created successfully."
         exit 1
     }
-    
+
     docker network connect $DockerNetwork "$containerId" 2>$null | Out-Null
     & $InitDbScript
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

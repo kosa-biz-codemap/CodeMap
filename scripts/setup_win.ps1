@@ -50,12 +50,12 @@ $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";"
 Write-Host "[Step 1/4] Configuring SSL certificates using mkcert..." -ForegroundColor Cyan
 try {
     & mkcert -install
-    
+
     $certsDir = "$rootPath\backend\certs"
     if (-not (Test-Path "$certsDir")) {
         New-Item -ItemType Directory -Path "$certsDir" | Out-Null
     }
-    
+
     Push-Location "$certsDir"
     & mkcert localhost 127.0.0.1
     Pop-Location
@@ -169,12 +169,12 @@ function Test-PostgresConnection {
         [string]$Password,
         [string]$DbName
     )
-    
+
     # 1차 포트 연결 확인
     if (-not (Test-PortConnection -HostName $HostName -Port $Port)) {
         return $false
     }
-    
+
     # 2차 venv 파이썬 내 psycopg를 사용한 실접속/로그인 테스트
     $pythonExe = "$rootPath\backend\venv\Scripts\python.exe"
     if (Test-Path $pythonExe) {
@@ -201,7 +201,7 @@ except Exception as e:
         $output = & "$pythonExe" "$tempPyFile" 2>&1
         $exitCode = $LASTEXITCODE
         Remove-Item -Path $tempPyFile -ErrorAction SilentlyContinue
-        
+
         if ($exitCode -ne 0) {
             Write-Host "[Warning] PostgreSQL connection test failed:" -ForegroundColor Red
             $output | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
@@ -209,7 +209,7 @@ except Exception as e:
         }
         return $true
     }
-    
+
     # 파이썬 venv가 준비되지 않은 경우 포트 응답성만을 기준으로 예비 통과
     return $true
 }
@@ -224,7 +224,7 @@ if (Test-PostgresConnection -HostName $dbConfig.Host -Port $dbConfig.Port -User 
     $isDbAvailable = $true
 } else {
     Write-Host "[Info] 데이터베이스 포트에 접속할 수 없습니다. 로컬 Docker 구성을 확인합니다..." -ForegroundColor Yellow
-    
+
     if (-not (Get-Command "docker" -ErrorAction SilentlyContinue)) {
         Write-Host "[Info] Docker가 설치되어 있지 않습니다. winget을 통해 Docker Desktop 설치를 시작합니다..." -ForegroundColor Yellow
         try {
@@ -239,7 +239,7 @@ if (Test-PostgresConnection -HostName $dbConfig.Host -Port $dbConfig.Port -User 
         }
     } else {
         Write-Host "[Pass] Docker가 이미 설치되어 있습니다." -ForegroundColor Green
-        
+
         $dockerReady = $false
         try {
             docker info --format '{{.ID}}' | Out-Null
@@ -258,7 +258,7 @@ if (Test-PostgresConnection -HostName $dbConfig.Host -Port $dbConfig.Port -User 
                 Write-Host "[Info] 'docker desktop' CLI 명령어를 사용할 수 없거나 실패했습니다. 예비 수단(Start-Process)으로 구동을 시도합니다..." -ForegroundColor Yellow
                 Start-Process -FilePath "C:\Program Files\Docker\Docker\Docker Desktop.exe" -WindowStyle Hidden
             }
-            
+
             for ($i = 0; $i -lt 30; $i++) {
                 Start-Sleep -Seconds 2
                 try {
@@ -271,10 +271,10 @@ if (Test-PostgresConnection -HostName $dbConfig.Host -Port $dbConfig.Port -User 
         if ($dockerReady) {
             Write-Host "[Pass] Docker 데몬이 정상 작동 중입니다." -ForegroundColor Green
             Write-Host "[Info] 로컬 PostgreSQL 컨테이너를 구동합니다..." -ForegroundColor Yellow
-            
+
             $composeFile = "$rootPath\scripts\docker-compose.yml"
             $envFile = "$rootPath\backend\.env"
-            
+
             docker compose -f "$composeFile" --env-file "$envFile" up -d db
             if ($LASTEXITCODE -eq 0) {
                 Write-Host "[Info] 데이터베이스 컨테이너 ID를 조회 중입니다..." -ForegroundColor Yellow
@@ -284,7 +284,7 @@ if (Test-PostgresConnection -HostName $dbConfig.Host -Port $dbConfig.Port -User 
                 } else {
                     $containerId = $containerId.Trim()
                 }
-                
+
                 if (-not $containerId) {
                     Write-Host "[Warning] 데이터베이스 컨테이너 서비스(db)를 감지하지 못했습니다. 컨테이너 생성에 실패했을 수 있습니다." -ForegroundColor Red
                 } else {
