@@ -393,6 +393,195 @@ class TestEvidenceAggregator(unittest.TestCase):
         self.assertEqual(result["events"][2]["type"], "replan_started")
         self.assertIn("nextPlanHint", result["events"][2])
 
+    def test_evaluator_all_errors(self):
+        """모든 워커 결과가 에러로 위장된 경우의 결정 검증."""
+        from app.agent.nodes.evaluator_node import evaluator_node
+        from app.agent.state import WorkerResult
+
+        state = {
+            "user_query": "test query",
+            "repo_id": "r1",
+            "clone_path": "/tmp",
+            "run_id": "r1",
+            "rewritten_query": "test query",
+            "access_plan": [],
+            "security_result": {"approved": [], "rejected": []},
+            "worker_results": [
+                WorkerResult(
+                    id="1",
+                    path="auth.py",
+                    lineStart=None,
+                    lineEnd=None,
+                    score=None,
+                    snippet="파일 읽기 오류: Execution timed out",
+                    metadata={"worker": "read_worker", "tool": "file_read"}
+                ),
+                WorkerResult(
+                    id="2",
+                    path=None,
+                    lineStart=None,
+                    lineEnd=None,
+                    score=None,
+                    snippet="검색 실패: API error",
+                    metadata={"worker": "search_worker", "tool": "fallback_failed"}
+                ),
+            ],
+            "events": [],
+            "errors": [],
+            "durations": {},
+            "compact_context": {},
+            "evaluator_decision": None,
+            "replan_count": 0,
+            "max_replans": 1,
+            "replan_hint": None,
+            "final_answer": None,
+        }
+
+        res = evaluator_node(state)
+        ctx = res["compact_context"]
+
+        ## 1. groupedByFile이나 selectedEvidenceCount에서 제외되는지 확인
+        self.assertEqual(ctx["selectedEvidenceCount"], 0)
+        self.assertEqual(len(ctx["groupedByFile"]), 0)
+
+        ## 2. workerErrors에 2건의 에러가 모두 담겨있는지 확인
+        self.assertEqual(len(ctx["workerErrors"]), 2)
+        self.assertEqual(ctx["workerErrors"][0]["worker"], "read_worker")
+        self.assertEqual(ctx["workerErrors"][0]["path"], "auth.py")
+        self.assertEqual(
+            ctx["workerErrors"][0]["reason"],
+            "파일 읽기 오류: Execution timed out"
+        )
+        self.assertEqual(ctx["workerErrors"][1]["worker"], "search_worker")
+        self.assertEqual(ctx["workerErrors"][1]["path"], None)
+        self.assertEqual(
+            ctx["workerErrors"][1]["reason"],
+            "검색 실패: API error"
+        )
+
+        ## 3. evaluatorDecision 판단 검증 (sufficient=False)
+        decision = res["evaluator_decision"]
+        self.assertFalse(decision["sufficient"])
+        self.assertEqual(
+            decision["missingInfo"],
+            ["검색/파일 접근 중 오류로 근거를 확보하지 못함"]
+        )
+        self.assertIn("read_worker(auth.py)", decision["nextPlanHint"])
+        self.assertIn("search_worker", decision["nextPlanHint"])
+        self.assertIn("피해서", decision["nextPlanHint"])
+
+    def test_evaluator_mixed_errors_and_valid(self):
+        """정상 결과와 위장된 에러 결과가 혼재된 경우의 결정 검증."""
+        from app.agent.nodes.evaluator_node import evaluator_node
+        from app.agent.state import WorkerResult
+
+        state = {
+            "user_query": "test query",
+            "repo_id": "r1",
+            "clone_path": "/tmp",
+            "run_id": "r1",
+            "rewritten_query": "test query",
+            "access_plan": [],
+            "security_result": {"approved": [], "rejected": []},
+            "worker_results": [
+                WorkerResult(
+                    id="1",
+                    path="auth.py",
+                    lineStart=None,
+                    lineEnd=None,
+                    score=None,
+                    snippet="파일 읽기 오류: Execution timed out",
+                    metadata={"worker": "read_worker", "tool": "file_read"}
+                ),
+                WorkerResult(
+                    id="2",
+                    path="service.py",
+                    lineStart=1,
+                    lineEnd=5,
+                    score=0.9,
+                    snippet="def handle(): pass",
+                    metadata={"worker": "read_worker", "tool": "file_read"}
+                ),
+            ],
+            "events": [],
+            "errors": [],
+            "durations": {},
+            "compact_context": {},
+            "evaluator_decision": None,
+            "replan_count": 0,
+            "max_replans": 1,
+            "replan_hint": None,
+            "final_answer": None,
+        }
+
+        res = evaluator_node(state)
+        ctx = res["compact_context"]
+
+        ## 1. 정상 결과만 groupedByFile에 포함되는지 확인
+        self.assertEqual(ctx["selectedEvidenceCount"], 1)
+        self.assertIn("service.py", ctx["groupedByFile"])
+        self.assertNotIn("auth.py", ctx["groupedByFile"])
+
+        ## 2. workerErrors에 에러 1건만 요약 저장되는지 확인
+        self.assertEqual(len(ctx["workerErrors"]), 1)
+        self.assertEqual(ctx["workerErrors"][0]["path"], "auth.py")
+
+        ## 3. evaluatorDecision 판단 검증 (정상 결과가 있으므로 sufficient=True)
+        decision = res["evaluator_decision"]
+        self.assertTrue(decision["sufficient"])
+        self.assertIn(
+            "일부 search/read 단계에서 오류가 발생했습니다",
+            decision["reason"]
+        )
+
+    def test_evaluator_no_errors_all_valid(self):
+        """에러 없이 정상 결과만 있는 경우의 결정 검증."""
+        from app.agent.nodes.evaluator_node import evaluator_node
+        from app.agent.state import WorkerResult
+
+        state = {
+            "user_query": "test query",
+            "repo_id": "r1",
+            "clone_path": "/tmp",
+            "run_id": "r1",
+            "rewritten_query": "test query",
+            "access_plan": [],
+            "security_result": {"approved": [], "rejected": []},
+            "worker_results": [
+                WorkerResult(
+                    id="1",
+                    path="service.py",
+                    lineStart=1,
+                    lineEnd=5,
+                    score=0.9,
+                    snippet="def handle(): pass",
+                    metadata={"worker": "read_worker", "tool": "file_read"}
+                ),
+            ],
+            "events": [],
+            "errors": [],
+            "durations": {},
+            "compact_context": {},
+            "evaluator_decision": None,
+            "replan_count": 0,
+            "max_replans": 1,
+            "replan_hint": None,
+            "final_answer": None,
+        }
+
+        res = evaluator_node(state)
+        ctx = res["compact_context"]
+
+        self.assertEqual(ctx["selectedEvidenceCount"], 1)
+        self.assertEqual(len(ctx["workerErrors"]), 0)
+
+        decision = res["evaluator_decision"]
+        self.assertTrue(decision["sufficient"])
+        self.assertNotIn(
+            "오류",
+            decision["reason"]
+        )
+
 
 class TestReplanRouting(unittest.TestCase):
     def test_route_after_evaluator_replans_until_limit(self):
