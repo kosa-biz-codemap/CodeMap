@@ -6,11 +6,12 @@ on:
       - main
     paths:
       - 'backend/**'
+      - 'database/**'
+      - 'scripts/**'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 jobs:
-  # 1. 깃허브 로봇 공장에서 도커 이미지를 굽고 도커 허브(창고)에 올리는 작업
   build-and-push:
     runs-on: ubuntu-latest
     steps:
@@ -35,57 +36,120 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:buildcache,mode=max
 
-  # 2. 깃허브 로봇이 구글 서버(VM)에 원격 접속해서 도커를 껐다 켜는 작업
+  # 1차 시도: GCP
   deploy-to-gcp:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-      - id: 'auth'
-        name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v2'
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
       - name: Execute remote SSH commands to deploy
-        uses: 'google-github-actions/ssh-compute@v2'
+        uses: google-github-actions/ssh-compute@v2
         with:
-          instance_name: 'codemap-backend-vm'
-          zone: 'asia-northeast3-a' # GCP 존이 다르다면 알맞게 수정해주세요.
+          instance_name: codemap-backend-vm
+          zone: asia-northeast3-a
           command: |
-            cd ~/CodeMap/backend
+            set -e
 
-            echo "1. 새 이미지를 도커 허브에서 다운로드합니다."
-            sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest
+            cd ~/CodeMap
+            git fetch origin main
+            git checkout origin/main -- scripts/deploy_backend.sh scripts/init_db.sh scripts/docker-compose.yml database/init.sql
+            chmod +x scripts/deploy_backend.sh scripts/init_db.sh
+            sudo env \
+              BACKEND_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest" \
+              CLOUD_PROVIDER="${{ vars.CLOUD_PROVIDER || 'gcp' }}" \
+              INGRESS_MODE="${{ vars.INGRESS_MODE || 'direct' }}" \
+              PUBLIC_BACKEND_URL="${{ vars.PUBLIC_BACKEND_URL }}" \
+              INGRESS_CHECK_REQUIRED="${{ vars.INGRESS_CHECK_REQUIRED || 'false' }}" \
+              bash scripts/deploy_backend.sh
 
-            echo "2. 기존에 돌아가던 백엔드 컨테이너를 중지하고 삭제합니다."
-            sudo docker rm -f backend_app || true
+  # 2차 폴백: GCP 배포가 실패했을 때만 일반 SSH로 재시도
+  deploy-via-ssh-fallback:
+    needs: [build-and-push, deploy-to-gcp]
+    if: always() && needs.deploy-to-gcp.result == 'failure'
+    runs-on: ubuntu-latest
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_HOME_DIR: ${{ secrets.SSH_HOME_DIR }}
+      BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest
+    steps:
+      - name: Set up deploy-only SSH private key
+        run: |
+          mkdir -p ~/.ssh
+          install -m 600 -D /dev/null ~/.ssh/id_deploy
+          printf '%s\n' "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
 
-            echo "3. 새 버전의 이미지로 컨테이너를 다시 실행합니다. (동적 스냅샷 볼륨 마운트)"
-            cd ~/CodeMap/backend
-            CLONE_PATH=""
-            if [ -f .env ]; then
-              CLONE_PATH=$(grep -w CLONE_BASE_DIR .env | cut -d '=' -f2 | tr -d '\r' | xargs 2>/dev/null || true)
-              if [ -z "$CLONE_PATH" ]; then
-                OS_TYPE=$(uname -s 2>/dev/null || echo "Linux")
-                if [[ "$OS_TYPE" == *"NT"* ]] || [[ "$OS_TYPE" == *"MINGW"* ]] || [[ "$OS_TYPE" == *"MSYS"* ]]; then
-                  CLONE_PATH=$(grep -w CLONE_BASE_DIR_WINDOWS .env | cut -d '=' -f2 | tr -d '\r' | xargs 2>/dev/null || true)
-                else
-                  CLONE_PATH=$(grep -w CLONE_BASE_DIR_UNIX .env | cut -d '=' -f2 | tr -d '\r' | xargs 2>/dev/null || true)
-                fi
-              fi
-            fi
-            if [ -z "$CLONE_PATH" ]; then
-              OS_TYPE=$(uname -s 2>/dev/null || echo "Linux")
-              if [[ "$OS_TYPE" == *"NT"* ]] || [[ "$OS_TYPE" == *"MINGW"* ]] || [[ "$OS_TYPE" == *"MSYS"* ]]; then
-                CLONE_PATH="C:/temp/codemap/jobs"
-              else
-                CLONE_PATH="/tmp/codemap/jobs"
-              fi
-            fi
-            echo "스냅샷 볼륨 매핑 경로: $CLONE_PATH"
-            sudo docker run -d -p 8000:8000 -v "$CLONE_PATH:$CLONE_PATH" --name backend_app --env-file .env ${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest
+      - name: Pin known host (MITM 방지, ssh-keyscan으로 미리 받아둔 값)
+        run: |
+          printf '%s\n' "${{ secrets.SSH_KNOWN_HOST }}" >> ~/.ssh/known_hosts
 
-            echo "4. 불필요한 옛날 도커 찌꺼기들을 청소합니다."
-            sudo docker image prune -f
-            
-            echo "배포가 성공적으로 완료되었습니다!"
+      - name: Detect remote OS
+        id: detect_os
+        run: |
+          set +e
+          ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" "uname -s"
+          exit_code=$?
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          if [ "$exit_code" -eq 0 ]; then
+            echo "감지 결과: Unix 계열 (uname 성공)"
+          else
+            echo "감지 결과: Windows 추정 (uname 실패, exit=$exit_code)"
+          fi
+
+      - name: Deploy via plain SSH (Linux/Unix)
+        if: steps.detect_os.outputs.exit_code == '0'
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" "
+            set -e
+            cd '$SSH_HOME_DIR'
+            git fetch origin main
+            git checkout origin/main -- scripts/deploy_backend.sh scripts/init_db.sh scripts/docker-compose.yml database/init.sql
+            chmod +x scripts/deploy_backend.sh scripts/init_db.sh
+            sudo env \
+              BACKEND_IMAGE='$BACKEND_IMAGE' \
+              CLOUD_PROVIDER='${{ vars.CLOUD_PROVIDER || \"generic\" }}' \
+              INGRESS_MODE='${{ vars.INGRESS_MODE || \"direct\" }}' \
+              PUBLIC_BACKEND_URL='${{ vars.PUBLIC_BACKEND_URL }}' \
+              INGRESS_CHECK_REQUIRED='${{ vars.INGRESS_CHECK_REQUIRED || \"false\" }}' \
+              bash scripts/deploy_backend.sh
+          "
+
+      - name: Deploy via plain SSH (Windows)
+        if: steps.detect_os.outputs.exit_code != '0'
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" -o StrictHostKeyChecking=yes "$SSH_USER@$SSH_HOST" "powershell -NoProfile -Command \"
+            Set-Location -Path '$SSH_HOME_DIR';
+            git fetch origin main;
+            git checkout origin/main -- scripts/deploy_backend.ps1 scripts/init_db.ps1 scripts/docker-compose.yml database/init.sql;
+            \$env:BACKEND_IMAGE = '$BACKEND_IMAGE';
+            \$env:CLOUD_PROVIDER = '${{ vars.CLOUD_PROVIDER || \"generic\" }}';
+            \$env:INGRESS_MODE = '${{ vars.INGRESS_MODE || \"direct\" }}';
+            \$env:PUBLIC_BACKEND_URL = '${{ vars.PUBLIC_BACKEND_URL }}';
+            \$env:INGRESS_CHECK_REQUIRED = '${{ vars.INGRESS_CHECK_REQUIRED || \"false\" }}';
+            powershell -ExecutionPolicy Bypass -File scripts\\deploy_backend.ps1
+          \""
+
+  # 둘 다 실패하면 워크플로우 자체를 최종 실패로 표시
+  check-deploy-result:
+    needs: [deploy-to-gcp, deploy-via-ssh-fallback]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if both deploy paths failed
+        run: |
+          gcp_result="${{ needs.deploy-to-gcp.result }}"
+          ssh_result="${{ needs.deploy-via-ssh-fallback.result }}"
+          echo "GCP result: $gcp_result"
+          echo "SSH fallback result: $ssh_result"
+          if [ "$gcp_result" != "success" ] && [ "$ssh_result" != "success" ]; then
+            echo "Both GCP and SSH fallback deployments failed."
+            exit 1
+          fi
+          echo "Deployment succeeded via at least one path."
