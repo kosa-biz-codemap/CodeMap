@@ -7,7 +7,7 @@ from pathlib import Path
 _MAX_FILE_SIZE = 50_000
 
 
-def read_repository_file(clone_path: str, rel_path: str | None) -> str:
+def read_repository_file(clone_path: str, rel_path: str | None, raise_on_error: bool = False) -> str:
     """Read a bounded repository-relative file as UTF-8 text."""
     target = (Path(clone_path) / (rel_path or "")).resolve()
     root = Path(clone_path).resolve()
@@ -22,7 +22,10 @@ def read_repository_file(clone_path: str, rel_path: str | None) -> str:
             text = text[:_MAX_FILE_SIZE] + f"\n... (파일 크기 초과, {_MAX_FILE_SIZE}자까지만 표시)"
         return text
     except Exception as exc:
+        if raise_on_error:
+            raise
         return f"파일 읽기 실패: {exc}"
+
 
 
 # ──────────────────────────────────────────────

@@ -8,7 +8,7 @@ from pathlib import Path
 _MAX_TREE_LINES = 200
 
 
-def scan_directory_tree(clone_path: str, rel_path: str | None) -> str:
+def scan_directory_tree(clone_path: str, rel_path: str | None, raise_on_error: bool = False) -> str:
     """Return a bounded text tree for a repository-relative directory."""
     target = (Path(clone_path) / (rel_path or "")).resolve()
     root = Path(clone_path).resolve()
@@ -30,7 +30,10 @@ def scan_directory_tree(clone_path: str, rel_path: str | None) -> str:
                 lines.append("... (truncated)")
                 break
     except Exception as exc:
+        if raise_on_error:
+            raise
         return f"탐색 실패: {exc}"
+
 
     return "\n".join(lines)
 

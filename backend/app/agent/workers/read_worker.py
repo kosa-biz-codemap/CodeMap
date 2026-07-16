@@ -21,15 +21,18 @@ async def read_worker(state: CodeMapState) -> dict:
     logger.info("[ReadWorker] 시작 — path=%s", rel_path)
     started_event = {"type": "worker_started", "worker": "read", "target": rel_path or "."}
     
+    error_category = None
     try:
         content = await asyncio.wait_for(
-            asyncio.to_thread(read_repository_file, clone_path, rel_path),
+            asyncio.to_thread(read_repository_file, clone_path, rel_path, raise_on_error=True),
             timeout=2.0
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         content = "파일 읽기 오류: Execution timed out"
+        error_category = "interrupted"
     except Exception as exc:
-        content = f"오류 발생: {exc}"
+        content = f"파일 읽기 실패: {exc}"
+        error_category = "runtime_error"
         
     if not content:
         return {"worker_results": [], "events": [
@@ -44,7 +47,12 @@ async def read_worker(state: CodeMapState) -> dict:
         lineEnd=None,
         score=None,
         snippet=content,
-        metadata={"worker": "read", "tool": "file_read", "query": rel_path},
+        metadata={
+            "worker": "read",
+            "tool": "file_read",
+            "query": rel_path,
+            "errorCategory": error_category
+        },
     )
     return {
         "worker_results": [result],
@@ -58,3 +66,4 @@ async def read_worker(state: CodeMapState) -> dict:
             },
         ],
     }
+
