@@ -582,6 +582,308 @@ class TestEvidenceAggregator(unittest.TestCase):
             decision["reason"]
         )
 
+    def test_evaluator_tool_read_failure(self):
+        """tool/file_read.py의 자체 예외 처리 문구 감지 검증."""
+        from app.agent.nodes.evaluator_node import evaluator_node
+        from app.agent.state import WorkerResult
+
+        state = {
+            "user_query": "test query",
+            "repo_id": "r1",
+            "clone_path": "/tmp",
+            "run_id": "r1",
+            "rewritten_query": "test query",
+            "access_plan": [],
+            "security_result": {"approved": [], "rejected": []},
+            "worker_results": [
+                WorkerResult(
+                    id="1",
+                    path="auth.py",
+                    lineStart=None,
+                    lineEnd=None,
+                    score=None,
+                    snippet="파일 읽기 실패: Permission denied",
+                    metadata={"worker": "read_worker", "tool": "file_read"}
+                ),
+            ],
+            "events": [],
+            "errors": [],
+            "durations": {},
+            "compact_context": {},
+            "evaluator_decision": None,
+            "replan_count": 0,
+            "max_replans": 1,
+            "replan_hint": None,
+            "final_answer": None,
+        }
+
+        res = evaluator_node(state)
+        ctx = res["compact_context"]
+
+        ## 1. 에러 결과가 groupedByFile 및 selectedEvidenceCount에서 제외되는지 확인
+        self.assertEqual(ctx["selectedEvidenceCount"], 0)
+        self.assertEqual(len(ctx["groupedByFile"]), 0)
+
+        ## 2. workerErrors에 해당 정보가 요약 수집되는지 확인
+        self.assertEqual(len(ctx["workerErrors"]), 1)
+        self.assertEqual(ctx["workerErrors"][0]["worker"], "read_worker")
+        self.assertEqual(ctx["workerErrors"][0]["path"], "auth.py")
+        self.assertEqual(
+            ctx["workerErrors"][0]["reason"],
+            "파일 읽기 실패: Permission denied"
+        )
+
+        ## 3. evaluatorDecision 판단 검증 (sufficient=False)
+        decision = res["evaluator_decision"]
+        self.assertFalse(decision["sufficient"])
+        self.assertEqual(
+            decision["missingInfo"],
+            ["검색/파일 접근 중 오류로 근거를 확보하지 못함"]
+        )
+        self.assertIn("read_worker(auth.py)", decision["nextPlanHint"])
+
+    def test_evaluator_tool_dir_scan_failure(self):
+        """tool/dir_scan.py의 자체 예외 처리 문구 감지 검증."""
+        from app.agent.nodes.evaluator_node import evaluator_node
+        from app.agent.state import WorkerResult
+
+        state = {
+            "user_query": "test query",
+            "repo_id": "r1",
+            "clone_path": "/tmp",
+            "run_id": "r1",
+            "rewritten_query": "test query",
+            "access_plan": [],
+            "security_result": {"approved": [], "rejected": []},
+            "worker_results": [
+                WorkerResult(
+                    id="1",
+                    path="app/src",
+                    lineStart=None,
+                    lineEnd=None,
+                    score=None,
+                    snippet="탐색 실패: [Errno 13] Permission denied",
+                    metadata={"worker": "dir_worker", "tool": "dir_scan"}
+                ),
+            ],
+            "events": [],
+            "errors": [],
+            "durations": {},
+            "compact_context": {},
+            "evaluator_decision": None,
+            "replan_count": 0,
+            "max_replans": 1,
+            "replan_hint": None,
+            "final_answer": None,
+        }
+
+        res = evaluator_node(state)
+        ctx = res["compact_context"]
+
+        ## 1. 에러 결과가 groupedByFile 및 selectedEvidenceCount에서 제외되는지 확인
+        self.assertEqual(ctx["selectedEvidenceCount"], 0)
+        self.assertEqual(len(ctx["groupedByFile"]), 0)
+
+        ## 2. workerErrors에 요약 수집되는지 확인
+        self.assertEqual(len(ctx["workerErrors"]), 1)
+        self.assertEqual(ctx["workerErrors"][0]["worker"], "dir_worker")
+        self.assertEqual(ctx["workerErrors"][0]["path"], "app/src")
+        self.assertEqual(
+            ctx["workerErrors"][0]["reason"],
+            "탐색 실패: [Errno 13] Permission denied"
+        )
+
+        ## 3. evaluatorDecision 판단 검증 (sufficient=False)
+        decision = res["evaluator_decision"]
+        self.assertFalse(decision["sufficient"])
+        self.assertEqual(
+            decision["missingInfo"],
+            ["검색/파일 접근 중 오류로 근거를 확보하지 못함"]
+        )
+        self.assertIn("dir_worker(app/src)", decision["nextPlanHint"])
+
+    def test_evaluator_category_priority(self):
+        """errorCategory가 설정되어 있으면 기존 접두사와 무관하게 에러로 판정하는지 검증."""
+        from app.agent.nodes.evaluator_node import evaluator_node
+        from app.agent.state import WorkerResult
+
+        state = {
+            "user_query": "test query",
+            "repo_id": "r1",
+            "clone_path": "/tmp",
+            "run_id": "r1",
+            "rewritten_query": "test query",
+            "access_plan": [],
+            "security_result": {"approved": [], "rejected": []},
+            "worker_results": [
+                WorkerResult(
+                    id="1",
+                    path="auth.py",
+                    lineStart=None,
+                    lineEnd=None,
+                    score=None,
+                    snippet="접두사 없음. 일반 스니펫 같지만 에러",
+                    metadata={"worker": "read_worker", "tool": "file_read", "errorCategory": "runtime_error"}
+                ),
+            ],
+            "events": [],
+            "errors": [],
+            "durations": {},
+            "compact_context": {},
+            "evaluator_decision": None,
+            "replan_count": 0,
+            "max_replans": 1,
+            "replan_hint": None,
+            "final_answer": None,
+        }
+
+        res = evaluator_node(state)
+        ctx = res["compact_context"]
+        self.assertEqual(ctx["selectedEvidenceCount"], 0)
+        self.assertEqual(len(ctx["groupedByFile"]), 0)
+        self.assertEqual(len(ctx["workerErrors"]), 1)
+        self.assertEqual(ctx["workerErrors"][0]["category"], "runtime_error")
+
+    def test_evaluator_category_hints(self):
+        """각 에러 카테고리별 다수 발생 시 차별화된 nextPlanHint 제공 검증."""
+        from app.agent.nodes.evaluator_node import evaluator_node
+        from app.agent.state import WorkerResult
+
+        def run_eval_with_errors(errors):
+            state = {
+                "user_query": "test query",
+                "repo_id": "r1",
+                "clone_path": "/tmp",
+                "run_id": "r1",
+                "rewritten_query": "test query",
+                "access_plan": [],
+                "security_result": {"approved": [], "rejected": []},
+                "worker_results": errors,
+                "events": [],
+                "errors": [],
+                "durations": {},
+                "compact_context": {},
+                "evaluator_decision": None,
+                "replan_count": 0,
+                "max_replans": 1,
+                "replan_hint": None,
+                "final_answer": None,
+            }
+            return evaluator_node(state)["evaluator_decision"]
+
+        # 1. input_error 다수
+        dec1 = run_eval_with_errors([
+            WorkerResult(
+                id="1", path="a.py", lineStart=None, lineEnd=None, score=None,
+                snippet="정규식 오류", metadata={"worker": "grep_worker", "tool": "grep_scan", "errorCategory": "input_error"}
+            ),
+            WorkerResult(
+                id="2", path="b.py", lineStart=None, lineEnd=None, score=None,
+                snippet="정규식 오류", metadata={"worker": "grep_worker", "tool": "grep_scan", "errorCategory": "input_error"}
+            )
+        ])
+        self.assertIn("입력값(패턴/경로) 자체가 유효하지 않았습니다", dec1["nextPlanHint"])
+
+        # 2. interrupted 다수
+        dec2 = run_eval_with_errors([
+            WorkerResult(
+                id="1", path="a.py", lineStart=None, lineEnd=None, score=None,
+                snippet="정규식 오류: timeout", metadata={"worker": "grep_worker", "tool": "grep_scan", "errorCategory": "interrupted"}
+            )
+        ])
+        self.assertIn("탐색 범위가 너무 넓어 시간 초과되었습니다", dec2["nextPlanHint"])
+
+        # 3. runtime_error 다수
+        dec3 = run_eval_with_errors([
+            WorkerResult(
+                id="1", path="a.py", lineStart=None, lineEnd=None, score=None,
+                snippet="파일 읽기 실패", metadata={"worker": "read_worker", "tool": "file_read", "errorCategory": "runtime_error"}
+            )
+        ])
+        self.assertIn("실패한 read_worker(a.py)을(를) 피해서", dec3["nextPlanHint"])
+
+    def test_evaluator_legacy_fallback(self):
+        """legacy (errorCategory가 없는) WorkerResult도 문자열 접두사 폴백으로 에러 처리 및 카테고리 역산 검증."""
+        from app.agent.nodes.evaluator_node import evaluator_node
+        from app.agent.state import WorkerResult
+
+        state = {
+            "user_query": "test query",
+            "repo_id": "r1",
+            "clone_path": "/tmp",
+            "run_id": "r1",
+            "rewritten_query": "test query",
+            "access_plan": [],
+            "security_result": {"approved": [], "rejected": []},
+            "worker_results": [
+                WorkerResult(
+                    id="1",
+                    path="auth.py",
+                    lineStart=None,
+                    lineEnd=None,
+                    score=None,
+                    snippet="파일 읽기 실패: Permission denied",
+                    metadata={"worker": "read_worker", "tool": "file_read"}
+                ),
+            ],
+            "events": [],
+            "errors": [],
+            "durations": {},
+            "compact_context": {},
+            "evaluator_decision": None,
+            "replan_count": 0,
+            "max_replans": 1,
+            "replan_hint": None,
+            "final_answer": None,
+        }
+
+        res = evaluator_node(state)
+        ctx = res["compact_context"]
+        self.assertEqual(ctx["selectedEvidenceCount"], 0)
+        self.assertEqual(len(ctx["workerErrors"]), 1)
+        self.assertEqual(ctx["workerErrors"][0]["category"], "runtime_error")
+
+    def test_evaluator_legacy_file_read_timeout_fallback(self):
+        """errorCategory가 없는 legacy WorkerResult의 '파일 읽기 오류: ... timed out' snippet에 대해 category='interrupted' 역산 검증."""
+        from app.agent.nodes.evaluator_node import evaluator_node
+        from app.agent.state import WorkerResult
+
+        state = {
+            "user_query": "test query",
+            "repo_id": "r1",
+            "clone_path": "/tmp",
+            "run_id": "r1",
+            "rewritten_query": "test query",
+            "access_plan": [],
+            "security_result": {"approved": [], "rejected": []},
+            "worker_results": [
+                WorkerResult(
+                    id="1",
+                    path="auth.py",
+                    lineStart=None,
+                    lineEnd=None,
+                    score=None,
+                    snippet="파일 읽기 오류: Execution timed out",
+                    metadata={"worker": "read_worker", "tool": "file_read"}
+                ),
+            ],
+            "events": [],
+            "errors": [],
+            "durations": {},
+            "compact_context": {},
+            "evaluator_decision": None,
+            "replan_count": 0,
+            "max_replans": 1,
+            "replan_hint": None,
+            "final_answer": None,
+        }
+
+        res = evaluator_node(state)
+        ctx = res["compact_context"]
+        self.assertEqual(ctx["selectedEvidenceCount"], 0)
+        self.assertEqual(len(ctx["workerErrors"]), 1)
+        self.assertEqual(ctx["workerErrors"][0]["category"], "interrupted")
+
 
 class TestReplanRouting(unittest.TestCase):
     def test_route_after_evaluator_replans_until_limit(self):
@@ -1041,5 +1343,87 @@ class TestRepositoryToolBoundaries(unittest.TestCase):
             self.assertIn("정규식 오류", grep_repository_path(str(root), "app.py", "(a+)+$"))
 
 
+class TestGrepWorkerIntegration(unittest.IsolatedAsyncioTestCase):
+    async def test_grep_repository_path_line_timeout_raise_on_error(self):
+        from app.tool.grep_scan import grep_repository_path
+        from app.agent.workers.grep_worker import grep_worker
+        from app.agent.state import CodeMapState
+
+        # compiled.search가 TimeoutError를 유발하도록 mock 처리
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            root.mkdir()
+            (root / "app.py").write_text("dummy content\n", encoding="utf-8")
+
+            mock_pattern = MagicMock()
+            mock_pattern.search.side_effect = TimeoutError("Timeout simulated")
+
+            with patch("app.tool.grep_scan.compile_safe_regex", return_value=mock_pattern):
+                # raise_on_error=True일 때 TimeoutError가 발생(raise)하는지 확인
+                with self.assertRaises(TimeoutError):
+                    grep_repository_path(str(root), "app.py", "dummy", raise_on_error=True)
+
+                # raise_on_error=False(디폴트)일 때 기존처럼 "(정규식 타임아웃 방어)"를 포함하여 문자열 반환하는지 확인
+                res = grep_repository_path(str(root), "app.py", "dummy", raise_on_error=False)
+                self.assertIn("(정규식 타임아웃 방어)", res)
+
+                # grep_worker를 거쳤을 때 'interrupted' 카테고리로 적재되는지 검증
+                state: CodeMapState = {
+                    "user_query": "dummy",
+                    "repo_id": "00000000-0000-0000-0000-000000000101",
+                    "clone_path": str(root),
+                    "run_id": "run-1",
+                    "worker_results": [],
+                    "events": [],
+                    "_plan_item": {"tool": "grep", "path": "app.py", "query": "dummy", "scope": "file"},
+                }
+                worker_res = await grep_worker(state)
+                results = worker_res["worker_results"]
+                self.assertEqual(len(results), 1)
+                self.assertEqual(results[0]["metadata"]["errorCategory"], "interrupted")
+
+    async def test_grep_repository_path_regex_error_raise_on_error(self):
+        from app.tool.grep_scan import grep_repository_path
+        from app.agent.workers.grep_worker import grep_worker
+        from app.agent.state import CodeMapState
+        import regex
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            root.mkdir()
+            (root / "app.py").write_text("dummy content\n", encoding="utf-8")
+
+            mock_pattern = MagicMock()
+            mock_pattern.search.side_effect = regex.error("Regex failure simulated")
+
+            # compiled.search가 regex.error를 유발하도록 mock 처리
+            with patch("app.tool.grep_scan.compile_safe_regex", return_value=mock_pattern):
+                # raise_on_error=True일 때 regex.error가 발생(raise)하는지 확인
+                with self.assertRaises(regex.error):
+                    grep_repository_path(str(root), "app.py", "dummy", raise_on_error=True)
+
+                # raise_on_error=False일 때 "결과 없음"이 반환되는지 확인 (기존 Exception continue 사양)
+                res = grep_repository_path(str(root), "app.py", "dummy", raise_on_error=False)
+                self.assertEqual(res, "(결과 없음)")
+
+
+                # grep_worker를 거쳤을 때 'runtime_error' 카테고리로 적재되는지 검증
+                state: CodeMapState = {
+                    "user_query": "dummy",
+                    "repo_id": "00000000-0000-0000-0000-000000000101",
+                    "clone_path": str(root),
+                    "run_id": "run-1",
+                    "worker_results": [],
+                    "events": [],
+                    "_plan_item": {"tool": "grep", "path": "app.py", "query": "dummy", "scope": "file"},
+                }
+                worker_res = await grep_worker(state)
+                results = worker_res["worker_results"]
+                self.assertEqual(len(results), 1)
+                self.assertEqual(results[0]["metadata"]["errorCategory"], "runtime_error")
+
+
+
 if __name__ == "__main__":
     unittest.main()
+
