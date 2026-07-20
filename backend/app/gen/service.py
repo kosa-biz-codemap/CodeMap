@@ -57,7 +57,7 @@ def _normalize_summary(summary: object) -> str | None:
     if not isinstance(summary, dict):
         return str(summary)
 
-    # purpose / overview 중 존재하는 첫 번째 값을 본문으로 사용
+    ## purpose / overview 중 존재하는 첫 번째 값을 본문으로 사용
     purpose = ""
     for key in ("purpose", "overview", "summary", "description"):
         val = summary.get(key)
@@ -65,7 +65,7 @@ def _normalize_summary(summary: object) -> str | None:
             purpose = val.strip()
             break
 
-    # key_features 목록을 마크다운 bullet 로 추가
+    ## key_features 목록을 마크다운 bullet 로 추가
     key_features = summary.get("key_features")
     features_text = ""
     if isinstance(key_features, list) and key_features:
@@ -166,7 +166,7 @@ def _normalize_primary_language(stack: object) -> str | None:
 
 
 def _normalize_file_summaries(file_summaries: object) -> list[DocFileSummaryItem]:
-    # report 최상위 "file_summaries" 키를 직접 받아 DocFileSummaryItem 목록으로 변환한다.
+    ## report 최상위 "file_summaries" 키를 직접 받아 DocFileSummaryItem 목록으로 변환한다.
     if not isinstance(file_summaries, list):
         return []
     items = []
@@ -218,7 +218,7 @@ async def save_onboarding_doc(
     '''
     repo = GenDocRepository(db)
 
-    # 1. 저장소 존재 여부 확인
+    ## 1. 저장소 존재 여부 확인
     analysis_job = await repo.get_repo_by_id(repo_id)
     if analysis_job is None:
         logger.warning(
@@ -226,7 +226,7 @@ async def save_onboarding_doc(
         )
         raise RepoNotFoundError()
 
-    # 2. 문서 저장
+    ## 2. 문서 저장
     try:
         doc = await repo.save_doc(
             repo_id=repo_id,
@@ -281,19 +281,19 @@ async def get_onboarding_doc(
     '''
     repo = GenDocRepository(db)
 
-    # 1. 저장소 존재 여부 확인
+    ## 1. 저장소 존재 여부 확인
     analysis_job = await repo.get_repo_by_id(repo_id)
     if analysis_job is None:
         logger.warning("[DOCS-GEN-API-001] 저장소 없음 | repo_id=%s", repo_id)
         raise RepoNotFoundError()
 
-    # 2. 활성 문서 조회
+    ## 2. 활성 문서 조회
     doc = await repo.get_active_by_repo_id(repo_id)
     if doc is None:
         logger.warning("[DOCS-GEN-API-001] 가이드북 없음 | repo_id=%s", repo_id)
         raise DocsNotFoundError()
 
-    # 3. format=json: report_json 기반 구조화 데이터 반환
+    ## 3. format=json: report_json 기반 구조화 데이터 반환
     if fmt == "json":
         report = doc.report_json or {}
         guide = report.get("guide") or {}
@@ -331,7 +331,7 @@ async def get_onboarding_doc(
             version=doc.version,
         )
 
-    # 4. format=markdown (기본): Markdown 전문 반환
+    ## 4. format=markdown (기본): Markdown 전문 반환
     logger.info(
         "[DOCS-GEN-API-001] Markdown 조회 완료 | repo_id=%s version=%d",
         repo_id, doc.version,
@@ -390,24 +390,24 @@ async def validate_and_queue_doc_generation(
     repo = GenDocRepository(db)
     settings = get_settings()
 
-    # 1. 저장소 존재 여부 확인
+    ## 1. 저장소 존재 여부 확인
     analysis_job = await repo.get_repo_by_id(repo_id)
     if analysis_job is None:
         logger.warning("[DOCS-GEN-API-002] 저장소 없음 | repo_id=%s", repo_id)
         raise RepoNotFoundError()
 
-    # 2. 가이드북 생성 중복 실행 검사 (여기서 분산 락 획득)
-    #    이 시점부터 백그라운드 작업(run_doc_generation)이 등록되기 전까지
-    #    예외가 발생하면 락을 해제할 주체가 없어 docs_gen 락이 TTL(3600s)
-    #    만료까지 남아 데드락이 발생한다. 따라서 락 획득 이후의 모든 검증/
-    #    큐잉 로직을 try로 감싸 예외 발생 시 반드시 _mark_done()으로 락을
-    #    해제한 뒤 예외를 재전파한다. (Issue #230 데드락 버그 수정)
+    ## 2. 가이드북 생성 중복 실행 검사 (여기서 분산 락 획득)
+    ##    이 시점부터 백그라운드 작업(run_doc_generation)이 등록되기 전까지
+    ##    예외가 발생하면 락을 해제할 주체가 없어 docs_gen 락이 TTL(3600s)
+    ##    만료까지 남아 데드락이 발생한다. 따라서 락 획득 이후의 모든 검증/
+    ##    큐잉 로직을 try로 감싸 예외 발생 시 반드시 _mark_done()으로 락을
+    ##    해제한 뒤 예외를 재전파한다. (Issue #230 데드락 버그 수정)
     if not await _mark_in_progress(repo_id):
         logger.warning("[DOCS-GEN-API-002] 생성 진행 중 | repo_id=%s", repo_id)
         raise DocsGenerationInProgressError()
 
     try:
-        # 3. 기존 문서 존재 여부 검사 (force=false 이면 409)
+        ## 3. 기존 문서 존재 여부 검사 (force=false 이면 409)
         latest_version = await repo.get_latest_version(repo_id)
         if latest_version > 0 and not force:
             logger.warning(
@@ -416,7 +416,7 @@ async def validate_and_queue_doc_generation(
             )
             raise DocsAlreadyExistsError()
 
-        # 4. RAG 파이프라인 완료 여부 확인
+        ## 4. RAG 파이프라인 완료 여부 확인
         if analysis_job.status != JobStatus.COMPLETED.value:
             logger.warning(
                 "[DOCS-GEN-API-002] 분석 미완료 | repo_id=%s status=%s",
@@ -424,9 +424,9 @@ async def validate_and_queue_doc_generation(
             )
             raise AnalysisNotCompletedError()
 
-        # 5. 백그라운드 등록 전 동기적으로 진행 중 마킹하여 Race Condition 방지
-        # (BackgroundTask 내부에서 마킹하면 HTTP 응답 반환 후에야 set에 추가되어,
-        #  연속 요청 2건이 동시에 검사를 통과하는 경쟁 조건이 발생함)
+        ## 5. 백그라운드 등록 전 동기적으로 진행 중 마킹하여 Race Condition 방지
+        ## (BackgroundTask 내부에서 마킹하면 HTTP 응답 반환 후에야 set에 추가되어,
+        ##  연속 요청 2건이 동시에 검사를 통과하는 경쟁 조건이 발생함)
         next_version = latest_version + 1
         clone_path = f"{settings.CLONE_BASE_DIR}/{repo_id}/repo"
 
@@ -441,8 +441,8 @@ async def validate_and_queue_doc_generation(
             model=model,
         )
     except Exception:
-        # 백그라운드 작업 등록 실패 → run_doc_generation의 finally가 실행되지
-        # 않으므로 여기서 락을 직접 해제하여 영구 데드락을 방지한다.
+        ## 백그라운드 작업 등록 실패 → run_doc_generation의 finally가 실행되지
+        ## 않으므로 여기서 락을 직접 해제하여 영구 데드락을 방지한다.
         await _mark_done(repo_id)
         raise
 
@@ -491,13 +491,13 @@ async def rebuild_onboarding_doc(
     repo = GenDocRepository(db)
     settings = get_settings()
 
-    # 1. 저장소 존재 여부 확인
+    ## 1. 저장소 존재 여부 확인
     analysis_job = await repo.get_repo_by_id(repo_id)
     if analysis_job is None:
         logger.warning("[DOCS-GEN-API-003] 저장소 없음 | repo_id=%s", repo_id)
         raise RepoNotFoundError()
 
-    # 2. 재생성 대상 활성 문서 조회
+    ## 2. 재생성 대상 활성 문서 조회
     active_doc = await repo.get_active_by_repo_id(repo_id)
     if active_doc is None:
         logger.warning("[DOCS-GEN-API-003] 재생성 대상 없음 | repo_id=%s", repo_id)
@@ -506,7 +506,7 @@ async def rebuild_onboarding_doc(
     previous_version = active_doc.version
     new_version = previous_version + 1
 
-    # 3. 기존 활성 문서 소프트 삭제
+    ## 3. 기존 활성 문서 소프트 삭제
     try:
         await repo.soft_delete_active_docs(repo_id)
         await db.commit()
@@ -521,8 +521,8 @@ async def rebuild_onboarding_doc(
         )
         raise DatabaseSaveFailedError() from exc
 
-    # 4. 재생성 백그라운드 작업 등록
-    # 프로젝트 표준 클론 경로: {CLONE_BASE_DIR}/{repo_id}/repo
+    ## 4. 재생성 백그라운드 작업 등록
+    ## 프로젝트 표준 클론 경로: {CLONE_BASE_DIR}/{repo_id}/repo
     clone_path = f"{settings.CLONE_BASE_DIR}/{repo_id}/repo"
     if reason:
         logger.info(
@@ -576,13 +576,13 @@ async def get_doc_download_content(
     '''
     repo = GenDocRepository(db)
 
-    # 1. 저장소 존재 여부 확인
+    ## 1. 저장소 존재 여부 확인
     analysis_job = await repo.get_repo_by_id(repo_id)
     if analysis_job is None:
         logger.warning("[DOCS-GEN-API-004] 저장소 없음 | repo_id=%s", repo_id)
         raise RepoNotFoundError()
 
-    # 2. 활성 문서 조회
+    ## 2. 활성 문서 조회
     doc = await repo.get_active_by_repo_id(repo_id)
     if doc is None:
         logger.warning("[DOCS-GEN-API-004] 가이드북 없음 | repo_id=%s", repo_id)
@@ -658,19 +658,19 @@ async def get_recommended_tasks(
     '''
     repo = GenDocRepository(db)
 
-    # 1. 저장소 존재 여부 확인
+    ## 1. 저장소 존재 여부 확인
     analysis_job = await repo.get_repo_by_id(repo_id)
     if analysis_job is None:
         logger.warning("[DOCS-GEN-API-006] 저장소 없음 | repo_id=%s", repo_id)
         raise RepoNotFoundError()
 
-    # 2. 활성 문서 조회
+    ## 2. 활성 문서 조회
     doc = await repo.get_active_by_repo_id(repo_id)
     if doc is None:
         logger.warning("[DOCS-GEN-API-006] 가이드북 없음 | repo_id=%s", repo_id)
         raise DocsNotFoundError()
 
-    # 3. first_tasks 정규화
+    ## 3. first_tasks 정규화
     report = doc.report_json or {}
     guide = report.get("guide") or {}
     raw_tasks = guide.get("first_tasks") or []

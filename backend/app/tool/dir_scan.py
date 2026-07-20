@@ -67,7 +67,7 @@ def list_repository_files(cwd: Path, limit: int = 1200) -> list[Path]:
         if any(part in ignored_dirs for part in path.parts):
             continue
 
-        # workspace 탈출 검증 (보안 가드)
+        ## workspace 탈출 검증 (보안 가드)
         try:
             path.resolve().relative_to(root)
         except ValueError:

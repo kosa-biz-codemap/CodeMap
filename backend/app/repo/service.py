@@ -155,9 +155,9 @@ class AnalysisService:
 
         # 2. 브랜치 미입력 시 git이 원격 기본 브랜치를 자동 선택한다.
         branch = request.branch or "default"
-        # visibility/teamId 정합성을 명시적으로 검증한다. (자체 PR 리뷰 M2)
-        #  - visibility는 단일 진실원(source of truth). legacy isPrivate는 더 이상 사용하지 않는다.
-        #  - teamId가 있는데 visibility!=team이면 조용히 private 저장되는 일이 없도록 거부한다.
+        ## visibility/teamId 정합성을 명시적으로 검증한다. (자체 PR 리뷰 M2)
+        ##  - visibility는 단일 진실원(source of truth). legacy isPrivate는 더 이상 사용하지 않는다.
+        ##  - teamId가 있는데 visibility!=team이면 조용히 private 저장되는 일이 없도록 거부한다.
         visibility = (request.visibility or "private").lower()
         if visibility not in {"private", "team"}:
             raise CodeMapException(400, "INVALID_VISIBILITY", "visibility는 private 또는 team이어야 합니다.")
@@ -355,13 +355,13 @@ class AnalysisService:
             if not await self.repository.user_has_team_access(team_id, user_id):
                 raise CodeMapException(403, "TEAM_ACCESS_DENIED", "해당 팀에 접근할 수 없습니다.")
             return team_id, False
-        # private: 로그인 필수 (비로그인 공개 분석 생성은 더 이상 허용하지 않는다. 자체 PR 리뷰 M1)
+        ## private: 로그인 필수 (비로그인 공개 분석 생성은 더 이상 허용하지 않는다. 자체 PR 리뷰 M1)
         if user_id is None:
             raise CodeMapException(400, "PRIVATE_REQUIRES_AUTH", "개인 분석은 로그인 후 사용할 수 있습니다.")
         return None, True
 
     async def can_access_job(self, job, current_user_id: UUID | None) -> bool:
-        # 단일 판정 모듈에 위임 (자체 PR 리뷰 M3)
+        ## 단일 판정 모듈에 위임 (자체 PR 리뷰 M3)
         return await access.can_access_job(self.db, job, current_user_id)
 
     # ──────────────────────────────────────────
@@ -1049,12 +1049,12 @@ class AnalysisService:
 
         root = Path(clone_path).resolve()
 
-        # 1. 파일 리스트 추출 (디렉토리 스캔 전담)
+        ## 1. 파일 리스트 추출 (디렉토리 스캔 전담)
         file_paths = await asyncio.to_thread(list_repository_files, root)
         total_files = len(file_paths)
 
         if total_files == 0:
-            # 예외 폴백: 소스 파일이 없는 경우
+            ## 예외 폴백: 소스 파일이 없는 경우
             report = {
                 "repository": {"name": repo_name, "root": str(root)},
                 "stats": {
@@ -1091,12 +1091,12 @@ class AnalysisService:
             await self.db.commit()
             return report
 
-        # 2. 기본 파일 물리 정보 일괄 스캔 (I/O 병렬 구동)
+        ## 2. 기본 파일 물리 정보 일괄 스캔 (I/O 병렬 구동)
         file_meta = await asyncio.to_thread(
             extract_file_static_metadata, file_paths, root
         )
 
-        # 주 언어 판별 및 언어 통계 산정
+        ## 주 언어 판별 및 언어 통계 산정
         from collections import Counter
         languages = Counter()
         total_lines = 0
@@ -1137,7 +1137,7 @@ class AnalysisService:
         )
         test_ratio = test_files / max(total_files, 1)
 
-        # 3. 남은 분석 도구 병렬 호출 (asyncio.gather)
+        ## 3. 남은 분석 도구 병렬 호출 (asyncio.gather)
         todo_task = asyncio.to_thread(count_todo_annotations, file_paths)
         env_task = asyncio.to_thread(
             verify_build_environment, file_paths, primary_language, root
@@ -1209,7 +1209,7 @@ class AnalysisService:
             "recommendations": [],
         }
 
-        # 분석 소견/가이드라인 보강
+        ## 분석 소견/가이드라인 보강
         if not env_res["has_mandatory_manifest"]:
             report["key_risks"].append(
                 f"{primary_language} 빌드 구성 파일이 결락되어 "
@@ -1222,7 +1222,7 @@ class AnalysisService:
                 "priority": "high",
             })
 
-        # 7. DB 최종 영속화 및 커밋
+        ## 7. DB 최종 영속화 및 커밋
         await self.repository.update_job_status(
             job_id=job_id,
             status=JobStatus.IN_PROGRESS.value,
@@ -1451,7 +1451,7 @@ async def sweep_disk_cleanup(interval_seconds: int = 300) -> None:
     """
     while True:
         try:
-            # [순환 임포트 방지] app.infra.database -> app.repo.service -> database 순환 참조 방지를 위해 지역 임포트 처리
+            ## [순환 임포트 방지] app.infra.database -> app.repo.service -> database 순환 참조 방지를 위해 지역 임포트 처리
             from app.infra.database import async_session_factory
             async with async_session_factory() as session:
                 service = AnalysisService(session)

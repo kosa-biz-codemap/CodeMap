@@ -66,10 +66,10 @@ router = APIRouter(prefix="/api/gen/docs", tags=["DOCS GEN"])
 @router.get(
     "/{repo_id}",
     status_code=status.HTTP_200_OK,
-    # response_model을 명시하지 않아 FastAPI smart-union의 잘못된 직렬화 분기를 방지한다.
-    # 두 응답 모델이 동일한 최상위 envelope(code/message/data)를 공유하므로
-    # Union 지정 시 format=json 응답이 DocGetMarkdownResponse로 잘못 검증될 수 있다.
-    # 반환 타입 힌트가 문서화 역할을 대신하며, 실제 직렬화는 Pydantic 인스턴스가 처리한다.
+    ## response_model을 명시하지 않아 FastAPI smart-union의 잘못된 직렬화 분기를 방지한다.
+    ## 두 응답 모델이 동일한 최상위 envelope(code/message/data)를 공유하므로
+    ## Union 지정 시 format=json 응답이 DocGetMarkdownResponse로 잘못 검증될 수 있다.
+    ## 반환 타입 힌트가 문서화 역할을 대신하며, 실제 직렬화는 Pydantic 인스턴스가 처리한다.
     response_model=None,
     responses={
         200: {
@@ -237,8 +237,8 @@ async def download_doc(
 
     content, repo_name = await get_doc_download_content(db=db, repo_id=repo_id)
 
-    # 파일명 ASCII 외 문자 제거 (Content-Disposition 헤더는 latin-1만 허용)
-    # flags=re.ASCII 없이는 \w가 한글 등 유니코드 문자도 허용해 인코딩 오류 위험이 있다
+    ## 파일명 ASCII 외 문자 제거 (Content-Disposition 헤더는 latin-1만 허용)
+    ## flags=re.ASCII 없이는 \w가 한글 등 유니코드 문자도 허용해 인코딩 오류 위험이 있다
     safe_name = re.sub(r"[^\w\-]", "_", repo_name, flags=re.ASCII)
     filename = f"{safe_name}_onboarding.md"
 
@@ -327,7 +327,7 @@ async def guard_doc(
     if not body.content.strip():
         raise InvalidContentError()
 
-    # 저장소 존재 여부 확인
+    ## 저장소 존재 여부 확인
     gen_repo = GenDocRepository(db)
     repo = await gen_repo.get_repo_by_id(repo_id)
     if repo is None:

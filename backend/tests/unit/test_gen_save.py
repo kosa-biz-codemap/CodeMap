@@ -203,7 +203,7 @@ class GenDocRepositorySaveDocTests(unittest.IsolatedAsyncioTestCase):
         db = _make_db_mock()
 
         async def fake_flush():
-            # flush 호출 시 id 주입 시뮬레이션
+            ## flush 호출 시 id 주입 시뮬레이션
             pass
         db.flush.side_effect = fake_flush
 
@@ -421,7 +421,7 @@ class GenRouterTests(unittest.TestCase):
             )
 
         self.assertEqual(resp.status_code, 404)
-        # build_error_response 구조: {"code": 404, "error": {"code": "REPO_NOT_FOUND", ...}}
+        ## build_error_response 구조: {"code": 404, "error": {"code": "REPO_NOT_FOUND", ...}}
         self.assertEqual(resp.json()["error"]["code"], "REPO_NOT_FOUND")
 
     def test_500_database_save_failed(self):
@@ -436,7 +436,7 @@ class GenRouterTests(unittest.TestCase):
             )
 
         self.assertEqual(resp.status_code, 500)
-        # build_error_response 구조: {"code": 500, "error": {"code": "DATABASE_SAVE_FAILED", ...}}
+        ## build_error_response 구조: {"code": 500, "error": {"code": "DATABASE_SAVE_FAILED", ...}}
         self.assertEqual(resp.json()["error"]["code"], "DATABASE_SAVE_FAILED")
 
     def test_422_missing_content(self):
@@ -484,15 +484,15 @@ class OnboardingDocModelTests(unittest.TestCase):
 
     def test_default_doc_type(self):
         """doc_type 컬럼은 DB INSERT 시 적용될 'onboarding' 기본값을 가져야 한다."""
-        # SQLAlchemy mapped_column(default=...) 는 INSERT 시 적용되므로
-        # 컬럼 메타데이터에서 default 값을 확인한다.
+        ## SQLAlchemy mapped_column(default=...) 는 INSERT 시 적용되므로
+        ## 컬럼 메타데이터에서 default 값을 확인한다.
         col = OnboardingDoc.__table__.c["doc_type"]
         self.assertEqual(col.default.arg, "onboarding")
 
     def test_id_default_uuid(self):
         """id 컬럼은 callable ColumnDefault가 등록되어 있어야 한다."""
-        # SQLAlchemy mapped_column(default=uuid.uuid4) 은 INSERT 시 호출된다.
-        # col.default.arg 는 SQLAlchemy 내부 ctx 래퍼이므로 is_callable 플래그로 확인한다.
+        ## SQLAlchemy mapped_column(default=uuid.uuid4) 은 INSERT 시 호출된다.
+        ## col.default.arg 는 SQLAlchemy 내부 ctx 래퍼이므로 is_callable 플래그로 확인한다.
         col = OnboardingDoc.__table__.c["id"]
         self.assertIsNotNone(col.default, "id 컬럼에 ColumnDefault가 없습니다.")
         self.assertTrue(

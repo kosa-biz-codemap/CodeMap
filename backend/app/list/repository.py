@@ -116,7 +116,7 @@ class AnalysisJobListRepository:
         job: AnalysisJob,
         current_user_id: UUID | None,
     ) -> bool:
-        # 단일 판정 모듈에 위임 (자체 PR 리뷰 M3)
+        ## 단일 판정 모듈에 위임 (자체 PR 리뷰 M3)
         return await access.can_access_job(self.db, job, current_user_id)
 
     async def update_analysis_job_status(

@@ -171,7 +171,7 @@ class ListService:
         owner = match.group("owner")
         repo_name = match.group("repo")
 
-        # GitHub API 공통 헤더 구성 (인증 토큰 적용)
+        ## GitHub API 공통 헤더 구성 (인증 토큰 적용)
         settings = get_settings()
         headers = {"User-Agent": "CodeMap"}
         if settings.GITHUB_TOKEN:
@@ -180,10 +180,10 @@ class ListService:
         target_branch = branch
 
         try:
-            # 이슈 #3 수정: AsyncClient를 1개로 통합하여 커넥션 재사용
+            ## 이슈 #3 수정: AsyncClient를 1개로 통합하여 커넥션 재사용
             async with httpx.AsyncClient(timeout=10, headers=headers) as client:
                 if not target_branch:
-                    # default_branch 확인
+                    ## default_branch 확인
                     api_url = f"https://api.github.com/repos/{owner}/{repo_name}"
                     response = await client.get(api_url)
                     if response.status_code == 404:
@@ -202,7 +202,7 @@ class ListService:
                     except (ValueError, TypeError) as exc:
                         raise ValidationFailedError(f"저장소 정보 파싱 중 오류가 발생했습니다: {exc}")
 
-                # 이슈 #별도 제안: 브랜치명 URL encoding (슬래시 등 특수문자 대응)
+                ## 이슈 #별도 제안: 브랜치명 URL encoding (슬래시 등 특수문자 대응)
                 encoded_branch = url_quote(target_branch, safe="")
                 tree_url = (
                     f"https://api.github.com/repos/{owner}/{repo_name}"
@@ -228,9 +228,9 @@ class ListService:
         # API-005 스펙 준수: 제한 기준 설정값 DTO 상시 반환용 기본 인스턴스 생성
         limit = PreValidateLimit(fileCount=500, fileSizeKb=500)
 
-        # 이슈 #별도 제안: truncated 응답 처리
-        # GitHub Trees API는 큼 저장소에서 truncated=true를 내립니다.
-        # 이 경우 실제 파일 수/용량보다 적게 계산되어 isValid=true를 잘못 반환할 수 있습니다.
+        ## 이슈 #별도 제안: truncated 응답 처리
+        ## GitHub Trees API는 큼 저장소에서 truncated=true를 내립니다.
+        ## 이 경우 실제 파일 수/용량보다 적게 계산되어 isValid=true를 잘못 반환할 수 있습니다.
         if payload.get("truncated", False):
             return PreValidateResponse(
                 code=200,
@@ -274,7 +274,7 @@ class ListService:
         if file_count == 0:
             raise ValidationFailedError("저장소 내에 분석 가능한 파일이 없습니다.")
 
-        # 이슈 #4 수정: warning_message를 먼저 생성하고 is_valid는 단일 소스로 통일
+        ## 이슈 #4 수정: warning_message를 먼저 생성하고 is_valid는 단일 소스로 통일
         warning_message = None
         warning_code = None
 

@@ -26,7 +26,7 @@ from uuid import UUID, uuid4
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-# 백엔드 app 모듈 경로 추가
+## 백엔드 app 모듈 경로 추가
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 _JOB_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -48,7 +48,7 @@ def _make_app(clone_base_dir: str) -> FastAPI:
     app.dependency_overrides[get_db] = _fake_db
     app.include_router(router)
 
-    # get_settings를 전역으로 패치해서 CLONE_BASE_DIR 고정
+    ## get_settings를 전역으로 패치해서 CLONE_BASE_DIR 고정
     patcher = patch("app.repo.router.get_settings")
     mock_settings = patcher.start()
     mock_settings.return_value.CLONE_BASE_DIR = clone_base_dir
@@ -105,7 +105,7 @@ class TestFileContentWorkspaceNotReady(unittest.TestCase):
             client = TestClient(app, raise_server_exceptions=False)
 
             with _mock_job_status_ok():
-                # workspace 디렉토리를 생성하지 않은 상태
+                ## workspace 디렉토리를 생성하지 않은 상태
                 resp = client.get(
                     f"/api/repo/analysis/{_JOB_ID_STR}/files/content",
                     params={"path": "src/main.py"},
@@ -150,10 +150,10 @@ class TestFileContentPathTraversal(unittest.TestCase):
     def test_encoded_traversal_segment_is_blocked(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             self._setup(tmpdir)
-            # URL 디코딩 후 ".." 포함
+            ## URL 디코딩 후 ".." 포함
             resp = self._run(tmpdir, "src/..%2F..%2Fetc%2Fpasswd")
 
-        # 403 이거나 404 모두 허용 — workspace 외부 파일에 접근 불가해야 한다
+        ## 403 이거나 404 모두 허용 — workspace 외부 파일에 접근 불가해야 한다
         self.assertIn(resp.status_code, (403, 404))
 
 
@@ -164,7 +164,7 @@ class TestFileContentBinaryBlocked(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir) / _JOB_ID_STR / "repo"
             workspace.mkdir(parents=True)
-            # 실제 파일 존재 여부 무관하게 확장자만으로 차단
+            ## 실제 파일 존재 여부 무관하게 확장자만으로 차단
             (workspace / "logo.png").write_bytes(b"\x89PNG\r\n\x1a\n")
 
             app, settings_patcher = _make_app(tmpdir)
@@ -209,7 +209,7 @@ class TestFileContentFileNotFound(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir) / _JOB_ID_STR / "repo"
             workspace.mkdir(parents=True)
-            # 파일 미생성
+            ## 파일 미생성
 
             app, settings_patcher = _make_app(tmpdir)
             client = TestClient(app, raise_server_exceptions=False)
@@ -322,7 +322,7 @@ class TestFileContentTruncated(unittest.TestCase):
     """50,000자 초과 파일은 truncated=True로 잘린 내용을 반환한다."""
 
     def test_large_file_returns_truncated(self):
-        # 50,001자 파일 생성
+        ## 50,001자 파일 생성
         big_content = "x" * 50_001
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir) / _JOB_ID_STR / "repo"
@@ -346,7 +346,7 @@ class TestFileContentTruncated(unittest.TestCase):
         self.assertEqual(len(data["content"]), 50_000)
 
     def test_exact_limit_file_not_truncated(self):
-        # 정확히 50,000자는 잘리지 않아야 한다
+        ## 정확히 50,000자는 잘리지 않아야 한다
         exact_content = "y" * 50_000
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir) / _JOB_ID_STR / "repo"
@@ -372,7 +372,7 @@ class TestFileContentEncodingFallback(unittest.TestCase):
     """UTF-8이 아닌 파일도 latin-1 fallback으로 읽을 수 있다."""
 
     def test_latin1_file_readable(self):
-        # latin-1 전용 바이트로 구성된 파일
+        ## latin-1 전용 바이트로 구성된 파일
         raw_bytes = "Ärger mit Ü".encode("latin-1")
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir) / _JOB_ID_STR / "repo"
@@ -474,7 +474,7 @@ class TestFileContentDbFallback(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             workspace = Path(tmpdir) / _JOB_ID_STR / "repo"
             workspace.mkdir(parents=True)
-            # 파일 미생성 → 로컬 read 실패 → DB fallback 경로 진입
+            ## 파일 미생성 → 로컬 read 실패 → DB fallback 경로 진입
 
             app, settings_patcher = _make_app(tmpdir)
             client = TestClient(app, raise_server_exceptions=False)
@@ -497,10 +497,10 @@ class TestFileContentDbFallback(unittest.TestCase):
         self.assertFalse(data["truncated"])
 
     def test_workspace_dir_missing_uses_db_fallback(self):
-        # clone workspace 디렉토리 자체가 없어도 DB fallback이 동작한다.
+        ## clone workspace 디렉토리 자체가 없어도 DB fallback이 동작한다.
         recovered = "console.log('recovered');\n"
         with tempfile.TemporaryDirectory() as tmpdir:
-            # workspace 디렉토리 미생성
+            ## workspace 디렉토리 미생성
             app, settings_patcher = _make_app(tmpdir)
             client = TestClient(app, raise_server_exceptions=False)
 
@@ -566,7 +566,7 @@ class TestFileContentDbFallback(unittest.TestCase):
         self.assertEqual(len(data["content"]), 50_000)
 
     def test_binary_blocked_before_fallback(self):
-        # 바이너리 확장자는 FS/DB와 무관하게 422로 차단된다.
+        ## 바이너리 확장자는 FS/DB와 무관하게 422로 차단된다.
         with tempfile.TemporaryDirectory() as tmpdir:
             app, settings_patcher = _make_app(tmpdir)
             client = TestClient(app, raise_server_exceptions=False)

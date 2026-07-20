@@ -173,8 +173,8 @@ async def register_analysis(
     Onboarding Guide → Report 저장 순서로 비동기 처리되며,
     각 단계의 진행 상태는 WebSocket으로 실시간 push된다.
     """
-    # 분석 기록은 항상 소유자/팀에 귀속되므로 로그인 필수. (자체 PR 리뷰 M1)
-    #  visibility/teamId 정합성 및 팀 권한 검증은 service._resolve_visibility가 담당한다.
+    ## 분석 기록은 항상 소유자/팀에 귀속되므로 로그인 필수. (자체 PR 리뷰 M1)
+    ##  visibility/teamId 정합성 및 팀 권한 검증은 service._resolve_visibility가 담당한다.
     if current_user is None:
         raise HTTPException(
             status_code=400,
@@ -328,7 +328,7 @@ async def stream_analysis_events(
     각 파이프라인 단계 전환 시마다 이벤트를 수신한다.
     status가 COMPLETED 또는 FAILED인 이벤트 수신 후 스트림이 종료된다.
     """
-    # private/team job은 권한이 있는 사용자만 스트림을 수신할 수 있다. (자체 PR 리뷰 B1)
+    ## private/team job은 권한이 있는 사용자만 스트림을 수신할 수 있다. (자체 PR 리뷰 B1)
     current_user_id = _user_id_from_token(token)
     # job 존재 여부 + 접근 권한 확인 (별도 세션 사용)
     async with async_session_factory() as session:
@@ -411,7 +411,7 @@ async def start_pipeline(
     return await service.start_pipeline(job_id, background_tasks)
 
 
-# 바이너리 파일 확장자 집합 — 미리보기 불가 파일 유형 정의
+## 바이너리 파일 확장자 집합 — 미리보기 불가 파일 유형 정의
 _BINARY_EXTENSIONS = frozenset({
     ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".ico", ".svg", ".webp",
     ".mp3", ".mp4", ".wav", ".avi", ".mov", ".mkv",
@@ -423,10 +423,10 @@ _BINARY_EXTENSIONS = frozenset({
     ".lock",
 })
 
-# 파일 크기 제한 (문자 수 기준)
+## 파일 크기 제한 (문자 수 기준)
 _MAX_FILE_CHARS = 50_000
 
-# 확장자 → 언어 매핑
+## 확장자 → 언어 매핑
 _EXT_TO_LANGUAGE: dict[str, str] = {
     ".py": "python", ".js": "javascript", ".jsx": "jsx",
     ".ts": "typescript", ".tsx": "tsx",
@@ -549,7 +549,7 @@ async def get_file_content(
     - 바이너리 확장자는 422로 차단한다.
     - 50,000자 초과 시 잘린 내용과 truncated=true를 반환한다.
     """
-    # job 존재 확인
+    ## job 존재 확인
     service = AnalysisService(db)
     from app.common import access
     access.touch_last_accessed(db, job_id)
@@ -563,8 +563,8 @@ async def get_file_content(
     settings = get_settings()
     clone_root = (Path(settings.CLONE_BASE_DIR) / str(job_id) / "repo").resolve()
 
-    # path traversal 사전 차단: 절대 경로 또는 상위 디렉토리 참조 포함 시 거부
-    #  (clone workspace 존재 여부와 무관하게 항상 먼저 검사한다)
+    ## path traversal 사전 차단: 절대 경로 또는 상위 디렉토리 참조 포함 시 거부
+    ##  (clone workspace 존재 여부와 무관하게 항상 먼저 검사한다)
     clean_path = path.lstrip("/").replace("\\", "/")
     if ".." in clean_path.split("/"):
         raise FilePathForbiddenError()
@@ -575,11 +575,11 @@ async def get_file_content(
     except ValueError:
         raise FilePathForbiddenError()
 
-    # 바이너리 파일 차단 (확장자 기반 — FS 존재 여부와 무관)
+    ## 바이너리 파일 차단 (확장자 기반 — FS 존재 여부와 무관)
     if Path(clean_path).suffix.lower() in _BINARY_EXTENSIONS:
         raise BinaryFileError()
 
-    # 1차: 로컬 clone workspace에서 직접 읽기
+    ## 1차: 로컬 clone workspace에서 직접 읽기
     if not clone_root.exists():
         logger.info("[get_file_content] 로컬 스냅샷 부재 감지, 재클론 복구 개시 (job_id=%s)", job_id)
         try:
@@ -597,8 +597,8 @@ async def get_file_content(
         )
         return _build_file_content_response(clean_path, content, truncated)
 
-    # 2차 방어 (Issue #226): 로컬 FS 누락 시 DB CodeNode content로 복구 fallback.
-    #  임베딩 누락/예외로 FILE 노드가 비어 있어도 가용성을 유지한다.
+    ## 2차 방어 (Issue #226): 로컬 FS 누락 시 DB CodeNode content로 복구 fallback.
+    ##  임베딩 누락/예외로 FILE 노드가 비어 있어도 가용성을 유지한다.
     fallback_content = await _read_db_fallback_content(db, job_id, clean_path)
     if fallback_content is not None:
         logger.warning(
@@ -609,7 +609,7 @@ async def get_file_content(
         content, truncated = _truncate_text(fallback_content)
         return _build_file_content_response(clean_path, content, truncated)
 
-    # 로컬·DB 모두 실패 → 기존과 동일하게 404
+    ## 로컬·DB 모두 실패 → 기존과 동일하게 404
     raise WorkspaceNotReadyError(
         message=f"파일을 찾을 수 없습니다: {clean_path}"
     )

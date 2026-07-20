@@ -256,7 +256,7 @@ class RebuildOnboardingDocServiceTests(unittest.IsolatedAsyncioTestCase):
         bg = self._make_bg_tasks()
 
         async def _mock_soft_delete(*args):
-            # self + repo_id 모두 수신하기 위해 *args 사용
+            ## self + repo_id 모두 수신하기 위해 *args 사용
             call_order.append("soft_delete")
             return 1
 
@@ -553,7 +553,7 @@ class RebuildRegressionTests(unittest.TestCase):
         self.app.include_router(router)
         self.mock_db = MagicMock()
         self.app.dependency_overrides[get_db] = lambda: self.mock_db
-        # GET /{repo_id}에 인증이 추가되어 get_current_user를 mock으로 대체한다.
+        ## GET /{repo_id}에 인증이 추가되어 get_current_user를 mock으로 대체한다.
         self.app.dependency_overrides[get_current_user] = lambda: {"id": "test-user"}
         self.client = TestClient(self.app, raise_server_exceptions=False)
 

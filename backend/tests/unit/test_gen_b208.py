@@ -207,7 +207,7 @@ class GetRecommendedTasksTests(unittest.IsolatedAsyncioTestCase):
         """report_json이 None이면 빈 tasks를 반환해야 한다."""
         from app.gen.service import get_recommended_tasks
         p1, p2 = self._mock_repo(report=None)
-        # doc.report_json을 None으로 설정
+        ## doc.report_json을 None으로 설정
         with p1:
             with patch(
                 "app.gen.repository.GenDocRepository.get_active_by_repo_id",

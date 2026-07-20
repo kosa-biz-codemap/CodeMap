@@ -354,7 +354,7 @@ class EmbedRepository:
 
         하나도 없으면 None을 반환한다.
         """
-        # 1차: FILE 대표 노드 content
+        ## 1차: FILE 대표 노드 content
         file_stmt = select(CodeNode.content).where(
             CodeNode.job_id == job_id,
             CodeNode.path == path,
@@ -365,7 +365,7 @@ class EmbedRepository:
         if file_content is not None:
             return file_content
 
-        # 2차: CHUNK 노드 content를 순서대로 재구성
+        ## 2차: CHUNK 노드 content를 순서대로 재구성
         chunk_stmt = (
             select(CodeNode.content)
             .where(

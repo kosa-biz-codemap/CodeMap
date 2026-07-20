@@ -17,13 +17,13 @@ def main():
         print(f"[Info] .env 파일이 이미 {env_path}에 존재합니다. 생성을 생략합니다.")
         return
 
-    # 시스템 전역 환경 변수에서 GITHUB_TOKEN을 우선적으로 읽어옵니다.
+    ## 시스템 전역 환경 변수에서 GITHUB_TOKEN을 우선적으로 읽어옵니다.
     global_github_token = os.environ.get("GITHUB_TOKEN", "").strip()
 
-    # 로컬 개발 및 튜토리얼용 표준 환경 변수 템플릿 구성
-    env_content = f"""# ──────────────────────────────────────────────
+    ## 로컬 개발 및 튜토리얼용 표준 환경 변수 템플릿 구성
+    env_content = f"""# ==========================================
 # CodeMap Backend Environment Configuration
-# ──────────────────────────────────────────────
+# ==========================================
 
 # 1. Database Configuration (Match with local DB / Docker Compose)
 DB_USER=postgres

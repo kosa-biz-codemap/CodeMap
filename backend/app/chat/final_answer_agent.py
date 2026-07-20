@@ -128,7 +128,7 @@ async def stream_final_answer(
         context=context_text
     )
 
-    # 2. LLM 스트리밍 응답
+    ## 2. LLM 스트리밍 응답
     if settings.OPENAI_API_KEY.get_secret_value():
         try:
             from langchain_core.messages import HumanMessage, SystemMessage
@@ -165,7 +165,7 @@ async def stream_final_answer(
                 exc,
             )
 
-    # 3. OPENAI_API_KEY 미설정 또는 LLM 실패 -> 폴백
+    ## 3. OPENAI_API_KEY 미설정 또는 LLM 실패 -> 폴백
     grouped = compact_context.get("groupedByFile", {})
     if grouped:
         all_snips = [s for snips in grouped.values() for s in snips]
@@ -183,7 +183,7 @@ async def stream_final_answer(
             "검색어를 다르게 입력해 보시거나 구체적인 파일을 지정해 보세요."
         )
 
-    # 폴백 응답도 토큰 단위로 분할 전송 (UI 일관성)
+    ## 폴백 응답도 토큰 단위로 분할 전송 (UI 일관성)
     chunk_size = 40
     for i in range(0, len(answer), chunk_size):
         yield {"type": "answer_delta", "content": answer[i:i + chunk_size]}

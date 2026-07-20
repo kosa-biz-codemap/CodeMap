@@ -143,7 +143,7 @@ class AnalysisJobRepository:
         return result.scalar_one_or_none()
 
     async def user_has_team_access(self, team_id: UUID, user_id: UUID) -> bool:
-        # 단일 판정 모듈에 위임 (자체 PR 리뷰 M3)
+        ## 단일 판정 모듈에 위임 (자체 PR 리뷰 M3)
         return await access.user_has_team_access(self.db, team_id, user_id)
 
     async def list_jobs(self, limit: int = 30) -> list[AnalysisJob]:

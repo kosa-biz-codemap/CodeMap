@@ -54,7 +54,7 @@ class TestCanAccessJob(unittest.IsolatedAsyncioTestCase):
     async def test_team_job_blocks_anonymous(self):
         db = FakeSession(member_exists=True)
         job = _job(team_id=uuid4())
-        # 익명 사용자는 멤버십 질의 없이 즉시 차단되어야 한다.
+        ## 익명 사용자는 멤버십 질의 없이 즉시 차단되어야 한다.
         self.assertFalse(await access.can_access_job(db, job, None))
         self.assertEqual(db.executed, 0)
 

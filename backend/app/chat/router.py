@@ -35,7 +35,7 @@ def _event(payload: dict) -> str:
 
 def _references_from_worker_results(worker_results: list[dict]) -> list[dict]:
     references: list[dict] = []
-    # (file_path, lineStart | None) 쌍으로 중복 제거 — None 포함 허용
+    ## (file_path, lineStart | None) 쌍으로 중복 제거 — None 포함 허용
     seen: set[tuple[str, int | None]] = set()
     for result in worker_results:
         file_path = result.get("path")

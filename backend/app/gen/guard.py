@@ -94,14 +94,14 @@ def _mask_content_sync(content: str) -> MaskResult:
     masked = content
 
     for pattern_type, pattern in _PATTERNS:
-        # 람다 기본인수로 루프 변수 캡처 — 클로저 바인딩 오류 방지
+        ## 람다 기본인수로 루프 변수 캡처 — 클로저 바인딩 오류 방지
         def replacer(m: re.Match[str], pt: str = pattern_type) -> str:
             detected.append(DetectedPattern(type=pt))
             return "[MASKED]"
 
         masked = pattern.sub(replacer, masked)
 
-    # 동일 패턴 타입은 중복 제거하여 detectedPatterns 리스트에 한 번만 표시
+    ## 동일 패턴 타입은 중복 제거하여 detectedPatterns 리스트에 한 번만 표시
     seen: set[str] = set()
     unique_patterns: list[DetectedPattern] = []
     for d in detected:

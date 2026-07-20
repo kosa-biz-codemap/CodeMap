@@ -63,7 +63,7 @@ class TestPreValidateService(unittest.IsolatedAsyncioTestCase):
         mock_response_repo.status_code = 200
         mock_response_repo.json.return_value = {"default_branch": "main"}
 
-        # 2. GET /repos/{owner}/{repo}/git/trees/main?recursive=1 응답 모킹
+        ## 2. GET /repos/{owner}/{repo}/git/trees/main?recursive=1 응답 모킹
         mock_response_tree = MagicMock()
         mock_response_tree.status_code = 200
         mock_response_tree.json.return_value = {
@@ -95,7 +95,7 @@ class TestPreValidateService(unittest.IsolatedAsyncioTestCase):
     @patch("httpx.AsyncClient.get")
     async def test_validate_repository_file_count_warning(self, mock_get):
         """파일 수가 100개를 초과할 때 warningMessage가 올바르게 설정되는지 확인합니다."""
-        # branch를 명시하면 tree API 호출 1회만 발생하므로 mock 1개만 설정
+        ## branch를 명시하면 tree API 호출 1회만 발생하므로 mock 1개만 설정
         mock_tree = []
         for i in range(501):
             mock_tree.append({"path": f"src/file_{i}.py", "type": "blob", "size": 100})
