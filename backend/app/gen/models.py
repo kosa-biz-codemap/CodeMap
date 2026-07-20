@@ -37,12 +37,12 @@ class OnboardingDoc(Base):
         Index("idx_docs_repo_id", "repo_id"),
     )
 
-    ## 문서 고유 ID
+    # 문서 고유 ID
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
 
-    ## 저장소 ID (analysis_jobs.id 참조)
+    # 저장소 ID (analysis_jobs.id 참조)
     repo_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("analysis_jobs.id", ondelete="CASCADE"),
@@ -50,14 +50,14 @@ class OnboardingDoc(Base):
         comment="대상 저장소 AnalysisJob ID",
     )
 
-    ## 연결된 분석 작업 ID
+    # 연결된 분석 작업 ID
     job_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         nullable=False,
         comment="문서 생성을 트리거한 분석 작업 ID",
     )
 
-    ## 문서 유형 (기본: onboarding)
+    # 문서 유형 (기본: onboarding)
     doc_type: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
@@ -65,14 +65,14 @@ class OnboardingDoc(Base):
         comment="문서 유형 (onboarding / summary 등)",
     )
 
-    ## Markdown 전문
+    # Markdown 전문
     content: Mapped[str] = mapped_column(
         Text,
         nullable=False,
         comment="생성된 Markdown 가이드북 전문",
     )
 
-    ## 가이드북 버전 (재생성 시 증가)
+    # 가이드북 버전 (재생성 시 증가)
     version: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
@@ -80,7 +80,7 @@ class OnboardingDoc(Base):
         comment="가이드북 버전 번호 (1부터 시작, 재생성 시 증가)",
     )
 
-    ## 활성 문서 여부 (소프트 삭제 지원: 재생성 시 이전 버전 비활성화)
+    # 활성 문서 여부 (소프트 삭제 지원: 재생성 시 이전 버전 비활성화)
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
@@ -88,14 +88,14 @@ class OnboardingDoc(Base):
         comment="활성 문서 여부 (소프트 삭제 지원)",
     )
 
-    ## master_report JSON 원본 (format=json 조회 응답용)
+    # master_report JSON 원본 (format=json 조회 응답용)
     report_json: Mapped[Any] = mapped_column(
         JSONB,
         nullable=True,
         comment="master_report JSON 원본 데이터",
     )
 
-    ## 생성 시각
+    # 생성 시각
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

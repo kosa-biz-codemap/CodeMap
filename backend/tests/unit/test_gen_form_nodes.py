@@ -262,7 +262,7 @@ class DocSummaryNodeTests(unittest.IsolatedAsyncioTestCase):
         summary = result["doc_summary"]
         self.assertEqual(summary["purpose"], "코드 분석 자동화")
         self.assertIn("요약 생성", summary["key_features"])
-        ## LLM 성공 경로: generated_by는 settings.OPENAI_MODEL 값 (기본: "gpt-4o-mini")
+        # LLM 성공 경로: generated_by는 settings.OPENAI_MODEL 값 (기본: "gpt-4o-mini")
         self.assertIsInstance(summary["generated_by"], str)
         self.assertNotEqual(summary["generated_by"], "heuristic")
 
@@ -328,7 +328,7 @@ class FolderSummaryNodeTests(unittest.IsolatedAsyncioTestCase):
         ):
             result = await gen_nodes.folder_summary_node(_base_state())
 
-        ## 폴백: 진입점 경로 파싱으로 folder_summaries 생성
+        # 폴백: 진입점 경로 파싱으로 folder_summaries 생성
         self.assertIsInstance(result["folder_summaries"], dict)
         self.assertNotEqual(result.get("status"), "failed")
 
@@ -549,8 +549,8 @@ class MasterReportNodeTests(unittest.IsolatedAsyncioTestCase):
     async def test_exception_sets_failed_status(self):
         """내부 예외 발생 시 status='failed'가 설정되어야 한다."""
         bad_state = _base_state()
-        ## analysis_report를 set 타입으로 전달하면 dict() 변환 시 ValueError 발생
-        ## (try 블록 안: report = dict(state.get("analysis_report") or {}))
+        # analysis_report를 set 타입으로 전달하면 dict() 변환 시 ValueError 발생
+        # (try 블록 안: report = dict(state.get("analysis_report") or {}))
         bad_state["analysis_report"] = {1, 2, 3}
         result = await gen_nodes.master_report_node(bad_state)
         self.assertEqual(result["status"], "failed")
@@ -672,37 +672,37 @@ class GenFormPipelineIntegrationTests(unittest.IsolatedAsyncioTestCase):
         ):
             state = _base_state()
 
-            ## 순서 1: B-205
+            # 순서 1: B-205
             r1 = await gen_nodes.readme_intro_node(state)
             self.assertNotEqual(r1.get("status"), "failed", "B-205 실패")
             state.update(r1)
 
-            ## 순서 2: B-201
+            # 순서 2: B-201
             r2 = await gen_nodes.doc_summary_node(state)
             self.assertNotEqual(r2.get("status"), "failed", "B-201 실패")
             state.update(r2)
 
-            ## 순서 3: B-203
+            # 순서 3: B-203
             r3 = await gen_nodes.folder_summary_node(state)
             self.assertNotEqual(r3.get("status"), "failed", "B-203 실패")
             state.update(r3)
 
-            ## 순서 4: B-206
+            # 순서 4: B-206
             r4 = await gen_nodes.flow_explain_node(state)
             self.assertNotEqual(r4.get("status"), "failed", "B-206 실패")
             state.update(r4)
 
-            ## 순서 5: B-202
+            # 순서 5: B-202
             r5 = await gen_nodes.onboarding_guide_node(state)
             self.assertNotEqual(r5.get("status"), "failed", "B-202 실패")
             state.update(r5)
 
-            ## 순서 6: B-204
+            # 순서 6: B-204
             r6 = await gen_nodes.master_report_node(state)
             self.assertNotEqual(r6.get("status"), "failed", "B-204 실패")
             state.update(r6)
 
-        ## 최종 결과 검증
+        # 최종 결과 검증
         self.assertEqual(state["status"], "completed")
         report = state["master_report"]
         self.assertIsNotNone(report)
@@ -712,7 +712,7 @@ class GenFormPipelineIntegrationTests(unittest.IsolatedAsyncioTestCase):
         ):
             self.assertIn(section, report, f"'{section}' 섹션 누락")
 
-        ## durations에 모든 단계 타이밍이 누적되었는지 확인
+        # durations에 모든 단계 타이밍이 누적되었는지 확인
         durations = report["durations"]
         self.assertIn("total", durations)
         self.assertGreater(durations["total"], 0)
