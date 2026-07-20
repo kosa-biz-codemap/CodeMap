@@ -289,7 +289,7 @@ class GenDownloadRouterTests(unittest.TestCase):
         from app.infra.database import get_db
         from app.common.exceptions import register_exception_handlers
 
-        ## get_current_user mock을 제거한 별도 앱으로 실제 인증 미제공 시나리오 검증
+        # get_current_user mock을 제거한 별도 앱으로 실제 인증 미제공 시나리오 검증
         app_no_auth = FastAPI()
         register_exception_handlers(app_no_auth)
         app_no_auth.include_router(router)
@@ -331,7 +331,7 @@ class FilenameEscapingTests(unittest.TestCase):
             resp = self.client.get(f"/api/gen/docs/{_REPO_ID}/download")
 
         disp = resp.headers.get("content-disposition", "")
-        ## 슬래시가 _로 치환되어야 함
+        # 슬래시가 _로 치환되어야 함
         self.assertNotIn("/", disp)
         self.assertIn("_onboarding.md", disp)
 
@@ -355,7 +355,7 @@ class FilenameEscapingTests(unittest.TestCase):
             resp = self.client.get(f"/api/gen/docs/{_REPO_ID}/download")
 
         disp = resp.headers.get("content-disposition", "")
-        ## filename= 이후의 파일명 부분만 추출하여 공백 검증
+        # filename= 이후의 파일명 부분만 추출하여 공백 검증
         filename_part = disp.split("filename=")[-1].strip('"')
         self.assertNotIn(" ", filename_part)
 
@@ -374,7 +374,7 @@ class FilenameEscapingTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         disp = resp.headers.get("content-disposition", "")
         filename_part = disp.split("filename=")[-1].strip('"')
-        ## 한글이 _ 로 치환되어 파일명에 비-ASCII 문자가 없어야 한다
+        # 한글이 _ 로 치환되어 파일명에 비-ASCII 문자가 없어야 한다
         self.assertTrue(
             filename_part.isascii(),
             f"파일명에 비-ASCII 문자가 포함됨: {filename_part!r}",
@@ -402,7 +402,7 @@ class DownloadRegressionTests(unittest.TestCase):
         self.app.include_router(router)
         self.mock_db = MagicMock()
         self.app.dependency_overrides[get_db] = lambda: self.mock_db
-        ## GET /{repo_id}에 인증이 추가되어 get_current_user를 mock으로 대체한다.
+        # GET /{repo_id}에 인증이 추가되어 get_current_user를 mock으로 대체한다.
         self.app.dependency_overrides[get_current_user] = lambda: {"id": "test-user"}
         self.client = TestClient(self.app, raise_server_exceptions=False)
 

@@ -159,7 +159,7 @@ class MasterReportToMarkdownTests(unittest.TestCase):
                 "tech_context": "FastAPI + PostgreSQL",
             },
             "stack": ["Python 3.12", "FastAPI"],
-            ## file_map은 folder_summaries 래퍼 dict 구조 (nodes.py master_report 기준)
+            # file_map은 folder_summaries 래퍼 dict 구조 (nodes.py master_report 기준)
             "file_map": {"folder_summaries": {"backend/": "API 서버 코드"}},
             "guide": {
                 "reading_order": [
@@ -228,7 +228,7 @@ class MasterReportToMarkdownTests(unittest.TestCase):
         """빈 report 전달 시 제목만 포함된 Markdown이 반환되어야 한다."""
         md = master_report_to_markdown({}, repo_name="Empty")
         self.assertIn("Empty", md)
-        ## 빈 report면 추가 섹션 없음 — KeyError 없이 안전하게 반환되어야 함
+        # 빈 report면 추가 섹션 없음 — KeyError 없이 안전하게 반환되어야 함
         self.assertIsInstance(md, str)
 
     def test_returns_string_type(self):
@@ -287,7 +287,7 @@ class ValidateAndQueueServiceTests(unittest.IsolatedAsyncioTestCase):
     """validate_and_queue_doc_generation 서비스 각 분기별 예외 검증"""
 
     def setUp(self):
-        ## _mark_in_progress 사이드 이펙트가 테스트 간 누적되지 않도록 초기화
+        # _mark_in_progress 사이드 이펙트가 테스트 간 누적되지 않도록 초기화
         bg_module._DOCS_GENERATION_IN_PROGRESS.clear()
 
     def tearDown(self):
@@ -375,7 +375,7 @@ class ValidateAndQueueServiceTests(unittest.IsolatedAsyncioTestCase):
             db = self._make_db()
             bg = MagicMock()
             bg.add_task = MagicMock()
-            ## DocsAlreadyExistsError 없이 정상 처리되어야 함
+            # DocsAlreadyExistsError 없이 정상 처리되어야 함
             job_id, version = await validate_and_queue_doc_generation(db, _REPO_ID, True, bg)
             self.assertEqual(job_id, _JOB_ID)
             self.assertEqual(version, 2)
@@ -423,7 +423,7 @@ class ValidateAndQueueServiceTests(unittest.IsolatedAsyncioTestCase):
             with self.assertRaises(DocsAlreadyExistsError):
                 await validate_and_queue_doc_generation(db, _REPO_ID, False, bg)
 
-        ## 핵심 단언: 예외 후에도 진행 중 마킹이 남아있으면 안 된다.
+        # 핵심 단언: 예외 후에도 진행 중 마킹이 남아있으면 안 된다.
         self.assertFalse(await bg_module.is_generation_in_progress(_REPO_ID))
 
     async def test_lock_released_when_analysis_not_completed(self):
@@ -490,7 +490,7 @@ class ValidateAndQueueServiceTests(unittest.IsolatedAsyncioTestCase):
             bg.add_task = MagicMock()
             await validate_and_queue_doc_generation(db, _REPO_ID, False, bg)
 
-        ## 성공 경로에서는 락이 남아있어야 한다 (백그라운드 작업이 finally로 해제).
+        # 성공 경로에서는 락이 남아있어야 한다 (백그라운드 작업이 finally로 해제).
         self.assertTrue(await bg_module.is_generation_in_progress(_REPO_ID))
 
     async def test_success_returns_job_id_and_version(self):

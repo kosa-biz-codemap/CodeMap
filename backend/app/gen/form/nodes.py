@@ -26,7 +26,7 @@ from app.gen.form.state import GenFormState
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-## LLM 호출 한도
+# LLM 호출 한도
 _LLM_TIMEOUT_SECONDS = 30
 _LLM_MAX_RETRIES = 1
 
@@ -369,7 +369,7 @@ async def folder_summary_node(state: GenFormState) -> dict:
             _read_readme, state.get("clone_path")
         )
 
-        ## 폴더 목록 추출 (분석 리포트의 file_tree 또는 entrypoints에서 유추)
+        # 폴더 목록 추출 (분석 리포트의 file_tree 또는 entrypoints에서 유추)
         entrypoints = report.get("entrypoints", [])
         folder_set: set[str] = set()
         for ep in entrypoints:
@@ -405,7 +405,7 @@ async def folder_summary_node(state: GenFormState) -> dict:
                     "folder_summary LLM 출력 스키마 불일치, 휴리스틱 대체: %s", exc
                 )
 
-        ## 폴백: 폴더명만 기록
+        # 폴백: 폴더명만 기록
         if not folder_summaries:
             folder_summaries = {f: f"{f}/ 디렉토리" for f in folders}
 
@@ -657,7 +657,7 @@ async def master_report_node(state: GenFormState) -> dict:
 
         stats = report.get("stats", {})
 
-        ## summary 섹션: 프로젝트 전체 요약
+        # summary 섹션: 프로젝트 전체 요약
         summary = {
             "project_intro": project_intro,
             "purpose": doc_summary.get("purpose", ""),
@@ -668,7 +668,7 @@ async def master_report_node(state: GenFormState) -> dict:
             "stats": stats,
         }
 
-        ## stack 섹션: 기술 스택 정보
+        # stack 섹션: 기술 스택 정보
         stack = {
             "technologies": report.get("stack", []),
             "primary_language": stats.get("primary_language", ""),
@@ -676,7 +676,7 @@ async def master_report_node(state: GenFormState) -> dict:
             "frameworks": doc_summary.get("tech_context", ""),
         }
 
-        ## file_map 섹션: 폴더별 역할 맵
+        # file_map 섹션: 폴더별 역할 맵
         file_map = {
             "folder_summaries": folder_summaries,
             "entrypoints": report.get("entrypoints", []),
@@ -684,19 +684,19 @@ async def master_report_node(state: GenFormState) -> dict:
             "total_lines": stats.get("lines", 0),
         }
 
-        ## recommendations 섹션: 온보딩 권장 사항
+        # recommendations 섹션: 온보딩 권장 사항
         recommendations = {
             "reading_order": onboarding_guide.get("reading_order", []),
             "first_tasks": onboarding_guide.get("first_tasks", []),
         }
 
-        ## heatmap 섹션: 위험 파일 및 주의 영역
+        # heatmap 섹션: 위험 파일 및 주의 영역
         heatmap = {
             "risk_files": onboarding_guide.get("risk_files", []),
             "key_risks": report.get("key_risks", []),
         }
 
-        ## durations 섹션: 파이프라인 단계별 소요시간
+        # durations 섹션: 파이프라인 단계별 소요시간
         elapsed_now = time.perf_counter() - _t0
         timings["b204_master_report"] = elapsed_now
         total = sum(timings.values())
@@ -705,7 +705,7 @@ async def master_report_node(state: GenFormState) -> dict:
             "total": round(total, 3),
         }
 
-        ## guide 섹션: 최종 온보딩 가이드 (B-202 결과 전달)
+        # guide 섹션: 최종 온보딩 가이드 (B-202 결과 전달)
         guide = {
             "reading_order": onboarding_guide.get("reading_order", []),
             "risk_files": onboarding_guide.get("risk_files", []),

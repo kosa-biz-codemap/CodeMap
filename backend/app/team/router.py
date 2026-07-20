@@ -70,7 +70,7 @@ def _team_response(team: Team, member: TeamMember) -> TeamResponse:
 
 
 def _aware(dt: datetime) -> datetime:
-    ## DB에서 naive로 돌아오는 경우를 대비해 UTC로 보정 후 비교
+    # DB에서 naive로 돌아오는 경우를 대비해 UTC로 보정 후 비교
     return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
@@ -129,7 +129,7 @@ async def create_invite(
     if not email:
         raise HTTPException(status_code=400, detail="INVALID_EMAIL")
 
-    ## 이미 active member인 이메일은 재초대 불필요
+    # 이미 active member인 이메일은 재초대 불필요
     existing_member = await db.execute(
         select(TeamMember.id)
         .join(User, User.id == TeamMember.user_id)
@@ -142,7 +142,7 @@ async def create_invite(
     if existing_member.scalar_one_or_none() is not None:
         raise HTTPException(status_code=409, detail="TEAM_MEMBER_ALREADY_EXISTS")
 
-    ## 같은 팀/이메일의 pending 초대가 있으면 만료시간만 갱신하여 재사용
+    # 같은 팀/이메일의 pending 초대가 있으면 만료시간만 갱신하여 재사용
     pending = await db.execute(
         select(TeamInvite).where(
             TeamInvite.team_id == team_id,
@@ -247,7 +247,7 @@ async def _load_invite_for_current_user(
 ) -> TeamInvite:
     result = await db.execute(select(TeamInvite).where(TeamInvite.id == invite_id))
     invite = result.scalar_one_or_none()
-    ## 초대 이메일과 로그인 이메일이 일치하지 않으면 존재 자체를 숨긴다.
+    # 초대 이메일과 로그인 이메일이 일치하지 않으면 존재 자체를 숨긴다.
     if invite is None or invite.email != email:
         raise HTTPException(status_code=404, detail="TEAM_INVITE_NOT_FOUND")
     return invite

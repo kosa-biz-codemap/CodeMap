@@ -64,7 +64,7 @@ class GenFormSupervisor:
         '''LangGraph StateGraph로 문서 생성 파이프라인 워크플로우를 구성한다.'''
         graph = StateGraph(GenFormState)
 
-        ## 노드 등록 (순서 1~6)
+        # 노드 등록 (순서 1~6)
         graph.add_node("readme_intro", readme_intro_node)     ## B-205
         graph.add_node("doc_summary", doc_summary_node)       ## B-201
         graph.add_node("folder_summary", folder_summary_node) ## B-203
@@ -72,10 +72,10 @@ class GenFormSupervisor:
         graph.add_node("onboarding_guide", onboarding_guide_node) ## B-202
         graph.add_node("master_report", master_report_node)   ## B-204
 
-        ## 시작 엣지: START → B-205
+        # 시작 엣지: START → B-205
         graph.add_edge(START, "readme_intro")
 
-        ## 조건부 엣지: 실패 시 즉시 END, 성공 시 다음 노드
+        # 조건부 엣지: 실패 시 즉시 END, 성공 시 다음 노드
         graph.add_conditional_edges(
             "readme_intro",
             _check_failure,
@@ -102,7 +102,7 @@ class GenFormSupervisor:
             {"success": "master_report", "failed": END},
         )
 
-        ## 최종 단계 종료
+        # 최종 단계 종료
         graph.add_edge("master_report", END)
 
         self.work_flow = graph.compile()

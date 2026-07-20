@@ -42,7 +42,7 @@ def _estimate_non_python_complexity(text: str) -> int:
     '''
     pattern = r"\b(?:if|for|while|catch|switch)\b"
     matches = re.findall(pattern, text)
-    ## 단순 제어 흐름 분기 개수를 기반으로 복잡도 추산
+    # 단순 제어 흐름 분기 개수를 기반으로 복잡도 추산
     estimated = 1 + (len(matches) // 3)
     return min(25, estimated)
 
@@ -68,7 +68,7 @@ def calculate_code_complexity(file_paths: list[Path]) -> dict:
         except OSError:
             continue
 
-        ## 대형 파일 검증
+        # 대형 파일 검증
         line_count = text.count("\n") + (1 if text else 0)
         if line_count > 700:
             oversized_files.append(path.name)
@@ -116,10 +116,10 @@ def calculate_module_coupling(dependencies: dict[str, list[str]]) -> dict:
     total_edges = sum(len(targets) for targets in dependencies.values())
     max_possible_edges = total_nodes * (total_nodes - 1)
 
-    ## 결합도 계수 (0 ~ 1 사이 실수)
+    # 결합도 계수 (0 ~ 1 사이 실수)
     coupling_coefficient = total_edges / max_possible_edges
 
-    ## DFS 순환 의존성(Cycle) 탐색
+    # DFS 순환 의존성(Cycle) 탐색
     visited = {}  # 0: unvisited, 1: visiting, 2: visited
     for node in dependencies:
         visited[node] = 0
