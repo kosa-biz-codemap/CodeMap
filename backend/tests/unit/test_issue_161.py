@@ -15,9 +15,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 
-## ─────────────────────────────────────────────
-## 테스트 클래스 1: _references_from_worker_results 수정 검증
-## ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# 테스트 클래스 1: _references_from_worker_results 수정 검증
+# ─────────────────────────────────────────────
 
 class TestReferencesFromWorkerResults(unittest.TestCase):
     """_references_from_worker_results의 None lineStart 처리를 검증한다."""
@@ -83,9 +83,9 @@ class TestReferencesFromWorkerResults(unittest.TestCase):
         self.assertEqual(len(refs), 2)
 
 
-## ─────────────────────────────────────────────
-## 테스트 클래스 2: _detect_language 헬퍼 검증
-## ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# 테스트 클래스 2: _detect_language 헬퍼 검증
+# ─────────────────────────────────────────────
 
 class TestDetectLanguage(unittest.TestCase):
     """_detect_language 헬퍼를 검증한다."""
@@ -116,9 +116,9 @@ class TestDetectLanguage(unittest.TestCase):
         self.assertEqual(self.fn("README.MD"), "markdown")
 
 
-## ─────────────────────────────────────────────
-## 테스트 클래스 3: _read_file_safe 헬퍼 검증
-## ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# 테스트 클래스 3: _read_file_safe 헬퍼 검증
+# ─────────────────────────────────────────────
 
 class TestReadFileSafe(unittest.TestCase):
     """_read_file_safe 헬퍼를 검증한다."""
@@ -160,9 +160,9 @@ class TestReadFileSafe(unittest.TestCase):
             self.assertEqual(len(content), 50_000)
 
 
-## ─────────────────────────────────────────────
-## 테스트 클래스 4: get_file_content 엔드포인트 검증
-## ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# 테스트 클래스 4: get_file_content 엔드포인트 검증
+# ─────────────────────────────────────────────
 
 class TestGetFileContentEndpoint(unittest.IsolatedAsyncioTestCase):
     """get_file_content 엔드포인트를 검증한다."""

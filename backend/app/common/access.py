@@ -49,13 +49,13 @@ async def can_access_job(
     team_id = getattr(job, "team_id", None)
     user_id = getattr(job, "user_id", None)
     is_private = bool(getattr(job, "is_private", False))
-    ## team job: 해당 팀 active member만 접근
+    # team job: 해당 팀 active member만 접근
     if team_id is not None:
         return await user_has_team_access(db, team_id, current_user_id)
-    ## private job: 생성자 본인만 접근
+    # private job: 생성자 본인만 접근
     if user_id is not None:
         return current_user_id == user_id
-    ## 소유자/팀이 모두 없는 레거시 공개 job만 무인증 접근 허용
+    # 소유자/팀이 모두 없는 레거시 공개 job만 무인증 접근 허용
     return not is_private
 
 
@@ -69,21 +69,21 @@ def touch_last_accessed(db: AsyncSession, job_id: UUID) -> None:
     """
     import asyncio
     
-    ## mock db / session 가드 검사
+    # mock db / session 가드 검사
     if type(db).__name__ in ("Mock", "MagicMock", "AsyncMock"):
         return
 
     async def _do_update() -> None:
         try:
             from app.repo.repository import AnalysisJobRepository
-            ## [순환 임포트 방지] app.infra.database -> app.repo.service -> database 순환 참조 방지를 위해 지역 임포트 처리
+            # [순환 임포트 방지] app.infra.database -> app.repo.service -> database 순환 참조 방지를 위해 지역 임포트 처리
             from app.infra.database import async_session_factory
             async with async_session_factory() as session:
                 repo = AnalysisJobRepository(session)
                 await repo.update_last_accessed(job_id)
                 await session.commit()
         except Exception as exc:
-            ## 백그라운드 갱신의 예외가 메인 흐름을 깨뜨리지 않도록 보호하되 경고 로그 남김
+            # 백그라운드 갱신의 예외가 메인 흐름을 깨뜨리지 않도록 보호하되 경고 로그 남김
             logger.warning(
                 "[touch_last_accessed] 최근 접근 시각 업데이트 실패 (job_id: %s): %s",
                 job_id,

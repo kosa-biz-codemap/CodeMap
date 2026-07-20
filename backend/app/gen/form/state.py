@@ -35,13 +35,13 @@ class GenFormState(TypedDict):
       timings — 단계별 소요시간 (초, perf_counter 기준)
     '''
 
-    ## 입력 필드
+    # 입력 필드
     repo_id: str
     clone_path: Optional[str]
     analysis_report: Optional[dict[str, Any]]
     llm_model: Optional[str]
 
-    ## 중간 결과 필드
+    # 중간 결과 필드
     project_intro: Optional[str]
     doc_summary: Optional[dict[str, Any]]
     folder_summaries: Optional[dict[str, str]]
@@ -49,7 +49,7 @@ class GenFormState(TypedDict):
     onboarding_guide: Optional[dict[str, Any]]
     master_report: Optional[dict[str, Any]]
 
-    ## 파이프라인 제어 필드
+    # 파이프라인 제어 필드
     status: str
     error: Optional[str]
     timings: dict[str, float]

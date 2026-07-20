@@ -31,7 +31,7 @@ async def grep_worker(state: CodeMapState) -> dict:
             timeout=2.0
         )
     except TimeoutError:
-        ## 워커 전체 타임아웃과 grep_scan 내부 라인 타임아웃은 이 시점에서 구분 불가하며 둘 다 interrupted로 처리한다
+        # 워커 전체 타임아웃과 grep_scan 내부 라인 타임아웃은 이 시점에서 구분 불가하며 둘 다 interrupted로 처리한다
         content = "정규식 오류: Regex execution timed out (ReDoS protection)"
         error_category = "interrupted"
     except ValueError as exc:

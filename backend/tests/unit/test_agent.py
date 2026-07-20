@@ -440,11 +440,11 @@ class TestEvidenceAggregator(unittest.TestCase):
         res = evaluator_node(state)
         ctx = res["compact_context"]
 
-        ## 1. groupedByFile이나 selectedEvidenceCount에서 제외되는지 확인
+        # 1. groupedByFile이나 selectedEvidenceCount에서 제외되는지 확인
         self.assertEqual(ctx["selectedEvidenceCount"], 0)
         self.assertEqual(len(ctx["groupedByFile"]), 0)
 
-        ## 2. workerErrors에 2건의 에러가 모두 담겨있는지 확인
+        # 2. workerErrors에 2건의 에러가 모두 담겨있는지 확인
         self.assertEqual(len(ctx["workerErrors"]), 2)
         self.assertEqual(ctx["workerErrors"][0]["worker"], "read_worker")
         self.assertEqual(ctx["workerErrors"][0]["path"], "auth.py")
@@ -459,7 +459,7 @@ class TestEvidenceAggregator(unittest.TestCase):
             "검색 실패: API error"
         )
 
-        ## 3. evaluatorDecision 판단 검증 (sufficient=False)
+        # 3. evaluatorDecision 판단 검증 (sufficient=False)
         decision = res["evaluator_decision"]
         self.assertFalse(decision["sufficient"])
         self.assertEqual(
@@ -517,16 +517,16 @@ class TestEvidenceAggregator(unittest.TestCase):
         res = evaluator_node(state)
         ctx = res["compact_context"]
 
-        ## 1. 정상 결과만 groupedByFile에 포함되는지 확인
+        # 1. 정상 결과만 groupedByFile에 포함되는지 확인
         self.assertEqual(ctx["selectedEvidenceCount"], 1)
         self.assertIn("service.py", ctx["groupedByFile"])
         self.assertNotIn("auth.py", ctx["groupedByFile"])
 
-        ## 2. workerErrors에 에러 1건만 요약 저장되는지 확인
+        # 2. workerErrors에 에러 1건만 요약 저장되는지 확인
         self.assertEqual(len(ctx["workerErrors"]), 1)
         self.assertEqual(ctx["workerErrors"][0]["path"], "auth.py")
 
-        ## 3. evaluatorDecision 판단 검증 (정상 결과가 있으므로 sufficient=True)
+        # 3. evaluatorDecision 판단 검증 (정상 결과가 있으므로 sufficient=True)
         decision = res["evaluator_decision"]
         self.assertTrue(decision["sufficient"])
         self.assertIn(
@@ -620,11 +620,11 @@ class TestEvidenceAggregator(unittest.TestCase):
         res = evaluator_node(state)
         ctx = res["compact_context"]
 
-        ## 1. 에러 결과가 groupedByFile 및 selectedEvidenceCount에서 제외되는지 확인
+        # 1. 에러 결과가 groupedByFile 및 selectedEvidenceCount에서 제외되는지 확인
         self.assertEqual(ctx["selectedEvidenceCount"], 0)
         self.assertEqual(len(ctx["groupedByFile"]), 0)
 
-        ## 2. workerErrors에 해당 정보가 요약 수집되는지 확인
+        # 2. workerErrors에 해당 정보가 요약 수집되는지 확인
         self.assertEqual(len(ctx["workerErrors"]), 1)
         self.assertEqual(ctx["workerErrors"][0]["worker"], "read_worker")
         self.assertEqual(ctx["workerErrors"][0]["path"], "auth.py")
@@ -633,7 +633,7 @@ class TestEvidenceAggregator(unittest.TestCase):
             "파일 읽기 실패: Permission denied"
         )
 
-        ## 3. evaluatorDecision 판단 검증 (sufficient=False)
+        # 3. evaluatorDecision 판단 검증 (sufficient=False)
         decision = res["evaluator_decision"]
         self.assertFalse(decision["sufficient"])
         self.assertEqual(
@@ -680,11 +680,11 @@ class TestEvidenceAggregator(unittest.TestCase):
         res = evaluator_node(state)
         ctx = res["compact_context"]
 
-        ## 1. 에러 결과가 groupedByFile 및 selectedEvidenceCount에서 제외되는지 확인
+        # 1. 에러 결과가 groupedByFile 및 selectedEvidenceCount에서 제외되는지 확인
         self.assertEqual(ctx["selectedEvidenceCount"], 0)
         self.assertEqual(len(ctx["groupedByFile"]), 0)
 
-        ## 2. workerErrors에 요약 수집되는지 확인
+        # 2. workerErrors에 요약 수집되는지 확인
         self.assertEqual(len(ctx["workerErrors"]), 1)
         self.assertEqual(ctx["workerErrors"][0]["worker"], "dir_worker")
         self.assertEqual(ctx["workerErrors"][0]["path"], "app/src")
@@ -693,7 +693,7 @@ class TestEvidenceAggregator(unittest.TestCase):
             "탐색 실패: [Errno 13] Permission denied"
         )
 
-        ## 3. evaluatorDecision 판단 검증 (sufficient=False)
+        # 3. evaluatorDecision 판단 검증 (sufficient=False)
         decision = res["evaluator_decision"]
         self.assertFalse(decision["sufficient"])
         self.assertEqual(

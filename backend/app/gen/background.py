@@ -17,7 +17,7 @@ from app.infra.redis import get_redis_client
 
 logger = logging.getLogger(__name__)
 
-## 가이드북 생성이 현재 진행 중인 repo_id 집합 (인메모리, 단일 프로세스 기준)
+# 가이드북 생성이 현재 진행 중인 repo_id 집합 (인메모리, 단일 프로세스 기준)
 _DOCS_GENERATION_IN_PROGRESS: set[str] = set()
 
 
@@ -86,7 +86,7 @@ async def run_doc_generation(
         model:           LLM 모델 식별자 (파이프라인 노드에 전달)
     '''
     try:
-        ## 1. GenFormSupervisor 빌드 및 실행
+        # 1. GenFormSupervisor 빌드 및 실행
         from app.gen.form.graph import GenFormSupervisor
         from app.gen.form.state import GenFormState
 
@@ -119,7 +119,7 @@ async def run_doc_generation(
             )
             return
 
-        ## 2. master_report → Markdown 변환 (동기 함수를 별도 스레드로 격리)
+        # 2. master_report → Markdown 변환 (동기 함수를 별도 스레드로 격리)
         from app.gen.markdown import master_report_to_markdown
 
         master_report = result_state.get("master_report") or {}
@@ -127,7 +127,7 @@ async def run_doc_generation(
             master_report_to_markdown, master_report, repo_name
         )
 
-        ## 3. DB 저장
+        # 3. DB 저장
         from app.gen.service import save_onboarding_doc
 
         async with async_session_factory() as db:

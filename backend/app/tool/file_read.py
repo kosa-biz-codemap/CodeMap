@@ -57,7 +57,7 @@ def extract_file_static_metadata(
         try:
             raw_bytes = path.read_bytes()[:160_000]
             if b"\x00" in raw_bytes:
-                ## 바이너리 파일 스킵
+                # 바이너리 파일 스킵
                 continue
             text = raw_bytes.decode("utf-8", errors="replace")
         except OSError:

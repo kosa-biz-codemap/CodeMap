@@ -54,7 +54,7 @@ def verify_build_environment(
             except ValueError:
                 entrypoints.append(path.name)
 
-    ## 주요 언어별 필수 매니페스트 존재성 매핑
+    # 주요 언어별 필수 매니페스트 존재성 매핑
     mandatory_manifests: dict[str, set[str]] = {
         "Python": {"requirements.txt", "pyproject.toml", "setup.py"},
         "TypeScript": {"package.json"},

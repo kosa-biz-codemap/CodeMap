@@ -113,7 +113,7 @@ async def websocket_list_progress(
                 )
                 return
 
-            ## private/team job은 권한이 있는 사용자만 진행률을 구독할 수 있다. (자체 PR 리뷰 B1)
+            # private/team job은 권한이 있는 사용자만 진행률을 구독할 수 있다. (자체 PR 리뷰 B1)
             if not await access.can_access_job(session, job, current_user_id):
                 await websocket.close(
                     code=WS_CLOSE_FORBIDDEN,

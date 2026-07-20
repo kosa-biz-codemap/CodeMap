@@ -213,11 +213,11 @@ def evaluator_node(state: CodeMapState) -> dict[str, Any]:
     raw_results: list[WorkerResult] = state.get("worker_results", [])
     logger.info("[Evaluator] 시작 — 원본 결과 수=%d", len(raw_results))
 
-    ## 정상 결과(valid)와 에러로 위장된 결과(error) 분리
+    # 정상 결과(valid)와 에러로 위장된 결과(error) 분리
     valid_results = [r for r in raw_results if not _is_error_result(r)]
     error_results = [r for r in raw_results if _is_error_result(r)]
 
-    ## 에러 감지 시 경고 로깅 및 요약 리스트 생성
+    # 에러 감지 시 경고 로깅 및 요약 리스트 생성
     worker_errors = []
     run_id = state.get("run_id")
     for r in error_results:

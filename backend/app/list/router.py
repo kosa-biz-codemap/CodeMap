@@ -91,7 +91,7 @@ async def get_analysis_jobs(
     teamId: Annotated[UUID | None, Query(description="특정 팀 기록 조회")] = None,
 ) -> AnalysisJobListResponse:
     """PROJECT-LIST-API-001 명세의 분석 이력 목록 응답을 반환합니다."""
-    ## UUID 파싱은 서비스 호출과 분리: ValueError가 DATABASE_ERROR로 잘못 매핑되는 것을 방지
+    # UUID 파싱은 서비스 호출과 분리: ValueError가 DATABASE_ERROR로 잘못 매핑되는 것을 방지
     sub = current_user.get("sub") if current_user else None
     try:
         current_user_id: UUID | None = UUID(sub) if sub else None
@@ -161,7 +161,7 @@ async def get_analysis_job_detail(
             ),
         ) from exc
 
-    ## UUID 파싱은 서비스 호출과 분리
+    # UUID 파싱은 서비스 호출과 분리
     sub = current_user.get("sub") if current_user else None
     try:
         current_user_id: UUID | None = UUID(sub) if sub else None
