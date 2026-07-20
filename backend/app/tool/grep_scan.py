@@ -12,11 +12,13 @@ _MAX_FILE_SIZE = 50_000
 _MAX_GREP_RESULTS = 30
 
 
-def grep_repository_path(clone_path: str, rel_path: str | None, pattern: str) -> str:
+def grep_repository_path(clone_path: str, rel_path: str | None, pattern: str, raise_on_error: bool = False) -> str:
     """Search a repository-relative path with a bounded regex scan."""
     try:
         compiled = compile_safe_regex(pattern, regex.IGNORECASE)
     except ValueError as exc:
+        if raise_on_error:
+            raise
         return f"정규식 오류: {exc}"
 
     base = (Path(clone_path) / (rel_path or "")).resolve()
@@ -43,17 +45,27 @@ def grep_repository_path(clone_path: str, rel_path: str | None, pattern: str) ->
                         if count >= _MAX_GREP_RESULTS:
                             break
             except TimeoutError:
+                if raise_on_error:
+                    raise
                 rel = file_path.relative_to(root)
                 matches.append(f"{rel}: (정규식 타임아웃 방어)")
                 break
+            except regex.error:
+                if raise_on_error:
+                    raise
+                continue
             except Exception:
                 continue
+
             if count >= _MAX_GREP_RESULTS:
                 break
     except regex.error as exc:
+        if raise_on_error:
+            raise
         return f"정규식 오류: {exc}"
 
     return "\n".join(matches) or "(결과 없음)"
+
 
 
 # ──────────────────────────────────────────────

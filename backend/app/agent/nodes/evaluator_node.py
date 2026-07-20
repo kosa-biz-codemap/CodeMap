@@ -72,6 +72,45 @@ worker_results에서 압축된 compact_context가 사용자 질문에 답하기 
 """
 
 
+
+
+
+# ──────────────────────────────────────────────
+# _is_error_result: 워커의 위장된 에러 결과 판별
+# ──────────────────────────────────────────────
+def _is_error_result(result: WorkerResult) -> bool:
+    """
+    워커 결과가 실제 코드 근거가 아닌 위장된 에러 결과인지
+    판별한다.
+
+    접두사 목록은 향후 워커가 새로운 에러 문구를 추가할 때
+    여기에도 같이 추가해야 한다.
+    """
+    metadata = result.get("metadata") or {}
+    
+    # 1. errorCategory가 정의된 경우 즉시 판정
+    error_category = metadata.get("errorCategory")
+    if error_category in ("input_error", "interrupted", "runtime_error"):
+        return True
+
+    # 2. 폴백 처리 (기존 문자열 매칭)
+    tool = metadata.get("tool")
+    if tool == "fallback_failed":
+        return True
+
+    snippet = result.get("snippet", "")
+    err_prefixes = (
+        "오류 발생:",
+        "검색 실패:",
+        "파일 읽기 오류:",
+        "정규식 오류:",
+        "파일 읽기 실패:",
+        "탐색 실패:",
+    )
+    return any(snippet.startswith(pref) for pref in err_prefixes)
+
+
+
 def _deduplicate(results: list[WorkerResult]) -> list[WorkerResult]:
     """Remove duplicate evidence by file path and snippet prefix."""
     seen: set[tuple] = set()
@@ -101,13 +140,62 @@ def _fallback_evaluator_decision(user_query: str, compact_context: dict[str, Any
     selected_count = int(compact_context.get("selectedEvidenceCount") or 0)
     grouped_by_file = compact_context.get("groupedByFile") or {}
     has_file_evidence = bool(grouped_by_file)
+    worker_errors = compact_context.get("workerErrors") or []
+    has_errors = len(worker_errors) > 0
+
     if selected_count > 0 and has_file_evidence:
+        reason = "파일 경로와 snippet 근거가 compact_context에 포함되어 있습니다."
+        if has_errors:
+            reason += " (일부 search/read 단계에서 오류가 발생했습니다)"
         return {
             "sufficient": True,
             "missingInfo": [],
             "nextPlanHint": None,
-            "reason": "파일 경로와 snippet 근거가 compact_context에 포함되어 있습니다.",
+            "reason": reason,
             "confidence": 0.72,
+        }
+
+    if has_errors:
+        # 카테고리별 개수 세기
+        counts = {"input_error": 0, "interrupted": 0, "runtime_error": 0}
+        for err in worker_errors:
+            cat = err.get("category")
+            if cat in counts:
+                counts[cat] += 1
+            else:
+                counts["runtime_error"] += 1
+        
+        # 최빈 카테고리 선택 (동률 시 runtime_error > interrupted > input_error 순으로 매핑되도록 처리)
+        maj_category = "runtime_error"
+        max_count = -1
+        for cat in ["input_error", "interrupted", "runtime_error"]:
+            if counts[cat] >= max_count:
+                max_count = counts[cat]
+                maj_category = cat
+
+        if maj_category == "input_error":
+            next_hint = "입력값(패턴/경로) 자체가 유효하지 않았습니다. 완전히 다른 파라미터로 재시도하십시오."
+        elif maj_category == "interrupted":
+            next_hint = "탐색 범위가 너무 넓어 시간 초과되었습니다. 더 좁은 범위나 구체적인 경로로 재시도하십시오."
+        else:
+            # runtime_error 다수
+            failed_infos = []
+            for err in worker_errors:
+                worker = err.get("worker") or "unknown"
+                path = err.get("path")
+                if path:
+                    failed_infos.append(f"{worker}({path})")
+                else:
+                    failed_infos.append(worker)
+            failed_str = ", ".join(failed_infos)
+            next_hint = f"실패한 {failed_str}을(를) 피해서 다른 tool이나 경로로 재탐색하십시오."
+
+        return {
+            "sufficient": False,
+            "missingInfo": ["검색/파일 접근 중 오류로 근거를 확보하지 못함"],
+            "nextPlanHint": next_hint,
+            "reason": "search/read 단계에서 오류가 발생해 근거를 확보하지 못함",
+            "confidence": 0.38,
         }
 
     return {
@@ -119,12 +207,60 @@ def _fallback_evaluator_decision(user_query: str, compact_context: dict[str, Any
     }
 
 
+
 def evaluator_node(state: CodeMapState) -> dict[str, Any]:
     """Build compact_context from raw worker_results."""
     raw_results: list[WorkerResult] = state.get("worker_results", [])
     logger.info("[Evaluator] 시작 — 원본 결과 수=%d", len(raw_results))
 
-    deduped = _deduplicate(raw_results)
+    ## 정상 결과(valid)와 에러로 위장된 결과(error) 분리
+    valid_results = [r for r in raw_results if not _is_error_result(r)]
+    error_results = [r for r in raw_results if _is_error_result(r)]
+
+    ## 에러 감지 시 경고 로깅 및 요약 리스트 생성
+    worker_errors = []
+    run_id = state.get("run_id")
+    for r in error_results:
+        metadata = r.get("metadata") or {}
+        worker = metadata.get("worker")
+        tool = metadata.get("tool")
+        path = r.get("path")
+        snippet = r.get("snippet", "")
+        reason = snippet[:200]
+
+        # category 추출 및 폴백 역산
+        category = metadata.get("errorCategory")
+        if not category:
+            if tool == "fallback_failed" or reason.startswith("검색 실패:") or reason.startswith("오류 발생:"):
+                category = "runtime_error"
+            elif reason.startswith("정규식 오류:"):
+                if "timed out" in reason or "Timeout" in reason:
+                    category = "interrupted"
+                else:
+                    category = "input_error"
+            elif reason.startswith("파일 읽기 오류:"):
+                category = "interrupted" if ("timed out" in reason or "Timeout" in reason) else "runtime_error"
+            elif reason.startswith("파일 읽기 실패:") or reason.startswith("탐색 실패:"):
+                category = "runtime_error"
+            else:
+                category = "runtime_error"
+
+
+        logger.warning(
+            "[Evaluator] 위장된 에러 결과 감지 - run_id: %s, "
+            "worker: %s, tool: %s, path: %s, reason: %s, category: %s",
+            run_id, worker, tool, path, reason, category
+        )
+
+        worker_errors.append({
+            "worker": worker,
+            "path": path,
+            "reason": reason,
+            "category": category,
+        })
+
+
+    deduped = _deduplicate(valid_results)
     grouped: dict[str, list[WorkerResult]] = defaultdict(list)
     no_path: list[WorkerResult] = []
     for result in deduped:
@@ -195,6 +331,7 @@ def evaluator_node(state: CodeMapState) -> dict[str, Any]:
         "tokenBudget": _TOKEN_BUDGET,
         "usedTokens": total_chars // 4,
         "groupedByFile": dict(grouped_by_file),
+        "workerErrors": worker_errors,
     }
     evaluator_decision = _fallback_evaluator_decision(state["user_query"], compact_context)
     replan_count = int(state.get("replan_count") or 0)

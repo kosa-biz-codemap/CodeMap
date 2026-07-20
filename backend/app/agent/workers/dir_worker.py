@@ -20,7 +20,14 @@ async def dir_worker(state: CodeMapState) -> dict:
 
     logger.info("[DirWorker] 시작 — path=%s", rel_path or ".")
     started_event = {"type": "worker_started", "worker": "dir", "target": rel_path or "."}
-    content = await asyncio.to_thread(scan_directory_tree, clone_path, rel_path)
+    
+    error_category = None
+    try:
+        content = await asyncio.to_thread(scan_directory_tree, clone_path, rel_path, raise_on_error=True)
+    except Exception as exc:
+        content = f"탐색 실패: {exc}"
+        error_category = "runtime_error"
+        
     if not content:
         return {"worker_results": [], "events": [
             started_event,
@@ -34,7 +41,12 @@ async def dir_worker(state: CodeMapState) -> dict:
         lineEnd=None,
         score=None,
         snippet=content,
-        metadata={"worker": "dir", "tool": "dir_scan", "query": rel_path},
+        metadata={
+            "worker": "dir",
+            "tool": "dir_scan",
+            "query": rel_path,
+            "errorCategory": error_category
+        },
     )
     return {
         "worker_results": [result],
@@ -48,3 +60,4 @@ async def dir_worker(state: CodeMapState) -> dict:
             },
         ],
     }
+

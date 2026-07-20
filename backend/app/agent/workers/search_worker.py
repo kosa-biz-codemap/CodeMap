@@ -87,9 +87,15 @@ async def search_worker(state: CodeMapState) -> dict:
                 lineEnd=None,
                 score=None,
                 snippet=f"검색 실패: {exc}",
-                metadata={"worker": "search", "tool": "fallback_failed", "query": query},
+                metadata={
+                    "worker": "search",
+                    "tool": "fallback_failed",
+                    "query": query,
+                    "errorCategory": "runtime_error"
+                },
             )
         )
+
 
     return _worker_event(worker_results, target=query)
 
