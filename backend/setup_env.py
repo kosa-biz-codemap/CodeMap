@@ -21,9 +21,9 @@ def main():
     global_github_token = os.environ.get("GITHUB_TOKEN", "").strip()
 
     # 로컬 개발 및 튜토리얼용 표준 환경 변수 템플릿 구성
-    env_content = f"""# ──────────────────────────────────────────────
+    env_content = f"""# ==========================================
 # CodeMap Backend Environment Configuration
-# ──────────────────────────────────────────────
+# ───
 
 # 1. Database Configuration (Match with local DB / Docker Compose)
 DB_USER=postgres
