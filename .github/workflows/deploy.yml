@@ -44,13 +44,17 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
+        env:
+          PROVIDER_LIST: ${{ secrets.CLOUD_PROVIDER_LIST }}
         run: |
-          raw_list="${{ secrets.CLOUD_PROVIDER_LIST }}"
-          if [ -z "$raw_list" ]; then
-            raw_list="gcp"
-          fi
-          json_matrix=$(echo "$raw_list" | tr -d ' ' | jq -R -c 'split(",")')
-          echo "matrix={\"cloud\":$json_matrix}" >> "$GITHUB_OUTPUT"
+          python3 -c "
+          import json, os
+          raw = os.environ.get('PROVIDER_LIST', '').strip()
+          providers = [p.strip() for p in raw.split(',') if p.strip()]
+          matrix_json = json.dumps({'cloud': providers})
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'matrix={matrix_json}\n')
+          "
 
   # 2. 1차 시도: 동적 클라우드 Matrix 병렬 배포
   deploy-to-cloud:
@@ -59,19 +63,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
-    env:
-      CLOUD_PROVIDER: ${{ matrix.cloud }}
     steps:
       # === 1. GCP Provider ===
       - id: auth-gcp
         name: Authenticate to GCP
-        if: env.CLOUD_PROVIDER == 'gcp'
+        if: matrix.cloud == 'gcp'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCREDENTIALS }}'
 
       - name: Execute remote SSH on GCP Compute Engine
-        if: env.CLOUD_PROVIDER == 'gcp'
+        if: matrix.cloud == 'gcp'
         uses: google-github-actions/ssh-compute@v2
         with:
           instance_name: '${{ secrets.INSTANCE_NAME }}'
@@ -84,17 +86,11 @@ jobs:
             git fetch origin main
             git checkout origin/main -- scripts/deploy_backend.sh scripts/init_db.sh scripts/docker-compose.yml database/init.sql
             chmod +x scripts/deploy_backend.sh scripts/init_db.sh
-            sudo env \
-              BACKEND_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest" \
-              CLOUD_PROVIDER="$CLOUD_PROVIDER" \
-              INGRESS_MODE="${{ secrets.INGRESS_MODE }}" \
-              PUBLIC_BACKEND_URL="${{ secrets.PUBLIC_BACKEND_URL }}" \
-              INGRESS_CHECK_REQUIRED="${{ secrets.INGRESS_CHECK_REQUIRED }}" \
-              bash scripts/deploy_backend.sh
+            sudo env BACKEND_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest" CLOUD_PROVIDER="${{ matrix.cloud }}" INGRESS_MODE="${{ secrets.INGRESS_MODE }}" PUBLIC_BACKEND_URL="${{ secrets.PUBLIC_BACKEND_URL }}" INGRESS_CHECK_REQUIRED="${{ secrets.INGRESS_CHECK_REQUIRED }}" bash scripts/deploy_backend.sh
 
       # === 2. AWS Provider ===
       - name: Authenticate to AWS
-        if: env.CLOUD_PROVIDER == 'aws'
+        if: matrix.cloud == 'aws'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -102,7 +98,7 @@ jobs:
           aws-region: ${{ secrets.ZONE }}
 
       - name: Execute Remote Command on AWS EC2 via SSM
-        if: env.CLOUD_PROVIDER == 'aws'
+        if: matrix.cloud == 'aws'
         run: |
           aws ssm send-command \
             --instance-ids "${{ secrets.INSTANCE_NAME }}" \
@@ -112,18 +108,18 @@ jobs:
               "git fetch origin main",
               "git checkout origin/main -- scripts/deploy_backend.sh scripts/init_db.sh scripts/docker-compose.yml database/init.sql",
               "chmod +x scripts/deploy_backend.sh scripts/init_db.sh",
-              "sudo env BACKEND_IMAGE=\"${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest\" CLOUD_PROVIDER=\"$CLOUD_PROVIDER\" INGRESS_MODE=\"${{ secrets.INGRESS_MODE }}\" PUBLIC_BACKEND_URL=\"${{ secrets.PUBLIC_BACKEND_URL }}\" INGRESS_CHECK_REQUIRED=\"${{ secrets.INGRESS_CHECK_REQUIRED }}\" bash scripts/deploy_backend.sh"
+              "sudo env BACKEND_IMAGE=\"${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest\" CLOUD_PROVIDER=\"${{ matrix.cloud }}\" INGRESS_MODE=\"${{ secrets.INGRESS_MODE }}\" PUBLIC_BACKEND_URL=\"${{ secrets.PUBLIC_BACKEND_URL }}\" INGRESS_CHECK_REQUIRED=\"${{ secrets.INGRESS_CHECK_REQUIRED }}\" bash scripts/deploy_backend.sh"
             ]'
 
       # === 3. Azure Provider ===
       - name: Authenticate to Azure
-        if: env.CLOUD_PROVIDER == 'azure'
+        if: matrix.cloud == 'azure'
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Execute Remote Command on Azure VM
-        if: env.CLOUD_PROVIDER == 'azure'
+        if: matrix.cloud == 'azure'
         uses: azure/CLI@v2
         with:
           inlineScript: |
@@ -131,7 +127,12 @@ jobs:
               --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
               --name "${{ secrets.INSTANCE_NAME }}" \
               --command-id RunShellScript \
-              --scripts "cd ${{ secrets.SSH_HOME_DIR }} && git fetch origin main && git checkout origin/main -- scripts/deploy_backend.sh scripts/init_db.sh scripts/docker-compose.yml database/init.sql && chmod +x scripts/deploy_backend.sh scripts/init_db.sh && sudo env BACKEND_IMAGE=\"${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest\" CLOUD_PROVIDER=\"$CLOUD_PROVIDER\" INGRESS_MODE=\"${{ secrets.INGRESS_MODE }}\" PUBLIC_BACKEND_URL=\"${{ secrets.PUBLIC_BACKEND_URL }}\" INGRESS_CHECK_REQUIRED=\"${{ secrets.INGRESS_CHECK_REQUIRED }}\" bash scripts/deploy_backend.sh"
+              --scripts \
+                "cd ${{ secrets.SSH_HOME_DIR }}" \
+                "git fetch origin main" \
+                "git checkout origin/main -- scripts/deploy_backend.sh scripts/init_db.sh scripts/docker-compose.yml database/init.sql" \
+                "chmod +x scripts/deploy_backend.sh scripts/init_db.sh" \
+                "sudo env BACKEND_IMAGE='${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest' CLOUD_PROVIDER='${{ matrix.cloud }}' INGRESS_MODE='${{ secrets.INGRESS_MODE }}' PUBLIC_BACKEND_URL='${{ secrets.PUBLIC_BACKEND_URL }}' INGRESS_CHECK_REQUIRED='${{ secrets.INGRESS_CHECK_REQUIRED }}' bash scripts/deploy_backend.sh"
 
   # 2차 폴백: 클라우드 배포가 실패했을 때만 일반 SSH로 재시도
   deploy-via-ssh-fallback:
