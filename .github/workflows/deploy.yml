@@ -36,42 +36,107 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:buildcache,mode=max
 
-  # 1차 시도: GCP
-  deploy-to-gcp:
+  # 1. 동적 Matrix 준비 (CLOUD_PROVIDER_LIST 쉼표 구분자 파싱)
+  setup-matrix:
     needs: build-and-push
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - id: auth
-        name: Authenticate to Google Cloud
+      - id: set-matrix
+        run: |
+          raw_list="${{ secrets.CLOUD_PROVIDER_LIST }}"
+          if [ -z "$raw_list" ]; then
+            raw_list="gcp"
+          fi
+          json_matrix=$(echo "$raw_list" | tr -d ' ' | jq -R -c 'split(",")')
+          echo "matrix={\"cloud\":$json_matrix}" >> "$GITHUB_OUTPUT"
+
+  # 2. 1차 시도: 동적 클라우드 Matrix 병렬 배포
+  deploy-to-cloud:
+    needs: [build-and-push, setup-matrix]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+    env:
+      CLOUD_PROVIDER: ${{ matrix.cloud }}
+    steps:
+      # === 1. GCP Provider ===
+      - id: auth-gcp
+        name: Authenticate to GCP
+        if: env.CLOUD_PROVIDER == 'gcp'
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+          credentials_json: '${{ secrets.GCREDENTIALS }}'
 
-      - name: Execute remote SSH commands to deploy
+      - name: Execute remote SSH on GCP Compute Engine
+        if: env.CLOUD_PROVIDER == 'gcp'
         uses: google-github-actions/ssh-compute@v2
         with:
-          instance_name: codemap-backend-vm
-          zone: asia-northeast3-a
+          instance_name: '${{ secrets.INSTANCE_NAME }}'
+          zone: '${{ secrets.ZONE }}'
           ssh_private_key: '${{ secrets.SSH_PRIVATE_KEY }}'
           command: |
             set -e
 
-            cd ~/CodeMap
+            cd "${{ secrets.SSH_HOME_DIR }}"
             git fetch origin main
             git checkout origin/main -- scripts/deploy_backend.sh scripts/init_db.sh scripts/docker-compose.yml database/init.sql
             chmod +x scripts/deploy_backend.sh scripts/init_db.sh
             sudo env \
               BACKEND_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest" \
-              CLOUD_PROVIDER="${{ vars.CLOUD_PROVIDER || 'gcp' }}" \
-              INGRESS_MODE="${{ vars.INGRESS_MODE || 'direct' }}" \
-              PUBLIC_BACKEND_URL="${{ vars.PUBLIC_BACKEND_URL }}" \
-              INGRESS_CHECK_REQUIRED="${{ vars.INGRESS_CHECK_REQUIRED || 'false' }}" \
+              CLOUD_PROVIDER="$CLOUD_PROVIDER" \
+              INGRESS_MODE="${{ secrets.INGRESS_MODE }}" \
+              PUBLIC_BACKEND_URL="${{ secrets.PUBLIC_BACKEND_URL }}" \
+              INGRESS_CHECK_REQUIRED="${{ secrets.INGRESS_CHECK_REQUIRED }}" \
               bash scripts/deploy_backend.sh
 
-  # 2차 폴백: GCP 배포가 실패했을 때만 일반 SSH로 재시도
+      # === 2. AWS Provider ===
+      - name: Authenticate to AWS
+        if: env.CLOUD_PROVIDER == 'aws'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.ZONE }}
+
+      - name: Execute Remote Command on AWS EC2 via SSM
+        if: env.CLOUD_PROVIDER == 'aws'
+        run: |
+          aws ssm send-command \
+            --instance-ids "${{ secrets.INSTANCE_NAME }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=[
+              "cd ${{ secrets.SSH_HOME_DIR }}",
+              "git fetch origin main",
+              "git checkout origin/main -- scripts/deploy_backend.sh scripts/init_db.sh scripts/docker-compose.yml database/init.sql",
+              "chmod +x scripts/deploy_backend.sh scripts/init_db.sh",
+              "sudo env BACKEND_IMAGE=\"${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest\" CLOUD_PROVIDER=\"$CLOUD_PROVIDER\" INGRESS_MODE=\"${{ secrets.INGRESS_MODE }}\" PUBLIC_BACKEND_URL=\"${{ secrets.PUBLIC_BACKEND_URL }}\" INGRESS_CHECK_REQUIRED=\"${{ secrets.INGRESS_CHECK_REQUIRED }}\" bash scripts/deploy_backend.sh"
+            ]'
+
+      # === 3. Azure Provider ===
+      - name: Authenticate to Azure
+        if: env.CLOUD_PROVIDER == 'azure'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Execute Remote Command on Azure VM
+        if: env.CLOUD_PROVIDER == 'azure'
+        uses: azure/CLI@v2
+        with:
+          inlineScript: |
+            az vm run-command invoke \
+              --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+              --name "${{ secrets.INSTANCE_NAME }}" \
+              --command-id RunShellScript \
+              --scripts "cd ${{ secrets.SSH_HOME_DIR }} && git fetch origin main && git checkout origin/main -- scripts/deploy_backend.sh scripts/init_db.sh scripts/docker-compose.yml database/init.sql && chmod +x scripts/deploy_backend.sh scripts/init_db.sh && sudo env BACKEND_IMAGE=\"${{ secrets.DOCKERHUB_USERNAME }}/codemap-backend:latest\" CLOUD_PROVIDER=\"$CLOUD_PROVIDER\" INGRESS_MODE=\"${{ secrets.INGRESS_MODE }}\" PUBLIC_BACKEND_URL=\"${{ secrets.PUBLIC_BACKEND_URL }}\" INGRESS_CHECK_REQUIRED=\"${{ secrets.INGRESS_CHECK_REQUIRED }}\" bash scripts/deploy_backend.sh"
+
+  # 2차 폴백: 클라우드 배포가 실패했을 때만 일반 SSH로 재시도
   deploy-via-ssh-fallback:
-    needs: [build-and-push, deploy-to-gcp]
-    if: always() && needs.deploy-to-gcp.result == 'failure'
+    needs: [build-and-push, deploy-to-cloud]
+    if: always() && needs.deploy-to-cloud.result == 'failure'
     runs-on: ubuntu-latest
     env:
       SSH_HOST: ${{ secrets.SSH_HOST }}
@@ -115,10 +180,10 @@ jobs:
             chmod +x scripts/deploy_backend.sh scripts/init_db.sh
             sudo env \
               BACKEND_IMAGE='$BACKEND_IMAGE' \
-              CLOUD_PROVIDER='${{ vars.CLOUD_PROVIDER || 'generic' }}' \
-              INGRESS_MODE='${{ vars.INGRESS_MODE || 'direct' }}' \
-              PUBLIC_BACKEND_URL='${{ vars.PUBLIC_BACKEND_URL }}' \
-              INGRESS_CHECK_REQUIRED='${{ vars.INGRESS_CHECK_REQUIRED || 'false' }}' \
+              CLOUD_PROVIDER='${{ secrets.CLOUD_PROVIDER }}' \
+              INGRESS_MODE='${{ secrets.INGRESS_MODE }}' \
+              PUBLIC_BACKEND_URL='${{ secrets.PUBLIC_BACKEND_URL }}' \
+              INGRESS_CHECK_REQUIRED='${{ secrets.INGRESS_CHECK_REQUIRED }}' \
               bash scripts/deploy_backend.sh
           "
 
@@ -130,27 +195,27 @@ jobs:
             git fetch origin main;
             git checkout origin/main -- scripts/deploy_backend.ps1 scripts/init_db.ps1 scripts/docker-compose.yml database/init.sql;
             \$env:BACKEND_IMAGE = '$BACKEND_IMAGE';
-            \$env:CLOUD_PROVIDER = '${{ vars.CLOUD_PROVIDER || 'generic' }}';
-            \$env:INGRESS_MODE = '${{ vars.INGRESS_MODE || 'direct' }}';
-            \$env:PUBLIC_BACKEND_URL = '${{ vars.PUBLIC_BACKEND_URL }}';
-            \$env:INGRESS_CHECK_REQUIRED = '${{ vars.INGRESS_CHECK_REQUIRED || 'false' }}';
+            \$env:CLOUD_PROVIDER = '${{ secrets.CLOUD_PROVIDER }}';
+            \$env:INGRESS_MODE = '${{ secrets.INGRESS_MODE }}';
+            \$env:PUBLIC_BACKEND_URL = '${{ secrets.PUBLIC_BACKEND_URL }}';
+            \$env:INGRESS_CHECK_REQUIRED = '${{ secrets.INGRESS_CHECK_REQUIRED }}';
             powershell -ExecutionPolicy Bypass -File scripts\\deploy_backend.ps1
           \""
 
   # 둘 다 실패하면 워크플로우 자체를 최종 실패로 표시
   check-deploy-result:
-    needs: [deploy-to-gcp, deploy-via-ssh-fallback]
+    needs: [deploy-to-cloud, deploy-via-ssh-fallback]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Fail if both deploy paths failed
         run: |
-          gcp_result="${{ needs.deploy-to-gcp.result }}"
+          cloud_result="${{ needs.deploy-to-cloud.result }}"
           ssh_result="${{ needs.deploy-via-ssh-fallback.result }}"
-          echo "GCP result: $gcp_result"
+          echo "Primary Cloud result: $cloud_result"
           echo "SSH fallback result: $ssh_result"
-          if [ "$gcp_result" != "success" ] && [ "$ssh_result" != "success" ]; then
-            echo "Both GCP and SSH fallback deployments failed."
+          if [ "$cloud_result" != "success" ] && [ "$ssh_result" != "success" ]; then
+            echo "Both Primary Cloud and SSH fallback deployments failed."
             exit 1
           fi
           echo "Deployment succeeded via at least one path."
