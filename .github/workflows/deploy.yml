@@ -52,6 +52,7 @@ jobs:
         with:
           instance_name: codemap-backend-vm
           zone: asia-northeast3-a
+          ssh_private_key: '${{ secrets.SSH_PRIVATE_KEY }}'
           command: |
             set -e
 
